@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
+  Building2,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -14,112 +15,47 @@ import {
   User,
   Calendar,
   DollarSign,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import Image from "next/image"
-import { toast } from "sonner"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 
 export default function Component() {
-  const [showCardDetails, setShowCardDetails] = useState(false)
-  const [currentStatus, setCurrentStatus] = useState("ready-to-charge")
-  const [showCheckoutForm, setShowCheckoutForm] = useState(false)
-  const [currentEntryIndex, setCurrentEntryIndex] = useState(0)
-
-  // Demo data array
-  const demoEntries = [
-    {
-      expediaId: "16700171",
-      batch: "BT2024031",
-      hotelName: "Black Fox Lodge Pigeon Forge",
-      hotelConfirmation: "3176067698",
-      guestName: "Bruce Wayne",
-      checkIn: "11/23/2024",
-      checkOut: "12/23/2024",
-      amount: 281.47,
-      cardDetails: {
-        btMaid: "XXXXXX MAID",
-        first4: "5567",
-        last12: "170839894181",
-        cvv: "457",
-        expire: "11/2027"
-      }
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState("ready-to-charge");
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState({
+    cardDetails: {
+      first4: "5567",
+      last12: "170839894181",
     },
-    {
-      expediaId: "16700172",
-      batch: "BT2024031",
-      hotelName: "Hilton Garden Inn",
-      hotelConfirmation: "3176067699",
-      guestName: "Clark Kent",
-      checkIn: "11/25/2024",
-      checkOut: "11/28/2024",
-      amount: 456.89,
-      cardDetails: {
-        btMaid: "XXXXXX MAID",
-        first4: "4111",
-        last12: "170839894182",
-        cvv: "123",
-        expire: "12/2027"
-      }
-    },
-    {
-      expediaId: "16700173",
-      batch: "BT2024031",
-      hotelName: "Marriott Downtown",
-      hotelConfirmation: "3176067700",
-      guestName: "Diana Prince",
-      checkIn: "12/01/2024",
-      checkOut: "12/05/2024",
-      amount: 789.99,
-      cardDetails: {
-        btMaid: "XXXXXX MAID",
-        first4: "3782",
-        last12: "170839894183",
-        cvv: "789",
-        expire: "10/2027"
-      }
-    }
-  ]
-
-  const currentEntry = demoEntries[currentEntryIndex]
+  });
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success("Copied to clipboard")
-  }
+    navigator.clipboard.writeText(text);
+  };
 
   const handleProcessCharge = () => {
-    setShowCheckoutForm(true)
-  }
+    setShowCheckoutForm(true);
+  };
 
   const handlePayPalCheckout = () => {
     // PayPal checkout logic would go here
-    console.log("Processing PayPal checkout...")
-    alert("PayPal checkout initiated!")
-  }
-
-  const handlePrevEntry = () => {
-    if (currentEntryIndex > 0) {
-      setCurrentEntryIndex(currentEntryIndex - 1)
-    }
-  }
-
-  const handleNextEntry = () => {
-    if (currentEntryIndex < demoEntries.length - 1) {
-      setCurrentEntryIndex(currentEntryIndex + 1)
-    }
-  }
-
-  const handleDownloadSheet = () => {
-    // In a real app, this would trigger a file download
-    alert("Downloading work sheet...")
-  }
+    console.log("Processing PayPal checkout...");
+    alert("PayPal checkout initiated!");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative">
@@ -129,64 +65,91 @@ export default function Component() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg">
-                  <Image src="https://www.vnpsolutions.com/img/VNP-logo.svg" alt="VNP Logo" width={100} height={100} />
+                <div className="p-2">
+                  <Image
+                    src="https://www.vnpsolutions.com/img/VNP-logo.svg"
+                    alt="VNP Logo"
+                    width={100}
+                    height={100}
+                  />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>
-                  <div className="text-xl font-bold text-gray-900">VCC Charge System</div>
+                  <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">
+                    VNP Solutions
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">
+                    VCC Charge System
+                  </div>
                 </div>
               </div>
               <Badge variant="secondary" className="ml-4">
-                Entry {currentEntryIndex + 1}/{demoEntries.length}
+                Entry 2/300
               </Badge>
             </div>
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Welcome </span>
+                <span>Welcome,</span>
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs">ES</AvatarFallback>
+                  <AvatarFallback className="bg-blue-600 text-white text-xs">
+                    ES
+                  </AvatarFallback>
                 </Avatar>
               </div>
-
-             
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={`container mx-auto px-6 py-8 transition-all duration-300 ${showCheckoutForm ? "mr-96" : ""}`}>
+      <main
+        className={`container mx-auto px-6 py-8 transition-all duration-300 ${
+          showCheckoutForm ? "mr-96" : ""
+        }`}
+      >
         {/* First Row - Booking Details and Guest Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Booking Details */}
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Booking Details</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Booking Details
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <label className="font-medium text-gray-500">Expedia ID</label>
+                  <label className="font-medium text-gray-500">
+                    Expedia ID
+                  </label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">{currentEntry.expediaId}</span>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(currentEntry.expediaId)}>
-                      <Copy className="h-3 w-3 cursor-pointer" />
+                    <span className="font-mono">16700171</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("16700171")}
+                    >
+                      <Copy className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Batch</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">{currentEntry.batch}</span>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(currentEntry.batch)}>
-                      <Copy className="h-3 w-3 cursor-pointer" />
+                    <span className="font-mono">16700171</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("16700171")}
+                    >
+                      <Copy className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <label className="font-medium text-gray-500">Posting Type</label>
+                  <label className="font-medium text-gray-500">
+                    Posting Type
+                  </label>
                   <div className="mt-1">
                     <Badge variant="outline">OTA Post</Badge>
                   </div>
@@ -201,15 +164,23 @@ export default function Component() {
 
               <div className="pt-2 border-t">
                 <label className="font-medium text-gray-500">Hotel Name</label>
-                <div className="mt-1 text-gray-900 font-medium">{currentEntry.hotelName}</div>
+                <div className="mt-1 text-gray-900 font-medium">
+                  Black Fox Lodge Pigeon Forge
+                </div>
               </div>
 
               <div>
-                <label className="font-medium text-gray-500">Hotel Confirmation</label>
+                <label className="font-medium text-gray-500">
+                  Hotel Confirmation
+                </label>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="font-mono">{currentEntry.hotelConfirmation}</span>
-                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(currentEntry.hotelConfirmation)}>
-                    <Copy className="h-3 w-3 cursor-pointer" />
+                  <span className="font-mono">3176067698</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard("3176067698")}
+                  >
+                    <Copy className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -219,22 +190,26 @@ export default function Component() {
           {/* Guest & Charge Information */}
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Guest & Charge Info</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Guest & Charge Info
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="font-medium text-gray-500">Guest Name</label>
-                <div className="mt-1 text-gray-900 font-medium">{currentEntry.guestName}</div>
+                <div className="mt-1 text-gray-900 font-medium">
+                  Bruce Wayne
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <label className="font-medium text-gray-500">Check In</label>
-                  <div className="mt-1 font-mono">{currentEntry.checkIn}</div>
+                  <div className="mt-1 font-mono">11/23/2024</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Check Out</label>
-                  <div className="mt-1 font-mono">{currentEntry.checkOut}</div>
+                  <div className="mt-1 font-mono">12/23/2024</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Currency</label>
@@ -244,14 +219,21 @@ export default function Component() {
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Amount</label>
-                  <div className="mt-1 text-2xl font-bold text-green-600">${currentEntry.amount.toFixed(2)}</div>
+                  <div className="mt-1 text-2xl font-bold text-green-600">
+                    $281.47
+                  </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t">
-                <label className="font-medium text-gray-500">Charge Status</label>
+                <label className="font-medium text-gray-500">
+                  Charge Status
+                </label>
                 <div className="mt-2">
-                  <Select value={currentStatus} onValueChange={setCurrentStatus}>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={setCurrentStatus}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -289,8 +271,16 @@ export default function Component() {
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center justify-between">
                 VCC Details
-                <Button variant="ghost" size="sm" onClick={() => setShowCardDetails(!showCardDetails)}>
-                  {showCardDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCardDetails(!showCardDetails)}
+                >
+                  {showCardDetails ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -298,32 +288,38 @@ export default function Component() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <label className="font-medium text-gray-500">BT Maid</label>
-                  <div className="mt-1 font-mono">{showCardDetails ? currentEntry.cardDetails.btMaid : "••••••••••"}</div>
+                  <div className="mt-1 font-mono">
+                    {showCardDetails ? "XXXXXX MAID" : "••••••••••"}
+                  </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">First 4</label>
-                  <div className="mt-1 font-mono">{currentEntry.cardDetails.first4}</div>
+                  <div className="mt-1 font-mono">5567</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Last 12</label>
-                  <div className="mt-1 font-mono">{showCardDetails ? currentEntry.cardDetails.last12 : "••••••••••••"}</div>
+                  <div className="mt-1 font-mono">
+                    {showCardDetails ? "170839894181" : "••••••••••••"}
+                  </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">CVV</label>
-                  <div className="mt-1 font-mono">{showCardDetails ? currentEntry.cardDetails.cvv : "•••"}</div>
+                  <div className="mt-1 font-mono">
+                    {showCardDetails ? "457" : "•••"}
+                  </div>
                 </div>
               </div>
 
               <div>
                 <label className="font-medium text-gray-500">Card Expire</label>
-                <div className="mt-1 font-mono">{currentEntry.cardDetails.expire}</div>
+                <div className="mt-1 font-mono">11/2027</div>
               </div>
             </CardContent>
           </Card>
 
           {/* Virtual Credit Card Visualization */}
-          <div className="flex items-center justify-center scale-125">
-            <div className="relative">
+          <div className="flex items-center justify-center">
+            <div className="relative scale-125">
               <div className="w-80 h-48 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden">
                 {/* Card Background Pattern */}
                 <div className="absolute inset-0 opacity-10">
@@ -345,19 +341,27 @@ export default function Component() {
 
                   <div>
                     <div className="text-xl font-mono tracking-wider mb-3">
-                      {showCardDetails 
-                        ? `${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4}`
+                      {showCardDetails
+                        ? `${
+                            currentEntry.cardDetails.first4
+                          } **** **** ${currentEntry.cardDetails.last12.slice(
+                            -4
+                          )}`
                         : `•••• •••• •••• ${currentEntry.cardDetails.first4}`}
                     </div>
 
                     <div className="flex justify-between items-end">
                       <div>
-                        <div className="text-xs opacity-60 uppercase tracking-wide">Card Holder</div>
-                        <div className="font-medium text-sm">{currentEntry.guestName}</div>
+                        <div className="text-xs opacity-60 uppercase tracking-wide">
+                          Card Holder
+                        </div>
+                        <div className="font-medium text-sm">Bruce Wayne</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs opacity-60 uppercase tracking-wide">Expires</div>
-                        <div className="font-mono text-sm">{currentEntry.cardDetails.expire}</div>
+                        <div className="text-xs opacity-60 uppercase tracking-wide">
+                          Expires
+                        </div>
+                        <div className="font-mono text-sm">11/2027</div>
                       </div>
                     </div>
                   </div>
@@ -365,7 +369,7 @@ export default function Component() {
 
                 {/* Amount Badge */}
                 <div className="absolute -bottom-2 -right-2 bg-green-500 text-white px-3 py-2 rounded-tl-2xl font-bold text-sm shadow-lg">
-                  ${currentEntry.amount.toFixed(2)}
+                  $281.47
                 </div>
               </div>
             </div>
@@ -374,29 +378,35 @@ export default function Component() {
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
-          <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={handleProcessCharge}>
+          <Button
+            size="lg"
+            className="bg-green-600 hover:bg-green-700"
+            onClick={handleProcessCharge}
+          >
             <Check className="h-4 w-4 mr-2" />
             Process Charge
           </Button>
-          <Button variant="outline" size="lg" onClick={handleDownloadSheet}>
+
+          <Button variant="outline" size="lg">
             <Download className="h-4 w-4 mr-2" />
             Download Sheet
           </Button>
-          <Button variant="outline" size="lg" onClick={handlePrevEntry} disabled={currentEntryIndex === 0}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="lg">
+            <ChevronLeft className="h-4 w-4 mr-1" />
             Prev
           </Button>
-          <Button variant="outline" size="lg" onClick={handleNextEntry} disabled={currentEntryIndex === demoEntries.length - 1}>
-            Next    
-            <ChevronRight className="h-4 w-4 mr-2" />
+          <Button size="lg">
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
-        
       </main>
 
       {/* PayPal Checkout Form Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 z-20 ${showCheckoutForm ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 z-20 ${
+          showCheckoutForm ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
@@ -412,7 +422,9 @@ export default function Component() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-blue-100 text-sm mt-1">Complete your payment securely</p>
+            <p className="text-blue-100 text-sm mt-1">
+              Complete your payment securely
+            </p>
           </div>
 
           {/* Form Content */}
@@ -421,20 +433,37 @@ export default function Component() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <User className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Guest Information</h3>
+                <h3 className="font-semibold text-gray-900">
+                  Guest Information
+                </h3>
               </div>
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="guestName">Full Name</Label>
-                  <Input id="guestName" value={currentEntry.guestName} readOnly className="bg-gray-50" />
+                  <Input
+                    id="guestName"
+                    value="Bruce Wayne"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="hotelName">Hotel</Label>
-                  <Input id="hotelName" value={currentEntry.hotelName} readOnly className="bg-gray-50" />
+                  <Input
+                    id="hotelName"
+                    value="Black Fox Lodge Pigeon Forge"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="confirmation">Confirmation</Label>
-                  <Input id="confirmation" value={currentEntry.hotelConfirmation} readOnly className="bg-gray-50" />
+                  <Input
+                    id="confirmation"
+                    value="3176067698"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
               </div>
             </div>
@@ -450,11 +479,21 @@ export default function Component() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="checkIn">Check In</Label>
-                  <Input id="checkIn" value={currentEntry.checkIn} readOnly className="bg-gray-50" />
+                  <Input
+                    id="checkIn"
+                    value="11/23/2024"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="checkOut">Check Out</Label>
-                  <Input id="checkOut" value={currentEntry.checkOut} readOnly className="bg-gray-50" />
+                  <Input
+                    id="checkOut"
+                    value="12/23/2024"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
               </div>
             </div>
@@ -465,16 +504,28 @@ export default function Component() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Payment Information</h3>
+                <h3 className="font-semibold text-gray-900">
+                  Payment Information
+                </h3>
               </div>
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="amount">Amount to Charge</Label>
-                  <Input id="amount" value={`$${currentEntry.amount.toFixed(2)}`} readOnly className="bg-gray-50 text-lg font-bold text-green-600" />
+                  <Input
+                    id="amount"
+                    value="$281.47"
+                    readOnly
+                    className="bg-gray-50 text-lg font-bold text-green-600"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="currency">Currency</Label>
-                  <Input id="currency" value="USD" readOnly className="bg-gray-50" />
+                  <Input
+                    id="currency"
+                    value="USD"
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
               </div>
             </div>
@@ -492,9 +543,15 @@ export default function Component() {
                   <Label htmlFor="cardNumber">Card Number</Label>
                   <Input
                     id="cardNumber"
-                    value={showCardDetails 
-                      ? `${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4} ${currentEntry.cardDetails.first4}`
-                      : `•••• •••• •••• ${currentEntry.cardDetails.first4}`}
+                    value={
+                      showCardDetails
+                        ? `${
+                            currentEntry.cardDetails.first4
+                          } **** **** ${currentEntry.cardDetails.last12.slice(
+                            -4
+                          )}`
+                        : `•••• •••• •••• ${currentEntry.cardDetails.first4}`
+                    }
                     readOnly
                     className="bg-gray-50 font-mono"
                   />
@@ -502,11 +559,21 @@ export default function Component() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="expiry">Expiry</Label>
-                    <Input id="expiry" value={currentEntry.cardDetails.expire} readOnly className="bg-gray-50 font-mono" />
+                    <Input
+                      id="expiry"
+                      value="11/2027"
+                      readOnly
+                      className="bg-gray-50 font-mono"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="cvv">CVV</Label>
-                    <Input id="cvv" value={showCardDetails ? currentEntry.cardDetails.cvv : "•••"} readOnly className="bg-gray-50 font-mono" />
+                    <Input
+                      id="cvv"
+                      value={showCardDetails ? "457" : "•••"}
+                      readOnly
+                      className="bg-gray-50 font-mono"
+                    />
                   </div>
                 </div>
               </div>
@@ -520,22 +587,30 @@ export default function Component() {
                 onClick={handlePayPalCheckout}
                 className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold"
               >
-                Pay with PayPal - ${currentEntry.amount.toFixed(2)}
+                Pay with PayPal - $281.47
               </Button>
-              <Button variant="outline" onClick={() => setShowCheckoutForm(false)} className="w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowCheckoutForm(false)}
+                className="w-full"
+              >
                 Cancel
               </Button>
-              
             </div>
-            <p className="text-xs text-gray-500 text-center mt-3">Your payment is secured by PayPal&apos;s encryption</p>
+            <p className="text-xs text-gray-500 text-center mt-3">
+              Your payment is secured by PayPal&apos;s encryption
+            </p>
           </div>
         </div>
       </div>
 
       {/* Overlay */}
       {showCheckoutForm && (
-        <div className="fixed inset-0 bg-black/20 z-10" onClick={() => setShowCheckoutForm(false)} />
+        <div
+          className="fixed inset-0 bg-black/20 z-10"
+          onClick={() => setShowCheckoutForm(false)}
+        />
       )}
     </div>
-  )
+  );
 }
