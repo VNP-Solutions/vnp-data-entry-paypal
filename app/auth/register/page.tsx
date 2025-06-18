@@ -1,36 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Image from "next/image"
-import Link from "next/link"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import Link from "next/link";
+import { toast } from "sonner";
 
-export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
+export default function RegisterPage() {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
-  })
+    confirmPassword: "",
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     
-    // Here you would typically make an API call to verify credentials
-    // For demo purposes, we'll just check for a demo account
-    if (formData.email === "demo@example.com" && formData.password === "password") {
-      toast.success("Login successful!")
-      router.push("/upload")
-    } else {
-      toast.error("Invalid credentials")
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
     }
-  }
+
+    // Here you would typically make an API call to register the user
+    toast.success("Registration successful! Please sign in.");
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -49,16 +51,28 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Login Form */}
+          {/* Registration Form */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-xl font-semibold text-gray-900">Welcome Back</CardTitle>
+              <CardTitle className="text-xl font-semibold text-gray-900">Create Account</CardTitle>
               <CardDescription className="text-gray-600">
-                Please sign in to your account
+                Sign up for a new account
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -77,7 +91,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Create a password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
@@ -94,41 +108,39 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    Forgot Password?
-                  </Link>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  Sign In
+                  Create Account
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
                 <div className="text-center mt-4">
-                  <span className="text-gray-600">Don&apos;t have an account?</span>{" "}
-                  <Link href="/auth/register" className="text-blue-600 hover:text-blue-800 font-medium">
-                    Sign Up
+                  <span className="text-gray-600">Already have an account?</span>{" "}
+                  <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
+                    Sign In
                   </Link>
                 </div>
               </form>
             </CardContent>
           </Card>
-
-          {/* Demo Account Info */}
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Demo Account:</p>
-            <p>Email: demo@example.com</p>
-            <p>Password: password</p>
-          </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+} 

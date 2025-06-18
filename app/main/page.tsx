@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Building2,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +36,7 @@ export default function Component() {
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [currentStatus, setCurrentStatus] = useState("ready-to-charge");
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState({
+  const [currentEntry] = useState({
     cardDetails: {
       first4: "5567",
       last12: "170839894181",
