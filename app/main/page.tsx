@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function Component() {
   const [showCardDetails, setShowCardDetails] = useState(false);
@@ -45,6 +46,7 @@ export default function Component() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   const handleProcessCharge = () => {
@@ -52,9 +54,8 @@ export default function Component() {
   };
 
   const handlePayPalCheckout = () => {
-    // PayPal checkout logic would go here
     console.log("Processing PayPal checkout...");
-    alert("PayPal checkout initiated!");
+    toast.success("PayPal checkout initiated!");
   };
 
   return (
