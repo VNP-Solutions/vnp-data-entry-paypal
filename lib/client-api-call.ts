@@ -34,6 +34,15 @@ interface AuthResponse {
   status: string;
 }
 
+interface ForgotPasswordData {
+  email: string;
+}
+
+interface ResetPasswordData {
+  newPassword: string;
+  confirmPassword: string;
+}
+
 class ApiClient {
   private sessionToken: string = '';
 
@@ -83,6 +92,27 @@ class ApiClient {
       const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/resend-otp`, {
         sessionToken: this.sessionToken
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  forgotPassword = async (data: ForgotPasswordData) => {
+    try {
+      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/forgot-password`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  resetPassword = async (resetToken: string, data: ResetPasswordData) => {
+    try {
+      const response = await axios.post<AuthResponse>(
+        `${API_BASE_URL}/auth/reset-password/${resetToken}`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw error;

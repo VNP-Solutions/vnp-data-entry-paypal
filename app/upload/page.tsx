@@ -3,16 +3,14 @@
 import { useState } from "react";
 import { Upload, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function UploadPage() {
   const router = useRouter();
-  const [workId, setWorkId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,29 +48,8 @@ export default function UploadPage() {
 
           {/* Main Form Card */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-xl font-semibold text-gray-900">Get Started</CardTitle>
-              <CardDescription className="text-gray-600">
-                Please provide your work ID and upload your current work file
-              </CardDescription>
-            </CardHeader>
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Work ID Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="workId" className="text-sm font-medium text-gray-700">
-                    VNP Work ID
-                  </Label>
-                  <Input
-                    id="workId"
-                    type="text"
-                    placeholder="VNP Work ID assigned to you"
-                    value={workId}
-                    onChange={(e) => setWorkId(e.target.value)}
-                    className="h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                    required
-                  />
-                </div>
 
                 {/* File Upload */}
                 <div className="space-y-2">
@@ -112,7 +89,7 @@ export default function UploadPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                  disabled={!workId || !selectedFile}
+                  disabled={!selectedFile}
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />

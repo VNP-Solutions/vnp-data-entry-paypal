@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,17 +10,70 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/client-api-call";
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetToken = searchParams.get("token");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Here you would typically make an API call to send reset password email
-    setIsSubmitted(true);
-    toast.success("Password reset instructions sent to your email");
+    setIsLoading(true);
+
+    try {
+      const response = await apiClient.forgotPassword({
+        email: formData.email
+      });
+      if (response.status === "success") {
+        toast.success(response.message);
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.response?.data?.message || "Failed to process request");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    setIsLoading(true);
+
+    try {
+      const response = await apiClient.resetPassword(resetToken!, {
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword
+      });
+      if (response.status === "success") {
+        toast.success(response.message);
+        router.push("/");
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.response?.data?.message || "Failed to reset password");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,67 +88,97 @@ export default function ForgotPasswordPage() {
               </div>
               <div className="text-left">
                 <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900">VCC Charge System</div>
+                <div className="text-2xl font-bold text-gray-900">VCC Charge System</div>
               </div>
             </div>
           </div>
 
-          {/* Forgot Password Form */}
+          {/* Form */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-xl font-semibold text-gray-900">Reset Password</CardTitle>
+            <CardHeader className="text-left pb-6">
+              <CardTitle className="text-xl font-semibold text-gray-900">
+                {resetToken ? "Reset Password" : "Forgot Password"}
+              </CardTitle>
               <CardDescription className="text-gray-600">
-                {isSubmitted
-                  ? "Check your email for reset instructions"
-                  : "Enter your email to receive password reset instructions"}
+                {resetToken
+                  ? "Enter your new password"
+                  : "Enter your email and we'll send you a reset link"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!isSubmitted ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={resetToken ? handleResetPassword : handleForgotPassword} className="space-y-4">
+                {!resetToken ? (
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
                     />
                   </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter new password"
+                          value={formData.newPassword}
+                          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    Send Reset Instructions
-                  </Button>
-                </form>
-              ) : (
-                <div className="text-center space-y-4">
-                  <div className="text-gray-600">
-                    We&apos;ve sent password reset instructions to <strong>{email}</strong>. Please check your email and follow the instructions to reset your password.
-                  </div>
-                  <Button
-                    onClick={() => setIsSubmitted(false)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Try another email
-                  </Button>
-                </div>
-              )}
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Confirm new password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
-              <div className="text-center mt-6">
-                <Link
-                  href="/"
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                  disabled={isLoading}
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Sign In
-                </Link>
-              </div>
+                  {isLoading
+                    ? "Please wait..."
+                    : resetToken
+                    ? "Reset Password"
+                    : "Send Reset Link"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+
+                <div className="text-center mt-4">
+                  <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
+                    Back to Login
+                  </Link>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>
