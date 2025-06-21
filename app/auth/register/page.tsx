@@ -10,10 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/client-api-call";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,7 +23,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -29,9 +31,17 @@ export default function RegisterPage() {
       return;
     }
 
-    // Here you would typically make an API call to register the user
-    toast.success("Registration successful! Please sign in.");
-    router.push("/");
+    try {
+      await apiClient.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      toast.success("Registration successful! Please sign in.");
+      router.push("/");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Registration failed");
+    }
   };
 
   return (
@@ -46,14 +56,14 @@ export default function RegisterPage() {
               </div>
               <div className="text-left">
                 <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900">VCC Charge System</div>
+                <div className="text-2xl font-bold text-gray-900">VCC Charge System</div>
               </div>
             </div>
           </div>
 
           {/* Registration Form */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="text-center pb-6">
+            <CardHeader className="text-left pb-6">
               <CardTitle className="text-xl font-semibold text-gray-900">Create Account</CardTitle>
               <CardDescription className="text-gray-600">
                 Sign up for a new account
@@ -113,12 +123,21 @@ export default function RegisterPage() {
                   <div className="relative">
                     <Input
                       id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       required
                     />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
                   </div>
                 </div>
 
