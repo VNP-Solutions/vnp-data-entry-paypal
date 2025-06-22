@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 interface RegisterData {
   name: string;
@@ -13,6 +13,13 @@ interface LoginData {
   password: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  lastLogin: string;
+}
+
 interface LoginResponse {
   status: string;
   message: string;
@@ -22,6 +29,16 @@ interface LoginResponse {
     email: string;
     expiresIn: number;
     message: string;
+  }
+}
+
+interface OtpVerificationResponse {
+  status: string;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+    tokenExpiresIn: string;
   }
 }
 
@@ -43,8 +60,73 @@ interface ResetPasswordData {
   confirmPassword: string;
 }
 
+interface UploadResponse {
+  status: string;
+  message: string;
+  data: Record<string, unknown>;
+}
+
+interface RowDataParams {
+  limit: number;
+  page: number;
+  chargeStatus: string;
+}
+
+interface RowDataResponse {
+  status: string;
+  data: {
+    rows: Array<{
+      id: string;
+      uploadId: string;
+      fileName: string;
+      uploadStatus: string;
+      rowNumber: number;
+      "Expedia ID": string;
+      "Batch": string;
+      "Posting Type": string;
+      "Portfolio": string;
+      "Hotel Name": string;
+      "Reservation ID": string;
+      "Hotel Confirmation Code": string;
+      "Name": string;
+      "Check In": string;
+      "Check Out": string;
+      "Curency": string;
+      "Amount to charge": string;
+      "Charge status": string;
+      "Card first 4": string;
+      "Card last 12": string;
+      "Card Expire": string;
+      "Card CVV": string;
+      "Soft Descriptor": string;
+      createdAt: string;
+    }>;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalCount: number;
+      limit: number;
+    };
+    filters: {
+      chargeStatus: string;
+      search: string | null;
+    };
+  };
+}
+
 class ApiClient {
   private sessionToken: string = '';
+  private authToken: string = '';
+
+  constructor() {
+    // Initialize auth token from localStorage
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('authToken');
+      if (storedToken) {
+        this.setAuthToken(storedToken);
+      }
+    }
+  }
 
   setSessionToken(token: string) {
     this.sessionToken = token;
@@ -52,6 +134,27 @@ class ApiClient {
 
   getSessionToken(): string {
     return this.sessionToken;
+  }
+
+  setAuthToken(token: string) {
+    this.authToken = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('authToken', token);
+    }
+    // Set the default authorization header for all future requests
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+
+  getAuthToken(): string {
+    return this.authToken;
+  }
+
+  clearAuthToken() {
+    this.authToken = '';
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      delete axios.defaults.headers.common['Authorization'];
+    }
   }
 
   register = async (data: RegisterData) => {
@@ -77,10 +180,16 @@ class ApiClient {
 
   verifyOtp = async (data: OtpVerificationData) => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/verify-otp`, {
+      const response = await axios.post<OtpVerificationResponse>(`${API_BASE_URL}/auth/verify-otp`, {
         sessionToken: this.sessionToken,
         otp: data.otp
       });
+      
+      if (response.data.status === 'success') {
+        // Save the auth token after successful OTP verification
+        this.setAuthToken(response.data.data.token);
+      }
+      
       return response.data;
     } catch (error) {
       throw error;
@@ -118,6 +227,58 @@ class ApiClient {
       throw error;
     }
   };
+
+  uploadFile = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await axios.post<UploadResponse>(
+        `${API_BASE_URL}/upload`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getRowData = async (params: RowDataParams) => {
+    try {
+      const response = await axios.get<RowDataResponse>(`${API_BASE_URL}/get-row-data`, {
+        params: {
+          limit: params.limit,
+          page: params.page,
+          chargeStatus: params.chargeStatus
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Add an axios interceptor to handle 401 errors (unauthorized)
+  setupAxiosInterceptors() {
+    axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          this.clearAuthToken();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
 }
 
 export const apiClient = new ApiClient();
+apiClient.setupAxiosInterceptors();

@@ -14,6 +14,7 @@ import {
   User,
   Calendar,
   DollarSign,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,17 +26,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { toast } from "sonner";
+import { UploadDialog } from "@/components/upload-dialog";
+import { useRouter } from "next/navigation";
 
 export default function Component() {
+  const router = useRouter()
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [currentStatus, setCurrentStatus] = useState("ready-to-charge");
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [currentEntry] = useState({
     cardDetails: {
       first4: "5567",
@@ -88,14 +92,31 @@ export default function Component() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Welcome,</span>
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs">
-                    ES
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+              <Button
+                onClick={() => setShowUploadDialog(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+              <Button
+                onClick={() => setShowUploadDialog(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Show Uploaded Files
+              </Button>
+              <Button
+                onClick={() => {
+                  // route to entity page
+                  router.push("/entity")
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Show All Entries
+              </Button>
+              
             </div>
           </div>
         </div>
@@ -611,6 +632,12 @@ export default function Component() {
           onClick={() => setShowCheckoutForm(false)}
         />
       )}
+
+      {/* Upload Dialog */}
+      <UploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+      />
     </div>
   );
 }

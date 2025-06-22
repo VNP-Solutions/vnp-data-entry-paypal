@@ -1,0 +1,411 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Eye, 
+  EyeOff, 
+  Search,
+  FileSpreadsheet,
+  RefreshCcw,
+  Calendar,
+  Building2,
+  CreditCard,
+  User2,
+  DollarSign
+} from "lucide-react"
+import { apiClient } from "@/lib/client-api-call"
+import { toast } from "sonner"
+
+interface RowData {
+  id: string;
+  uploadId: string;
+  fileName: string;
+  uploadStatus: string;
+  rowNumber: number;
+  "Expedia ID": string;
+  "Batch": string;
+  "Posting Type": string;
+  "Portfolio": string;
+  "Hotel Name": string;
+  "Reservation ID": string;
+  "Hotel Confirmation Code": string;
+  "Name": string;
+  "Check In": string;
+  "Check Out": string;
+  "Curency": string;
+  "Amount to charge": string;
+  "Charge status": string;
+  "Card first 4": string;
+  "Card last 12": string;
+  "Card Expire": string;
+  "Card CVV": string;
+  "Soft Descriptor": string;
+  createdAt: string;
+}
+
+interface ApiResponse {
+  rows: RowData[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+  };
+  filters: {
+    chargeStatus: string;
+    search: string | null;
+  };
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+export default function EntityPage() {
+  const [data, setData] = useState<ApiResponse>({
+    rows: [],
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalCount: 0,
+      limit: 10
+    },
+    filters: {
+      chargeStatus: "ready to charge",
+      search: null
+    }
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showCardDetails, setShowCardDetails] = useState(false)
+  const [chargeStatus, setChargeStatus] = useState("ready to charge")
+  const limit = 10
+  const [searchTerm, setSearchTerm] = useState("")
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await apiClient.getRowData({
+        limit,
+        page: currentPage,
+        chargeStatus
+      })
+      setData(response.data)
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.response?.data?.message || "Failed to fetch data")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [currentPage, chargeStatus, refreshKey])
+
+  const formatCurrency = (amount: string, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
+    }).format(parseFloat(amount))
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'ready to charge':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'charged':
+        return 'bg-green-100 text-green-800'
+      case 'failed':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8">
+      <div className="container mx-auto px-4">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Transaction Records</h1>
+          <p className="text-gray-600">Manage and monitor payment transactions</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Records</p>
+                <p className="text-xl font-bold text-gray-900">{data.pagination.totalCount}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Building2 className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Hotels</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {new Set(data.rows.map(row => row["Hotel Name"])).size}
+                </p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Amount</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(
+                    data.rows.reduce((sum, row) => sum + parseFloat(row["Amount to charge"]), 0).toString(),
+                    "USD"
+                  )}
+                </p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <CreditCard className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Ready to Charge</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {data.rows.filter(row => row["Charge status"].toLowerCase() === "ready to charge").length}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Filters Section */}
+        <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 w-full md:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by name, hotel, or confirmation..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Select value={chargeStatus} onValueChange={setChargeStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ready to charge">Ready to Charge</SelectItem>
+                  <SelectItem value="charged">Charged</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => setShowCardDetails(!showCardDetails)}
+                className="min-w-[140px]"
+              >
+                {showCardDetails ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                {showCardDetails ? "Hide Cards" : "Show Cards"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                className="w-10 h-10 p-0"
+              >
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Table Section */}
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50">
+                  <TableHead>Expedia ID</TableHead>
+                  <TableHead>Batch</TableHead>
+                  <TableHead>Hotel</TableHead>
+                  <TableHead>Guest</TableHead>
+                  <TableHead>Check In</TableHead>
+                  <TableHead>Check Out</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Card Details</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array(5).fill(0).map((_, idx) => (
+                    <TableRow key={idx}>
+                      {Array(9).fill(0).map((_, cellIdx) => (
+                        <TableCell key={cellIdx}>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : data.rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <FileSpreadsheet className="h-8 w-8 mb-2" />
+                        <p className="text-lg font-medium">No records found</p>
+                        <p className="text-sm">Try adjusting your filters</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.rows
+                    .filter(row => 
+                      searchTerm === "" ||
+                      row["Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      row["Hotel Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      row["Hotel Confirmation Code"].includes(searchTerm)
+                    )
+                    .map((row: RowData) => (
+                      <TableRow key={row.id} className="hover:bg-gray-50/50">
+                        <TableCell className="font-mono">{row["Expedia ID"]}</TableCell>
+                        <TableCell className="font-mono">{row["Batch"]}</TableCell>
+                        <TableCell>
+                          <div className="flex items-start gap-2">
+                            <Building2 className="h-4 w-4 text-gray-400 mt-1" />
+                            <div>
+                              <div className="font-medium">{row["Hotel Name"]}</div>
+                              <div className="text-sm text-gray-500">
+                                Conf: {row["Hotel Confirmation Code"]}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User2 className="h-4 w-4 text-gray-400" />
+                            <span>{row["Name"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span>{row["Check In"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span>{row["Check Out"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium">
+                              {formatCurrency(row["Amount to charge"], row["Curency"])}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-gray-400" />
+                            {showCardDetails ? (
+                              <div>
+                                <div>{row["Card first 4"]} **** **** {row["Card last 12"].slice(-4)}</div>
+                                <div className="text-sm text-gray-500">
+                                  Exp: {row["Card Expire"]}
+                                </div>
+                              </div>
+                            ) : (
+                              `**** **** **** ${row["Card last 12"].slice(-4)}`
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(row["Charge status"])}>
+                            {row["Charge status"]}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border-t">
+            <div className="text-sm text-gray-600">
+              Showing {data.rows.length} of {data.pagination.totalCount} entries
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm">
+                Page {data.pagination.currentPage} of {data.pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(data.pagination.totalPages, p + 1))}
+                disabled={currentPage === data.pagination.totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+} 

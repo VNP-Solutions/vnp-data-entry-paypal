@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Eye, EyeOff, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +10,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/client-api-call"
+import { useRouter } from "next/navigation"
 
 interface ApiError {
   response?: {
@@ -21,7 +21,6 @@ interface ApiError {
 }
 
 export default function LoginPage() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showOtpForm, setShowOtpForm] = useState(false)
@@ -30,7 +29,7 @@ export default function LoginPage() {
     password: "",
     otp: ""
   })
-
+  const router = useRouter()
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -62,7 +61,7 @@ export default function LoginPage() {
       })
       if (response.status === 'success') {
         toast.success(response.message)
-        router.push("/upload")
+        router.push("/main")
       }
     } catch (error) {
       const apiError = error as ApiError;
@@ -97,7 +96,7 @@ export default function LoginPage() {
               <div className="p-3">
                 <Image src="https://www.vnpsolutions.com/img/VNP-logo.svg" alt="VNP Logo" width={100} height={100} />
               </div>
-              <div className="text-left">
+              <div className="text-left flex-1">
                 <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>
                 <div className="text-2xl font-bold text-gray-900">VCC Charge System</div>
               </div>
