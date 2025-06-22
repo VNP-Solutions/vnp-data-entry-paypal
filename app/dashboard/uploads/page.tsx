@@ -348,7 +348,13 @@ export default function UploadsPage() {
                               <span>Retry Upload</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDiscardUpload(session.uploadId)}
+                              onClick={() => {
+                                if(session.status === "failed") {
+                                  handleDiscardUpload(session.uploadId)
+                                } else {
+                                  toast.error("Action only work for failed uploads")
+                                }
+                              }}
                               className="flex items-center gap-2 text-red-600 cursor-pointer p-2 hover:bg-red-100"
                             >
                               <Trash2 className="h-4 w-4" />
