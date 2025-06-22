@@ -114,6 +114,37 @@ interface RowDataResponse {
   };
 }
 
+interface UploadSession {
+  uploadId: string;
+  fileName: string;
+  status: string;
+  totalRows: number;
+  processedRows: number;
+  progress: number;
+  startedAt: string;
+  completedAt: string;
+  vnpWorkId: string | null;
+}
+
+interface UploadSessionsResponse {
+  status: string;
+  data: {
+    sessions: UploadSession[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+interface ApiResponse {
+  status: string;
+  message: string;
+  data?: any;
+}
+
 class ApiClient {
   private sessionToken: string = '';
   private authToken: string = '';
@@ -257,6 +288,45 @@ class ApiClient {
           chargeStatus: params.chargeStatus
         }
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getUploadSessions = async (page: number = 1, limit: number = 20) => {
+    try {
+      const response = await axios.get<UploadSessionsResponse>(`${API_BASE_URL}/upload/sessions`, {
+        params: {
+          page,
+          limit
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  retryUpload = async (uploadId: string) => {
+    try {
+      const response = await axios.post<ApiResponse>(
+        `${API_BASE_URL}/upload/resume/${uploadId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  discardUpload = async (uploadId: string) => {
+    try {
+      const response = await axios.delete<ApiResponse>(
+        `${API_BASE_URL}/upload/cleanup`,
+        {
+          params: { uploadId }
+        }
+      );
       return response.data;
     } catch (error) {
       throw error;
