@@ -157,8 +157,8 @@ export default function UploadsPage() {
     <div className="min-h-[80vh]">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Sessions</h1>
-        <p className="text-gray-600">Monitor and manage file upload sessions</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Files</h1>
+        <p className="text-gray-600">Monitor and manage uploaded files</p>
       </div>
 
       {/* Stats Cards */}
@@ -169,7 +169,7 @@ export default function UploadsPage() {
               <FileSpreadsheet className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Sessions</p>
+              <p className="text-sm text-gray-600">Total Files</p>
               <p className="text-xl font-bold text-gray-900">{data.pagination.total}</p>
             </div>
           </div>

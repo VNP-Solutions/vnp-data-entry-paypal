@@ -37,6 +37,13 @@ import {
 } from "lucide-react"
 import { apiClient } from "@/lib/client-api-call"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface RowData {
   id: string;
@@ -87,6 +94,34 @@ interface ApiError {
   };
 }
 
+interface ViewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  rowData: RowData | null;
+}
+
+const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
+  if (!rowData) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Entry Details</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-4 py-4">
+          {Object.entries(rowData).map(([key, value]) => (
+            <div key={key} className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">{key}</p>
+              <p className="text-sm">{String(value)}</p>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function EntityPage() {
   const [data, setData] = useState<ApiResponse>({
     rows: [],
@@ -108,6 +143,9 @@ export default function EntityPage() {
   const limit = 10
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
+  const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const router = useRouter();
 
   const fetchData = async () => {
     try {
@@ -153,6 +191,11 @@ export default function EntityPage() {
         return 'bg-gray-100 text-gray-800'
     }
   }
+
+  const handlePaymentClick = (row: RowData) => {
+    localStorage.setItem('selectedPaymentRow', JSON.stringify(row));
+    router.push('/dashboard/main');
+  };
 
   return (
     <div className="min-h-[80vh]">
@@ -278,6 +321,7 @@ export default function EntityPage() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -370,6 +414,30 @@ export default function EntityPage() {
                           {row["Charge status"]}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-center">
+                        {row["Charge status"] === "Ready to charge" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 hover:bg-blue-100"
+                            onClick={() => handlePaymentClick(row)}
+                          >
+                            <CreditCard className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 hover:bg-blue-100"
+                            onClick={() => {
+                              setSelectedRow(row);
+                              setShowViewDialog(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
               )}
@@ -404,6 +472,12 @@ export default function EntityPage() {
           </div>
         </div>
       </Card>
+
+      <ViewDialog
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        rowData={selectedRow}
+      />
     </div>
   )
 } 

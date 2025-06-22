@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Download,
   ChevronLeft,
@@ -34,11 +34,20 @@ export default function MainPage() {
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [currentStatus, setCurrentStatus] = useState("ready-to-charge");
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
-  const [currentEntry] = useState({
-    cardDetails: {
-      first4: "5567",
-      last12: "170839894181",
-    },
+  const [formData, setFormData] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    amount: '',
+    currency: '',
+    name: '',
+    hotelName: '',
+    reservationId: '',
+    checkIn: '',
+    checkOut: '',
+    softDescriptor: '',
+    cardFirst4: '',
+    cardLast12: '',
   });
 
   const copyToClipboard = (text: string) => {
@@ -51,9 +60,38 @@ export default function MainPage() {
   };
 
   const handlePayPalCheckout = () => {
-    console.log("Processing PayPal checkout...");
     toast.success("PayPal checkout initiated!");
   };
+
+  useEffect(() => {
+    // Check for payment data in localStorage
+    const paymentData = localStorage.getItem('selectedPaymentRow');
+    if (paymentData) {
+      try {
+        const parsedData = JSON.parse(paymentData);
+        // Set the form data with the payment information
+        setFormData({
+          cardNumber: parsedData["Card first 4"] + parsedData["Card last 12"],
+          expiryDate: parsedData["Card Expire"],
+          cvv: parsedData["Card CVV"],
+          amount: parsedData["Amount to charge"],
+          currency: parsedData["Curency"],
+          name: parsedData["Name"],
+          hotelName: parsedData["Hotel Name"],
+          reservationId: parsedData["Expedia ID"],
+          checkIn: parsedData["Check In"],
+          checkOut: parsedData["Check Out"],
+          softDescriptor: parsedData["Soft Descriptor"],
+          cardFirst4: parsedData["Card first 4"],
+          cardLast12: parsedData["Card last 12"],
+        });
+        // Clear the localStorage after setting the data
+        localStorage.removeItem('selectedPaymentRow');
+      } catch (error) {
+        console.error('Error parsing payment data:', error);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-[80vh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative">
@@ -80,11 +118,11 @@ export default function MainPage() {
                     Expedia ID
                   </label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">16700171</span>
+                    <span className="font-mono">{formData.reservationId}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("16700171")}
+                      onClick={() => copyToClipboard(formData.reservationId)}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -93,11 +131,11 @@ export default function MainPage() {
                 <div>
                   <label className="font-medium text-gray-500">Batch</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">16700171</span>
+                    <span className="font-mono">{formData.reservationId}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("16700171")}
+                      onClick={() => copyToClipboard(formData.reservationId)}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -122,7 +160,7 @@ export default function MainPage() {
               <div className="pt-2 border-t">
                 <label className="font-medium text-gray-500">Hotel Name</label>
                 <div className="mt-1 text-gray-900 font-medium">
-                  Black Fox Lodge Pigeon Forge
+                  {formData.hotelName}
                 </div>
               </div>
 
@@ -131,11 +169,11 @@ export default function MainPage() {
                   Hotel Confirmation
                 </label>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="font-mono">3176067698</span>
+                  <span className="font-mono">{formData.reservationId}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard("3176067698")}
+                    onClick={() => copyToClipboard(formData.reservationId)}
                   >
                     <Copy className="h-3 w-3" />
                   </Button>
@@ -155,29 +193,29 @@ export default function MainPage() {
               <div>
                 <label className="font-medium text-gray-500">Guest Name</label>
                 <div className="mt-1 text-gray-900 font-medium">
-                  Bruce Wayne
+                  {formData.name}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <label className="font-medium text-gray-500">Check In</label>
-                  <div className="mt-1 font-mono">11/23/2024</div>
+                  <div className="mt-1 font-mono">{formData.checkIn}</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Check Out</label>
-                  <div className="mt-1 font-mono">12/23/2024</div>
+                  <div className="mt-1 font-mono">{formData.checkOut}</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Currency</label>
                   <div className="mt-1">
-                    <Badge variant="outline">USD</Badge>
+                    <Badge variant="outline">{formData.currency}</Badge>
                   </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Amount</label>
                   <div className="mt-1 text-2xl font-bold text-green-600">
-                    $281.47
+                    ${formData.amount}
                   </div>
                 </div>
               </div>
@@ -246,30 +284,30 @@ export default function MainPage() {
                 <div>
                   <label className="font-medium text-gray-500">BT Maid</label>
                   <div className="mt-1 font-mono">
-                    {showCardDetails ? "XXXXXX MAID" : "••••••••••"}
+                    {showCardDetails ? formData.softDescriptor : "••••••••••"}
                   </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">First 4</label>
-                  <div className="mt-1 font-mono">5567</div>
+                  <div className="mt-1 font-mono">{formData.cardFirst4}</div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Last 12</label>
                   <div className="mt-1 font-mono">
-                    {showCardDetails ? "170839894181" : "••••••••••••"}
+                    {showCardDetails ? formData.cardLast12 : "••••••••••••"}
                   </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">CVV</label>
                   <div className="mt-1 font-mono">
-                    {showCardDetails ? "457" : "•••"}
+                    {showCardDetails ? formData.cvv : "•••"}
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="font-medium text-gray-500">Card Expire</label>
-                <div className="mt-1 font-mono">11/2027</div>
+                <div className="mt-1 font-mono">{formData.expiryDate}</div>
               </div>
             </CardContent>
           </Card>
@@ -299,12 +337,8 @@ export default function MainPage() {
                   <div>
                     <div className="text-xl font-mono tracking-wider mb-3">
                       {showCardDetails
-                        ? `${
-                            currentEntry.cardDetails.first4
-                          } **** **** ${currentEntry.cardDetails.last12.slice(
-                            -4
-                          )}`
-                        : `•••• •••• •••• ${currentEntry.cardDetails.first4}`}
+                        ? `${formData.cardFirst4} **** **** ${formData.cardLast12.slice(-4)}`
+                        : `•••• •••• •••• ${formData.cardFirst4}`}
                     </div>
 
                     <div className="flex justify-between items-end">
@@ -312,13 +346,13 @@ export default function MainPage() {
                         <div className="text-xs opacity-60 uppercase tracking-wide">
                           Card Holder
                         </div>
-                        <div className="font-medium text-sm">Bruce Wayne</div>
+                        <div className="font-medium text-sm">{formData.name}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs opacity-60 uppercase tracking-wide">
                           Expires
                         </div>
-                        <div className="font-mono text-sm">11/2027</div>
+                        <div className="font-mono text-sm">{formData.expiryDate}</div>
                       </div>
                     </div>
                   </div>
@@ -326,7 +360,7 @@ export default function MainPage() {
 
                 {/* Amount Badge */}
                 <div className="absolute -bottom-2 -right-2 bg-green-500 text-white px-3 py-2 rounded-tl-2xl font-bold text-sm shadow-lg">
-                  $281.47
+                  ${formData.amount}
                 </div>
               </div>
             </div>
@@ -399,7 +433,7 @@ export default function MainPage() {
                   <Label htmlFor="guestName">Full Name</Label>
                   <Input
                     id="guestName"
-                    value="Bruce Wayne"
+                    value={formData.name}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -408,7 +442,7 @@ export default function MainPage() {
                   <Label htmlFor="hotelName">Hotel</Label>
                   <Input
                     id="hotelName"
-                    value="Black Fox Lodge Pigeon Forge"
+                    value={formData.hotelName}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -417,7 +451,7 @@ export default function MainPage() {
                   <Label htmlFor="confirmation">Confirmation</Label>
                   <Input
                     id="confirmation"
-                    value="3176067698"
+                    value={formData.reservationId}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -438,7 +472,7 @@ export default function MainPage() {
                   <Label htmlFor="checkIn">Check In</Label>
                   <Input
                     id="checkIn"
-                    value="11/23/2024"
+                    value={formData.checkIn}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -447,7 +481,7 @@ export default function MainPage() {
                   <Label htmlFor="checkOut">Check Out</Label>
                   <Input
                     id="checkOut"
-                    value="12/23/2024"
+                    value={formData.checkOut}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -470,7 +504,7 @@ export default function MainPage() {
                   <Label htmlFor="amount">Amount to Charge</Label>
                   <Input
                     id="amount"
-                    value="$281.47"
+                    value={`$${formData.amount}`}
                     readOnly
                     className="bg-gray-50 text-lg font-bold text-green-600"
                   />
@@ -479,7 +513,7 @@ export default function MainPage() {
                   <Label htmlFor="currency">Currency</Label>
                   <Input
                     id="currency"
-                    value="USD"
+                    value={formData.currency}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -502,12 +536,8 @@ export default function MainPage() {
                     id="cardNumber"
                     value={
                       showCardDetails
-                        ? `${
-                            currentEntry.cardDetails.first4
-                          } **** **** ${currentEntry.cardDetails.last12.slice(
-                            -4
-                          )}`
-                        : `•••• •••• •••• ${currentEntry.cardDetails.first4}`
+                        ? `${formData.cardFirst4} **** **** ${formData.cardLast12.slice(-4)}`
+                        : `•••• •••• •••• ${formData.cardFirst4}`
                     }
                     readOnly
                     className="bg-gray-50 font-mono"
@@ -518,7 +548,7 @@ export default function MainPage() {
                     <Label htmlFor="expiry">Expiry</Label>
                     <Input
                       id="expiry"
-                      value="11/2027"
+                      value={formData.expiryDate}
                       readOnly
                       className="bg-gray-50 font-mono"
                     />
@@ -527,7 +557,7 @@ export default function MainPage() {
                     <Label htmlFor="cvv">CVV</Label>
                     <Input
                       id="cvv"
-                      value={showCardDetails ? "457" : "•••"}
+                      value={showCardDetails ? formData.cvv : "•••"}
                       readOnly
                       className="bg-gray-50 font-mono"
                     />
@@ -544,7 +574,7 @@ export default function MainPage() {
                 onClick={handlePayPalCheckout}
                 className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold"
               >
-                Pay with PayPal - $281.47
+                Pay with PayPal - ${formData.amount}
               </Button>
               <Button
                 variant="outline"
