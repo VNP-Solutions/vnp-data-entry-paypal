@@ -4,10 +4,11 @@ import { useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Upload } from "lucide-react"
+import { LogOut, Upload } from "lucide-react"
 import { UploadDialog } from "@/components/upload-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { apiClient } from "@/lib/client-api-call"
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,10 @@ export default function DashboardLayout({
 }) {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const pathname = usePathname()
+
+  const handleLogout = async () => {
+    await apiClient.logout();
+  };
 
   const navItems = [
     {
@@ -76,6 +81,14 @@ export default function DashboardLayout({
               >
                 <Upload className="h-4 w-4" />
                 Upload
+              </Button>
+              <Button
+                className="md:me-10"
+                onClick={handleLogout}
+                variant="ghost"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from 'js-cookie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -150,9 +151,9 @@ class ApiClient {
   private authToken: string = '';
 
   constructor() {
-    // Initialize auth token from localStorage
+    // Initialize auth token from cookie
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('authToken');
+      const storedToken = Cookies.get('auth_token');
       if (storedToken) {
         this.setAuthToken(storedToken);
       }
@@ -170,7 +171,12 @@ class ApiClient {
   setAuthToken(token: string) {
     this.authToken = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('authToken', token);
+      // Set cookie with httpOnly and secure flags
+      Cookies.set('auth_token', token, {
+        expires: 7, // 7 days
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
     }
     // Set the default authorization header for all future requests
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -183,7 +189,7 @@ class ApiClient {
   clearAuthToken() {
     this.authToken = '';
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
+      Cookies.remove('auth_token');
       delete axios.defaults.headers.common['Authorization'];
     }
   }
@@ -406,6 +412,15 @@ class ApiClient {
         }
       );
       return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  logout = async () => {
+    try {
+      this.clearAuthToken();
+      window.location.href = '/auth/login';
     } catch (error) {
       throw error;
     }
