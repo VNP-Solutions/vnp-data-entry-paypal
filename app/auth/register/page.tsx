@@ -38,7 +38,7 @@ export default function RegisterPage() {
         password: formData.password,
       });
       toast.success("Registration successful! Please sign in.");
-      router.push("/");
+      router.push("/auth/login");
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     }
@@ -151,7 +151,7 @@ export default function RegisterPage() {
 
                 <div className="text-center mt-4">
                   <span className="text-gray-600">Already have an account?</span>{" "}
-                  <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <Link href="/auth/login" className="text-blue-600 hover:text-blue-800 font-medium">
                     Sign In
                   </Link>
                 </div>

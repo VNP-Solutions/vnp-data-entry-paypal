@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
       });
       if (response.status === "success") {
         toast.success(response.message);
-        router.push("/");
+        router.push("/auth/login");
       }
     } catch (error) {
       const apiError = error as ApiError;
@@ -174,7 +174,7 @@ export default function ForgotPasswordPage() {
                 </Button>
 
                 <div className="text-center mt-4">
-                  <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <Link href="/auth/login" className="text-blue-600 hover:text-blue-800 font-medium">
                     Back to Login
                   </Link>
                 </div>
