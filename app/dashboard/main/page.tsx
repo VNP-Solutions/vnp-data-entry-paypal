@@ -65,6 +65,7 @@ export default function MainPage() {
   const [allRows, setAllRows] = useState<RowData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     cardNumber: '',
     expiryDate: '',
@@ -130,6 +131,8 @@ export default function MainPage() {
     });
   };
 
+  console.log(formData);
+
   const handleNext = () => {
     if (currentIndex < allRows.length - 1) {
       const nextIndex = currentIndex + 1;
@@ -159,8 +162,38 @@ export default function MainPage() {
     setShowCheckoutForm(true);
   };
 
-  const handlePayPalCheckout = () => {
-    toast.success("PayPal checkout initiated!");
+  const handlePayPalCheckout = async () => {
+    try {
+      setIsProcessing(true);
+      const currentRow = allRows[currentIndex];
+      const [month, year] = formData.expiryDate.split('/');
+      const formattedExpiry = `${year}-${month.padStart(2, '0')}`;
+
+      const response = await apiClient.processPayPalPayment({
+        amount: parseFloat(currentRow["Amount to charge"]),
+        currency: currentRow["Curency"],
+        descriptor: formData.softDescriptor,
+        documentId: currentRow.id,
+        cardNumber: `${formData.cardFirst4}${formData.cardLast12}`,
+        cardExpiry: formattedExpiry,
+        cardCvv: formData.cvv,
+        cardholderName: formData.name
+      });
+
+      if (response.status === "success") {
+        toast.success("Payment processed successfully!");
+        setShowCheckoutForm(false);
+        // Refresh the data
+        fetchAllData();
+      } else {
+        toast.error("Payment processing failed");
+      }
+    } catch (error) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || "Payment processing failed");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isLoading) {
@@ -435,7 +468,7 @@ export default function MainPage() {
                     <div className="text-xl font-mono tracking-wider mb-3">
                       {showCardDetails
                         ? `${formData.cardFirst4} **** **** ${formData.cardLast12.slice(-4)}`
-                        : `•••• •••• •••• ${formData.cardFirst4}`}
+                        : `${formData.cardFirst4} •••• •••• ••••`}
                     </div>
 
                     <div className="flex justify-between items-end">
@@ -536,7 +569,7 @@ export default function MainPage() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="guestName">Full Name</Label>
+                  <Label htmlFor="guestName" className="text-sm">Full Name</Label>
                   <Input
                     id="guestName"
                     value={formData.name}
@@ -554,10 +587,10 @@ export default function MainPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="confirmation">Confirmation</Label>
+                  <Label htmlFor="softDescriptor" className="text-sm">Soft Descriptor</Label>
                   <Input
-                    id="confirmation"
-                    value={formData.confirmation}
+                    id="softDescriptor"
+                    value={formData.softDescriptor}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -575,7 +608,7 @@ export default function MainPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="checkIn">Check In</Label>
+                  <Label htmlFor="checkIn" className="text-sm mb-1">Check In</Label>
                   <Input
                     id="checkIn"
                     value={formData.checkIn}
@@ -584,7 +617,7 @@ export default function MainPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="checkOut">Check Out</Label>
+                  <Label htmlFor="checkOut" className="text-sm mb-1">Check Out</Label>
                   <Input
                     id="checkOut"
                     value={formData.checkOut}
@@ -607,7 +640,7 @@ export default function MainPage() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="amount">Amount to Charge</Label>
+                  <Label htmlFor="amount" className="text-sm mb-1">Amount to Charge</Label>
                   <Input
                     id="amount"
                     value={`$${formData.amount}`}
@@ -616,7 +649,7 @@ export default function MainPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label htmlFor="currency" className="text-sm mb-1">Currency</Label>
                   <Input
                     id="currency"
                     value={formData.currency}
@@ -633,17 +666,17 @@ export default function MainPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">VCC Information</h3>
+                <h3 className="font-semibold text-gray-900">Card Information</h3>
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
+                  <Label htmlFor="cardNumber" className="text-sm mb-1">Card Number</Label>
                   <Input
                     id="cardNumber"
                     value={
                       showCardDetails
-                        ? `${formData.cardFirst4} **** **** ${formData.cardLast12.slice(-4)}`
-                        : `•••• •••• •••• ${formData.cardFirst4}`
+                        ? formData.cardNumber
+                        : `•••• •••• •••• ${formData.cardLast12.slice(-4)}`
                     }
                     readOnly
                     className="bg-gray-50 font-mono"
@@ -651,7 +684,7 @@ export default function MainPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="expiry">Expiry</Label>
+                    <Label htmlFor="expiry" className="text-sm mb-1">Expiry</Label>
                     <Input
                       id="expiry"
                       value={formData.expiryDate}
@@ -660,7 +693,7 @@ export default function MainPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cvv">CVV</Label>
+                    <Label htmlFor="cvv" className="text-sm mb-1">CVV</Label>
                     <Input
                       id="cvv"
                       value={showCardDetails ? formData.cvv : "•••"}
@@ -679,13 +712,22 @@ export default function MainPage() {
               <Button
                 onClick={handlePayPalCheckout}
                 className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold"
+                disabled={isProcessing}
               >
-                Pay with PayPal - ${formData.amount}
+                {isProcessing ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  <>Pay with PayPal - ${formData.amount}</>
+                )}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowCheckoutForm(false)}
                 className="w-full"
+                disabled={isProcessing}
               >
                 Cancel
               </Button>

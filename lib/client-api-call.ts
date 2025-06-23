@@ -362,6 +362,30 @@ class ApiClient {
     }
   };
 
+  processPayPalPayment = async (data: {
+    amount: number;
+    currency: string;
+    descriptor: string;
+    documentId: string;
+    cardNumber: string;
+    cardExpiry: string;
+    cardCvv: string;
+    cardholderName: string;
+  }) => {
+    try {
+      const response = await axios.post<{
+        status: string;
+        data: {
+          orderId: string;
+          status: string;
+        };
+      }>(`${API_BASE_URL}/paypal/process-payment`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   retryUpload = async (uploadId: string) => {
     try {
       const response = await axios.post<ApiResponse>(
