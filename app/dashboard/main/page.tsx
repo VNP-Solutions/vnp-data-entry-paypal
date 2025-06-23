@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import {
-  Download,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -65,6 +64,9 @@ export default function MainPage() {
   const [allRows, setAllRows] = useState<RowData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     cardNumber: '',
@@ -87,17 +89,41 @@ export default function MainPage() {
     portfolio: '',
   });
 
-  const fetchAllData = async () => {
+  const fetchPageData = async (page: number) => {
+    try {
+      setIsLoadingMore(true);
+      const response = await apiClient.getRowData({
+        limit: 100,
+        page,
+        chargeStatus: "ready to charge"
+      });
+      
+      if (response.data.rows.length > 0) {
+        setAllRows(prev => [...prev, ...response.data.rows]);
+        setTotalPages(response.data.pagination.totalPages);
+      }
+      return response.data.rows.length > 0;
+    } catch (error) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || "Failed to fetch data");
+      return false;
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const fetchInitialData = async () => {
     try {
       setIsLoading(true);
       const response = await apiClient.getRowData({
-        limit: 100,
+        limit:100,
         page: 1,
         chargeStatus: "ready to charge"
       });
       
       if (response.data.rows.length > 0) {
         setAllRows(response.data.rows);
+        setTotalPages(response.data.pagination.totalPages);
         updateFormDataFromRow(response.data.rows[0]);
       }
     } catch (error) {
@@ -133,9 +159,18 @@ export default function MainPage() {
 
   console.log(formData);
 
-  const handleNext = () => {
-    if (currentIndex < allRows.length - 1) {
-      const nextIndex = currentIndex + 1;
+  const handleNext = async () => {
+    const nextIndex = currentIndex + 1;
+    
+    // If we're about to show the last item in our current set and there are more pages
+    if (nextIndex === allRows.length - 1 && currentPage < totalPages) {
+      const hasMoreData = await fetchPageData(currentPage + 1);
+      if (hasMoreData) {
+        setCurrentPage(prev => prev + 1);
+      }
+    }
+    
+    if (nextIndex < allRows.length) {
       setCurrentIndex(nextIndex);
       updateFormDataFromRow(allRows[nextIndex]);
     }
@@ -150,7 +185,7 @@ export default function MainPage() {
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchInitialData();
   }, []);
 
   const copyToClipboard = (text: string) => {
@@ -184,7 +219,7 @@ export default function MainPage() {
         toast.success("Payment processed successfully!");
         setShowCheckoutForm(false);
         // Refresh the data
-        fetchAllData();
+        fetchInitialData();
       } else {
         toast.error("Payment processing failed");
       }
@@ -508,10 +543,7 @@ export default function MainPage() {
             Process Charge
           </Button>
 
-          <Button variant="outline" size="lg">
-            <Download className="h-4 w-4 mr-2" />
-            Download Sheet
-          </Button>
+          
           <Button 
             variant="outline" 
             size="lg"
@@ -524,10 +556,19 @@ export default function MainPage() {
           <Button 
             size="lg"
             onClick={handleNext}
-            disabled={currentIndex === allRows.length - 1}
+            disabled={currentIndex === allRows.length - 1 && currentPage === totalPages}
           >
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            {isLoadingMore ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Loading...
+              </div>
+            ) : (
+              <>
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </>
+            )}
           </Button>
         </div>
       </div>
