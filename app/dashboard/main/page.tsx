@@ -29,11 +29,42 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
+import { apiClient } from "@/lib/client-api-call"
+
+interface RowData {
+  id: string;
+  uploadId: string;
+  fileName: string;
+  uploadStatus: string;
+  rowNumber: number;
+  "Expedia ID": string;
+  "Batch": string;
+  "Posting Type": string;
+  "Portfolio": string;
+  "Hotel Name": string;
+  "Reservation ID": string;
+  "Hotel Confirmation Code": string;
+  "Name": string;
+  "Check In": string;
+  "Check Out": string;
+  "Curency": string;
+  "Amount to charge": string;
+  "Charge status": string;
+  "Card first 4": string;
+  "Card last 12": string;
+  "Card Expire": string;
+  "Card CVV": string;
+  "Soft Descriptor": string;
+  createdAt: string;
+}
 
 export default function MainPage() {
   const [showCardDetails, setShowCardDetails] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState("ready-to-charge");
+  const [currentStatus] = useState("ready to charge");
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [allRows, setAllRows] = useState<RowData[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     cardNumber: '',
     expiryDate: '',
@@ -42,13 +73,82 @@ export default function MainPage() {
     currency: '',
     name: '',
     hotelName: '',
+    otaId: '',
     reservationId: '',
+    batch: '',
+    confirmation: '',
     checkIn: '',
     checkOut: '',
     softDescriptor: '',
     cardFirst4: '',
     cardLast12: '',
+    postingType: '',
+    portfolio: '',
   });
+
+  const fetchAllData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiClient.getRowData({
+        limit: 100,
+        page: 1,
+        chargeStatus: "ready to charge"
+      });
+      
+      if (response.data.rows.length > 0) {
+        setAllRows(response.data.rows);
+        updateFormDataFromRow(response.data.rows[0]);
+      }
+    } catch (error) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || "Failed to fetch data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateFormDataFromRow = (row: RowData) => {
+    setFormData({
+      cardNumber: row["Card first 4"] + row["Card last 12"],
+      expiryDate: row["Card Expire"],
+      cvv: row["Card CVV"],
+      amount: row["Amount to charge"],
+      currency: row["Curency"],
+      name: row["Name"],
+      hotelName: row["Hotel Name"],
+      otaId: row["Expedia ID"],
+      reservationId: row["Reservation ID"],
+      batch: row["Batch"],
+      confirmation: row["Hotel Confirmation Code"],
+      checkIn: row["Check In"],
+      checkOut: row["Check Out"],
+      softDescriptor: row["Soft Descriptor"],
+      cardFirst4: row["Card first 4"],
+      cardLast12: row["Card last 12"],
+      postingType: row["Posting Type"],
+      portfolio: row["Portfolio"],
+    });
+  };
+
+  const handleNext = () => {
+    if (currentIndex < allRows.length - 1) {
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      updateFormDataFromRow(allRows[nextIndex]);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
+      updateFormDataFromRow(allRows[prevIndex]);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -63,35 +163,16 @@ export default function MainPage() {
     toast.success("PayPal checkout initiated!");
   };
 
-  useEffect(() => {
-    // Check for payment data in localStorage
-    const paymentData = localStorage.getItem('selectedPaymentRow');
-    if (paymentData) {
-      try {
-        const parsedData = JSON.parse(paymentData);
-        // Set the form data with the payment information
-        setFormData({
-          cardNumber: parsedData["Card first 4"] + parsedData["Card last 12"],
-          expiryDate: parsedData["Card Expire"],
-          cvv: parsedData["Card CVV"],
-          amount: parsedData["Amount to charge"],
-          currency: parsedData["Curency"],
-          name: parsedData["Name"],
-          hotelName: parsedData["Hotel Name"],
-          reservationId: parsedData["Expedia ID"],
-          checkIn: parsedData["Check In"],
-          checkOut: parsedData["Check Out"],
-          softDescriptor: parsedData["Soft Descriptor"],
-          cardFirst4: parsedData["Card first 4"],
-          cardLast12: parsedData["Card last 12"],
-        });
-        // Clear the localStorage after setting the data
-        localStorage.removeItem('selectedPaymentRow');
-      } catch (error) {
-        console.error('Error parsing payment data:', error);
-      }
-    }
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading payment details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative">
@@ -118,11 +199,11 @@ export default function MainPage() {
                     Expedia ID
                   </label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">{formData.reservationId}</span>
+                    <span className="font-mono">{formData.otaId}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(formData.reservationId)}
+                      onClick={() => copyToClipboard(formData.otaId)}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -131,11 +212,11 @@ export default function MainPage() {
                 <div>
                   <label className="font-medium text-gray-500">Batch</label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono">{formData.reservationId}</span>
+                    <span className="font-mono">{formData.batch}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(formData.reservationId)}
+                      onClick={() => copyToClipboard(formData.batch)}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -146,13 +227,13 @@ export default function MainPage() {
                     Posting Type
                   </label>
                   <div className="mt-1">
-                    <Badge variant="outline">OTA Post</Badge>
+                    <Badge variant="outline">{formData.postingType}</Badge>
                   </div>
                 </div>
                 <div>
                   <label className="font-medium text-gray-500">Portfolio</label>
                   <div className="mt-1">
-                    <span className="text-gray-900">Chartwell Hospitality</span>
+                    <span className="text-gray-900">{formData.portfolio}</span>
                   </div>
                 </div>
               </div>
@@ -164,9 +245,25 @@ export default function MainPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <label className="font-medium text-gray-500">
                   Hotel Confirmation
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-mono">{formData.confirmation}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(formData.confirmation)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <label className="font-medium text-gray-500">
+                  Reservation ID
                 </label>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="font-mono">{formData.reservationId}</span>
@@ -178,6 +275,7 @@ export default function MainPage() {
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
+              </div>
               </div>
             </CardContent>
           </Card>
@@ -227,19 +325,18 @@ export default function MainPage() {
                 <div className="mt-2">
                   <Select
                     value={currentStatus}
-                    onValueChange={setCurrentStatus}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ready-to-charge">
+                      <SelectItem value="ready to charge">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                           Ready to charge
                         </div>
                       </SelectItem>
-                      <SelectItem value="charged">
+                      {/* <SelectItem value="charged">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                           Charged
@@ -250,7 +347,7 @@ export default function MainPage() {
                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                           Failed
                         </div>
-                      </SelectItem>
+                      </SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
@@ -282,7 +379,7 @@ export default function MainPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <label className="font-medium text-gray-500">BT Maid</label>
+                  <label className="font-medium text-gray-500">Soft Descriptor</label>
                   <div className="mt-1 font-mono">
                     {showCardDetails ? formData.softDescriptor : "••••••••••"}
                   </div>
@@ -367,7 +464,7 @@ export default function MainPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Modified for navigation */}
         <div className="flex justify-center gap-4">
           <Button
             size="lg"
@@ -382,11 +479,20 @@ export default function MainPage() {
             <Download className="h-4 w-4 mr-2" />
             Download Sheet
           </Button>
-          <Button variant="outline" size="lg">
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Prev
           </Button>
-          <Button size="lg">
+          <Button 
+            size="lg"
+            onClick={handleNext}
+            disabled={currentIndex === allRows.length - 1}
+          >
             Next
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
@@ -451,7 +557,7 @@ export default function MainPage() {
                   <Label htmlFor="confirmation">Confirmation</Label>
                   <Input
                     id="confirmation"
-                    value={formData.reservationId}
+                    value={formData.confirmation}
                     readOnly
                     className="bg-gray-50"
                   />

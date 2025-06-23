@@ -294,6 +294,60 @@ class ApiClient {
     }
   };
 
+  getSingleRowData = async (documentId: string) => {
+    try {
+      const response = await axios.get<{
+        status: string;
+        data: {
+          id: string;
+          uploadId: string;
+          fileName: string;
+          uploadStatus: string;
+          rowNumber: number;
+          "Expedia ID": string;
+          "Batch": string;
+          "Posting Type": string;
+          "Portfolio": string;
+          "Hotel Name": string;
+          "Reservation ID": string;
+          "Hotel Confirmation Code": string;
+          "Name": string;
+          "Check In": string;
+          "Check Out": string;
+          "Curency": string;
+          "Amount to charge": string;
+          "Charge status": string;
+          "Card first 4": string;
+          "Card last 12": string;
+          "Card Expire": string;
+          "Card CVV": string;
+          "Soft Descriptor": string;
+          "VNP Work ID": string | null;
+          "Status": string | null;
+          paypalOrderId: string | null;
+          paypalCaptureId: string | null;
+          paypalNetworkTransactionId: string | null;
+          paypalFee: string | null;
+          paypalNetAmount: string | null;
+          paypalCardBrand: string | null;
+          paypalCardType: string | null;
+          paypalAvsCode: string | null;
+          paypalCvvCode: string | null;
+          paypalCreateTime: string | null;
+          paypalUpdateTime: string | null;
+          paypalStatus: string | null;
+          paypalAmount: string | null;
+          paypalCurrency: string | null;
+          paypalCardLastDigits: string | null;
+          createdAt: string;
+        };
+      }>(`${API_BASE_URL}/get-single-row-data/${documentId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   getUploadSessions = async (page: number = 1, limit: number = 20) => {
     try {
       const response = await axios.get<UploadSessionsResponse>(`${API_BASE_URL}/upload/sessions`, {
