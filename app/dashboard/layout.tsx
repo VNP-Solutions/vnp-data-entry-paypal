@@ -28,7 +28,7 @@ export default function DashboardLayout({
       href: "/dashboard/main",
     },
     {
-      label: "Uploaded Files",
+      label: "File History",
       href: "/dashboard/uploads",
     },
     {

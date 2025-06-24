@@ -62,7 +62,7 @@ export default function LoginPage() {
       })
       if (response.status === 'success') {
         toast.success(response.message)
-        router.push("/dashboard/main")
+        router.push("/dashboard/uploads")
       }
     } catch (error) {
       const apiError = error as ApiError;
