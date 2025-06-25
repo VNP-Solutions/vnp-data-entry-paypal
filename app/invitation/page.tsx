@@ -9,9 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useValidateInvitation, useCompleteInvitation } from "@/lib/hooks/use-api";
+import { apiClient } from "@/lib/client-api-call";
 
 type Step = "verify" | "set-password";
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 export default function NewUserPage() {
   const searchParams = useSearchParams();
@@ -27,10 +35,7 @@ export default function NewUserPage() {
     newPassword: "",
     confirmPassword: "",
   });
-
-  // React Query mutations
-  const validateInvitation = useValidateInvitation();
-  const completeInvitation = useCompleteInvitation();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
@@ -38,7 +43,7 @@ export default function NewUserPage() {
 
     if (!emailParam || !tokenParam) {
       toast.error("Invalid invitation link");
-      router.push("/auth/login");
+      // router.push("/auth/login");
       return;
     }
 
@@ -48,36 +53,48 @@ export default function NewUserPage() {
 
   const handleVerifyTempPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     try {
-      await validateInvitation.mutateAsync({
+      const response = await apiClient.validateInvitation({
         email,
         token,
         tempPassword: formData.tempPassword,
       });
-      
-      // Move to password setup step on success
-      setCurrentStep("set-password");
-    } catch {
-      // Error handling is done in the mutation
+
+      if (response.status === "success") {
+        toast.success("Temporary password verified successfully");
+        setCurrentStep("set-password");
+      } else {
+        toast.error("Invalid temporary password");
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.response?.data?.message || "Invalid temporary password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (formData.newPassword !== formData.confirmPassword) {
       toast.error("Passwords do not match");
+      setIsLoading(false);
       return;
     }
+    // asdasd
 
     if (formData.newPassword.length < 8) {
       toast.error("Password must be at least 8 characters long");
+      setIsLoading(false);
       return;
     }
 
     try {
-      await completeInvitation.mutateAsync({
+      const response = await apiClient.completeInvitation({
         email,
         token,
         tempPassword: formData.tempPassword,
@@ -85,17 +102,22 @@ export default function NewUserPage() {
         confirmPassword: formData.confirmPassword,
       });
       
-      // Redirect to login page after short delay
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 2000);
-    } catch {
-      // Error handling is done in the mutation
+      if (response.status === "success") {
+        toast.success("Password set successfully! Redirecting to login...");
+        setTimeout(() => {
+          router.push("/auth/login");
+        }, 2000);
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.response?.data?.message || "Failed to set new password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (!email || !token) {
-    return null; // Don't render anything while redirecting
+    return null;
   }
 
   return (
@@ -142,10 +164,11 @@ export default function NewUserPage() {
                       <Input
                         id="tempPassword"
                         type={showTempPassword ? "text" : "password"}
-                        placeholder="Available in your email"
+                        placeholder="Enter temporary password"
                         value={formData.tempPassword}
                         onChange={(e) => setFormData({ ...formData, tempPassword: e.target.value })}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -162,16 +185,18 @@ export default function NewUserPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700"
-                    disabled={validateInvitation.isPending}
+                    disabled={isLoading}
                   >
-                    <KeyRound className="mr-2 h-4 w-4" />
-                    {validateInvitation.isPending ? (
+                    {isLoading ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
                         Verifying...
                       </>
                     ) : (
-                      "Verify Password"
+                      <>
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        Verify Password
+                      </>
                     )}
                   </Button>
                 </form>
@@ -197,6 +222,7 @@ export default function NewUserPage() {
                         value={formData.newPassword}
                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -220,6 +246,7 @@ export default function NewUserPage() {
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -236,16 +263,18 @@ export default function NewUserPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700"
-                    disabled={completeInvitation.isPending}
+                    disabled={isLoading}
                   >
-                    <Lock className="mr-2 h-4 w-4" />
-                    {completeInvitation.isPending ? (
+                    {isLoading ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
                         Setting Password...
                       </>
                     ) : (
-                      "Set New Password"
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Set New Password
+                      </>
                     )}
                   </Button>
                 </form>
@@ -256,4 +285,4 @@ export default function NewUserPage() {
       </div>
     </div>
   );
-}
+} 

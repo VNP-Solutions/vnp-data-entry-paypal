@@ -152,27 +152,13 @@ export function useDiscardUpload() {
 }
 
 // Add new Invitation Hooks
-export function useSendInvitation() {
-  return useMutation({
-    mutationFn: apiClient.sendInvitation,
-    onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success("Invitation sent successfully!");
-      }
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to send invitation");
-    },
-  });
-}
-
 export function useValidateInvitation() {
   return useMutation({
     mutationFn: apiClient.validateInvitation,
-    onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success("Temporary password verified successfully");
-      }
+    onSuccess: (response) => {
+      console.log(response);
+      // Don't show success message here, let the component handle the success case
+      return response;
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Invalid temporary password");
@@ -183,10 +169,9 @@ export function useValidateInvitation() {
 export function useCompleteInvitation() {
   return useMutation({
     mutationFn: apiClient.completeInvitation,
-    onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success("Password set successfully! You can now login.");
-      }
+    onSuccess: (response) => {
+      // Don't show success message here, let the component handle the success case
+      return response;
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to set new password");
