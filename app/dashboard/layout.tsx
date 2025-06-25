@@ -9,6 +9,8 @@ import { UploadDialog } from "@/components/upload-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { apiClient } from "@/lib/client-api-call"
+import { useQueryClient } from "@tanstack/react-query"
+import { queryKeys } from "@/lib/hooks/use-api"
 
 export default function DashboardLayout({
   children,
@@ -17,9 +19,15 @@ export default function DashboardLayout({
 }) {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const pathname = usePathname()
+  const queryClient = useQueryClient()
 
   const handleLogout = async () => {
     await apiClient.logout();
+  };
+
+  const handleUploadSuccess = () => {
+    // Invalidate the upload sessions query to trigger a refetch
+    queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
   };
 
   const navItems = [
@@ -101,6 +109,7 @@ export default function DashboardLayout({
       <UploadDialog
         open={showUploadDialog}
         onOpenChange={setShowUploadDialog}
+        onUploadSuccess={handleUploadSuccess}
       />
     </div>
   )

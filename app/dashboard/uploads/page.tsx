@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -35,9 +35,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { apiClient } from "@/lib/client-api-call"
-import { toast } from "sonner"
 import { format } from "date-fns"
+import { useUploadSessions, useRetryUpload, useDiscardUpload } from "@/lib/hooks/use-api"
+import { toast } from "sonner"
 
 interface UploadSession {
   uploadId: string;
@@ -47,61 +47,36 @@ interface UploadSession {
   processedRows: number;
   progress: number;
   startedAt: string;
-  completedAt: string;
+  completedAt: string | null;
   vnpWorkId: string | null;
 }
 
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string;
-    };
+interface UploadSessionsResponse {
+  sessions: UploadSession[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
   };
 }
 
 export default function UploadsPage() {
-  const [data, setData] = useState<{
-    sessions: UploadSession[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      pages: number;
-    };
-  }>({
-    sessions: [],
-    pagination: {
-      total: 0,
-      page: 1,
-      limit: 20,
-      pages: 1
-    }
-  })
-  const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
-  const [refreshKey, setRefreshKey] = useState(0)
+  
+  // React Query hooks
+  const { data, isLoading, refetch } = useUploadSessions(currentPage)
+  const retryUploadMutation = useRetryUpload()
+  const discardUploadMutation = useDiscardUpload()
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true)
-      const response = await apiClient.getUploadSessions(currentPage)
-      setData(response.data)
-    } catch (error) {
-      const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to fetch upload sessions")
-    } finally {
-      setIsLoading(false)
-    }
+  const handleRetryUpload = async (uploadId: string) => {
+    await retryUploadMutation.mutateAsync(uploadId)
   }
 
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1)
+  const handleDiscardUpload = async (uploadId: string) => {
+    await discardUploadMutation.mutateAsync(uploadId)
   }
-
-  useEffect(() => {
-    fetchData()
-  }, [currentPage, refreshKey])
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -129,29 +104,12 @@ export default function UploadsPage() {
     }
   }
 
-  const handleRetryUpload = async (uploadId: string) => {
-    try {
-      await apiClient.retryUpload(uploadId);
-      toast.success("Upload retry initiated");
-      // Refresh the list
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to retry upload");
-    }
-  };
-
-  const handleDiscardUpload = async (uploadId: string) => {
-    try {
-      await apiClient.discardUpload(uploadId);
-      toast.success("Upload discarded successfully");
-      // Refresh the list
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to discard upload");
-    }
-  };
+  const responseData = data?.data as UploadSessionsResponse | undefined
+  const sessions = responseData?.sessions || []
+  const completedCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "completed").length
+  const processingCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "processing").length
+  const failedCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "failed").length
+  const pagination = responseData?.pagination
 
   return (
     <div className="min-h-[80vh]">
@@ -170,7 +128,9 @@ export default function UploadsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Files</p>
-              <p className="text-xl font-bold text-gray-900">{data.pagination.total}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {isLoading ? <Skeleton className="h-6 w-16" /> : sessions.length}
+              </p>
             </div>
           </div>
         </Card>
@@ -182,7 +142,7 @@ export default function UploadsPage() {
             <div>
               <p className="text-sm text-gray-600">Completed</p>
               <p className="text-xl font-bold text-gray-900">
-                {data.sessions.filter(session => session.status === "completed").length}
+                {isLoading ? <Skeleton className="h-6 w-16" /> : completedCount}
               </p>
             </div>
           </div>
@@ -195,7 +155,7 @@ export default function UploadsPage() {
             <div>
               <p className="text-sm text-gray-600">Processing</p>
               <p className="text-xl font-bold text-gray-900">
-                {data.sessions.filter(session => session.status === "processing").length}
+                {isLoading ? <Skeleton className="h-6 w-16" /> : processingCount}
               </p>
             </div>
           </div>
@@ -208,7 +168,7 @@ export default function UploadsPage() {
             <div>
               <p className="text-sm text-gray-600">Failed</p>
               <p className="text-xl font-bold text-gray-900">
-                {data.sessions.filter(session => session.status === "failed").length}
+                {isLoading ? <Skeleton className="h-6 w-16" /> : failedCount}
               </p>
             </div>
           </div>
@@ -229,15 +189,13 @@ export default function UploadsPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              className="w-10 h-10 p-0"
-            >
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="w-10 h-10 p-0"
+          >
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
         </div>
       </Card>
 
@@ -259,16 +217,16 @@ export default function UploadsPage() {
               {isLoading ? (
                 Array(5).fill(0).map((_, idx) => (
                   <TableRow key={idx}>
-                    {Array(8).fill(0).map((_, cellIdx) => (
+                    {Array(6).fill(0).map((_, cellIdx) => (
                       <TableCell key={cellIdx}>
                         <Skeleton className="h-6 w-full" />
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
-              ) : data.sessions.length === 0 ? (
+              ) : sessions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={6} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <Upload className="h-8 w-8 mb-2" />
                       <p className="text-lg font-medium">No upload sessions found</p>
@@ -277,12 +235,11 @@ export default function UploadsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.sessions
-                  .filter(session => 
-                    searchTerm === "" ||
+                sessions
+                  .filter((session: UploadSession) => 
                     session.fileName.toLowerCase().includes(searchTerm.toLowerCase())
                   )
-                  .map((session) => (
+                  .map((session: UploadSession) => (
                     <TableRow key={session.uploadId} className="hover:bg-gray-50/50">
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -312,11 +269,11 @@ export default function UploadsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {session.completedAt ? (
+                        {session.startedAt ? (
                           <div className="text-sm">
-                            {format(new Date(session.completedAt), "MMM d, yyyy")}
+                            {format(new Date(session.startedAt), "MMM d, yyyy")}
                             <div className="text-xs text-gray-500">
-                              {format(new Date(session.completedAt), "HH:mm:ss")}
+                              {format(new Date(session.startedAt), "HH:mm:ss")}
                             </div>
                           </div>
                         ) : (
@@ -334,25 +291,25 @@ export default function UploadsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                                onClick={() => {
+                                  if (session.status.toLowerCase() === "failed") {
+                                    handleRetryUpload(session.uploadId)
+                                  } else {
+                                    toast.error("This action only works for failed uploads")
+                                  }
+                                }}
+                                className="flex items-center gap-2 text-blue-600 cursor-pointer p-2 hover:bg-blue-100"
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                                <span>Retry Upload</span>
+                              </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                if(session.status === "failed") {
-                                  handleRetryUpload(session.uploadId)
-                                } else {
-                                  toast.error("Action only work for failed uploads")
-                                }
-                              }}
-                              className="flex items-center gap-2 text-blue-600 cursor-pointer p-2 hover:bg-blue-100"
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                              <span>Retry Upload</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if(session.status === "failed") {
+                                if (session.status.toLowerCase() === "failed") {
                                   handleDiscardUpload(session.uploadId)
                                 } else {
-                                  toast.error("Action only work for failed uploads")
+                                  toast.error("This action only works for failed uploads")
                                 }
                               }}
                               className="flex items-center gap-2 text-red-600 cursor-pointer p-2 hover:bg-red-100"
@@ -370,32 +327,35 @@ export default function UploadsPage() {
           </Table>
         </div>
 
-        <div className="flex items-center justify-between p-4 border-t">
-          <div className="text-sm text-gray-600">
-            Showing {data.sessions.length} of {data.pagination.total} sessions
+        {/* Pagination */}
+        {data && pagination && (
+          <div className="flex items-center justify-between p-4 border-t">
+            <div className="text-sm text-gray-600">
+              Showing {sessions.length} of {pagination.total} sessions
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {pagination.pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                disabled={currentPage === pagination.pages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm">
-              Page {data.pagination.page} of {data.pagination.pages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(data.pagination.pages, p + 1))}
-              disabled={currentPage === data.pagination.pages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        )}
       </Card>
     </div>
   )

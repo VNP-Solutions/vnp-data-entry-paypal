@@ -18,9 +18,10 @@ interface ApiError {
 interface UploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUploadSuccess?: () => void;
 }
 
-export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
+export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +66,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
         toast.success(response.message || 'File uploaded successfully');
         setSelectedFile(null);
         onOpenChange(false); // Close dialog after successful upload
+        onUploadSuccess?.(); // Trigger refetch of uploads data
       }
     } catch (error) {
       const apiError = error as ApiError;

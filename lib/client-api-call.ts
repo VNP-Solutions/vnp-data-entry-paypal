@@ -22,25 +22,17 @@ interface User {
 }
 
 interface LoginResponse {
-  status: string;
+  step: string;
+  sessionToken: string;
+  email: string;
+  expiresIn: number;
   message: string;
-  data: {
-    step: string;
-    sessionToken: string;
-    email: string;
-    expiresIn: number;
-    message: string;
-  }
 }
 
 interface OtpVerificationResponse {
-  status: string;
-  message: string;
-  data: {
-    user: User;
-    token: string;
-    tokenExpiresIn: string;
-  }
+  user: User;
+  token: string;
+  tokenExpiresIn: string;
 }
 
 interface OtpVerificationData {
@@ -140,10 +132,10 @@ interface UploadSessionsResponse {
   };
 }
 
-interface ApiResponse {
+interface ApiResponse<T = unknown> {
   status: string;
   message: string;
-  data?: any;
+  data: T;
 }
 
 class ApiClient {
@@ -196,7 +188,7 @@ class ApiClient {
 
   register = async (data: RegisterData) => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/register`, data);
+      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/register`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -205,7 +197,7 @@ class ApiClient {
 
   login = async (data: LoginData) => {
     try {
-      const response = await axios.post<LoginResponse>(`${API_BASE_URL}/auth/login`, data);
+      const response = await axios.post<ApiResponse<LoginResponse>>(`${API_BASE_URL}/auth/login`, data);
       if (response.data.status === 'success') {
         this.setSessionToken(response.data.data.sessionToken);
       }
@@ -217,7 +209,7 @@ class ApiClient {
 
   verifyOtp = async (data: OtpVerificationData) => {
     try {
-      const response = await axios.post<OtpVerificationResponse>(`${API_BASE_URL}/auth/verify-otp`, {
+      const response = await axios.post<ApiResponse<OtpVerificationResponse>>(`${API_BASE_URL}/auth/verify-otp`, {
         sessionToken: this.sessionToken,
         otp: data.otp
       });
@@ -235,7 +227,7 @@ class ApiClient {
 
   resendOtp = async () => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/resend-otp`, {
+      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/resend-otp`, {
         sessionToken: this.sessionToken
       });
       return response.data;
@@ -246,7 +238,7 @@ class ApiClient {
 
   forgotPassword = async (data: ForgotPasswordData) => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/forgot-password`, data);
+      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/forgot-password`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -255,7 +247,7 @@ class ApiClient {
 
   resetPassword = async (resetToken: string, data: ResetPasswordData) => {
     try {
-      const response = await axios.post<AuthResponse>(
+      const response = await axios.post<ApiResponse<AuthResponse>>(
         `${API_BASE_URL}/auth/reset-password/${resetToken}`,
         data
       );
@@ -270,7 +262,7 @@ class ApiClient {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await axios.post<UploadResponse>(
+      const response = await axios.post<ApiResponse<UploadResponse>>(
         `${API_BASE_URL}/upload`,
         formData,
         {
@@ -287,7 +279,7 @@ class ApiClient {
 
   getRowData = async (params: RowDataParams) => {
     try {
-      const response = await axios.get<RowDataResponse>(`${API_BASE_URL}/get-row-data`, {
+      const response = await axios.get<ApiResponse<RowDataResponse>>(`${API_BASE_URL}/get-row-data`, {
         params: {
           limit: params.limit,
           page: params.page,
@@ -302,52 +294,49 @@ class ApiClient {
 
   getSingleRowData = async (documentId: string) => {
     try {
-      const response = await axios.get<{
-        status: string;
-        data: {
-          id: string;
-          uploadId: string;
-          fileName: string;
-          uploadStatus: string;
-          rowNumber: number;
-          "Expedia ID": string;
-          "Batch": string;
-          "Posting Type": string;
-          "Portfolio": string;
-          "Hotel Name": string;
-          "Reservation ID": string;
-          "Hotel Confirmation Code": string;
-          "Name": string;
-          "Check In": string;
-          "Check Out": string;
-          "Curency": string;
-          "Amount to charge": string;
-          "Charge status": string;
-          "Card first 4": string;
-          "Card last 12": string;
-          "Card Expire": string;
-          "Card CVV": string;
-          "Soft Descriptor": string;
-          "VNP Work ID": string | null;
-          "Status": string | null;
-          paypalOrderId: string | null;
-          paypalCaptureId: string | null;
-          paypalNetworkTransactionId: string | null;
-          paypalFee: string | null;
-          paypalNetAmount: string | null;
-          paypalCardBrand: string | null;
-          paypalCardType: string | null;
-          paypalAvsCode: string | null;
-          paypalCvvCode: string | null;
-          paypalCreateTime: string | null;
-          paypalUpdateTime: string | null;
-          paypalStatus: string | null;
-          paypalAmount: string | null;
-          paypalCurrency: string | null;
-          paypalCardLastDigits: string | null;
-          createdAt: string;
-        };
-      }>(`${API_BASE_URL}/get-single-row-data/${documentId}`);
+      const response = await axios.get<ApiResponse<{
+        id: string;
+        uploadId: string;
+        fileName: string;
+        uploadStatus: string;
+        rowNumber: number;
+        "Expedia ID": string;
+        "Batch": string;
+        "Posting Type": string;
+        "Portfolio": string;
+        "Hotel Name": string;
+        "Reservation ID": string;
+        "Hotel Confirmation Code": string;
+        "Name": string;
+        "Check In": string;
+        "Check Out": string;
+        "Curency": string;
+        "Amount to charge": string;
+        "Charge status": string;
+        "Card first 4": string;
+        "Card last 12": string;
+        "Card Expire": string;
+        "Card CVV": string;
+        "Soft Descriptor": string;
+        "VNP Work ID": string | null;
+        "Status": string | null;
+        paypalOrderId: string | null;
+        paypalCaptureId: string | null;
+        paypalNetworkTransactionId: string | null;
+        paypalFee: string | null;
+        paypalNetAmount: string | null;
+        paypalCardBrand: string | null;
+        paypalCardType: string | null;
+        paypalAvsCode: string | null;
+        paypalCvvCode: string | null;
+        paypalCreateTime: string | null;
+        paypalUpdateTime: string | null;
+        paypalStatus: string | null;
+        paypalAmount: string | null;
+        paypalCurrency: string | null;
+        paypalCardLastDigits: string | null;
+        createdAt: string;
+      }>>(`${API_BASE_URL}/get-single-row-data/${documentId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -356,7 +345,7 @@ class ApiClient {
 
   getUploadSessions = async (page: number = 1, limit: number = 20) => {
     try {
-      const response = await axios.get<UploadSessionsResponse>(`${API_BASE_URL}/upload/sessions`, {
+      const response = await axios.get<ApiResponse<UploadSessionsResponse>>(`${API_BASE_URL}/upload/sessions`, {
         params: {
           page,
           limit
@@ -379,13 +368,10 @@ class ApiClient {
     cardholderName: string;
   }) => {
     try {
-      const response = await axios.post<{
+      const response = await axios.post<ApiResponse<{
+        orderId: string;
         status: string;
-        data: {
-          orderId: string;
-          status: string;
-        };
-      }>(`${API_BASE_URL}/paypal/process-payment`, data);
+      }>>(`${API_BASE_URL}/paypal/process-payment`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -394,7 +380,7 @@ class ApiClient {
 
   retryUpload = async (uploadId: string) => {
     try {
-      const response = await axios.post<ApiResponse>(
+      const response = await axios.post<ApiResponse<unknown>>(
         `${API_BASE_URL}/upload/resume/${uploadId}`
       );
       return response.data;
@@ -405,7 +391,7 @@ class ApiClient {
 
   discardUpload = async (uploadId: string) => {
     try {
-      const response = await axios.delete<ApiResponse>(
+      const response = await axios.delete<ApiResponse<unknown>>(
         `${API_BASE_URL}/upload/cleanup`,
         {
           params: { uploadId }
