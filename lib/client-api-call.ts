@@ -4,15 +4,8 @@ import Cookies from 'js-cookie';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-}
-
-interface InviteData {
   name?: string;
   email: string;
-  isInvite: true;
 }
 
 interface LoginData {
@@ -144,6 +137,41 @@ interface ApiResponse<T = unknown> {
   data: T;
 }
 
+interface ValidateInvitationData {
+  email: string;
+  tempPassword: string;
+  token: string;
+}
+
+interface CompleteInvitationData {
+  email: string;
+  tempPassword: string;
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface InvitationResponse {
+  inviter: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  statistics: {
+    total: number;
+    pending: number;
+    completed: number;
+    active: number;
+  };
+  invitations: Array<{
+    id: string;
+    email: string;
+    name?: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
 class ApiClient {
   private sessionToken: string = '';
   private authToken: string = '';
@@ -192,9 +220,12 @@ class ApiClient {
     }
   }
 
-  register = async (data: RegisterData | InviteData) => {
+  register = async (data: RegisterData) => {
     try {
-      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/register`, data);
+      const response = await axios.post<ApiResponse<AuthResponse>>(
+        `${API_BASE_URL}/invitations/send`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -413,6 +444,41 @@ class ApiClient {
     try {
       this.clearAuthToken();
       window.location.href = '/auth/login';
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  validateInvitation = async (data: ValidateInvitationData) => {
+    try {
+      const response = await axios.post<ApiResponse<AuthResponse>>(
+        `${API_BASE_URL}/invitations/validate`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  completeInvitation = async (data: CompleteInvitationData) => {
+    try {
+      const response = await axios.post<ApiResponse<AuthResponse>>(
+        `${API_BASE_URL}/invitations/complete`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getMyInvitations = async () => {
+    try {
+      const response = await axios.get<ApiResponse<InvitationResponse>>(
+        `${API_BASE_URL}/invitations/my-invitations`
+      );
+      return response.data;
     } catch (error) {
       throw error;
     }

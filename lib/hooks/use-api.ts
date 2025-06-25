@@ -7,6 +7,7 @@ export const queryKeys = {
   rowData: "row-data",
   uploadSessions: "upload-sessions",
   singleRowData: (id: string) => ["single-row-data", id],
+  invitations: "invitations",
 } as const;
 
 // Row Data Hooks
@@ -68,11 +69,11 @@ export function useRegister() {
     mutationFn: apiClient.register,
     onSuccess: (data) => {
       if (data.status === "success") {
-        toast.success("Registration successful! Please sign in.");
+        toast.success("Invitation sent! Please check your email to complete registration.");
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error(error.response?.data?.message || "Failed to send invitation");
     },
   });
 }
@@ -147,5 +148,56 @@ export function useDiscardUpload() {
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to discard upload");
     },
+  });
+}
+
+// Add new Invitation Hooks
+export function useSendInvitation() {
+  return useMutation({
+    mutationFn: apiClient.sendInvitation,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success("Invitation sent successfully!");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to send invitation");
+    },
+  });
+}
+
+export function useValidateInvitation() {
+  return useMutation({
+    mutationFn: apiClient.validateInvitation,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success("Temporary password verified successfully");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Invalid temporary password");
+    },
+  });
+}
+
+export function useCompleteInvitation() {
+  return useMutation({
+    mutationFn: apiClient.completeInvitation,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success("Password set successfully! You can now login.");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to set new password");
+    },
+  });
+}
+
+// Invitation Hooks
+export function useMyInvitations() {
+  return useQuery({
+    queryKey: [queryKeys.invitations],
+    queryFn: () => apiClient.getMyInvitations(),
   });
 } 

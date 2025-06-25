@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Eye, EyeOff, KeyRound, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useValidateInvitation, useCompleteInvitation } from "@/lib/hooks/use-api";
 
 type Step = "verify" | "set-password";
 
 export default function NewUserPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [email, setEmail] = useState<string>("");
+  const [token, setToken] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<Step>("verify");
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -25,26 +28,38 @@ export default function NewUserPage() {
     confirmPassword: "",
   });
 
+  // React Query mutations
+  const validateInvitation = useValidateInvitation();
+  const completeInvitation = useCompleteInvitation();
+
   useEffect(() => {
     const emailParam = searchParams.get("email");
-    if (emailParam) {
-      setEmail(emailParam);
+    const tokenParam = searchParams.get("token");
+
+    if (!emailParam || !tokenParam) {
+      toast.error("Invalid invitation link");
+      router.push("/auth/login");
+      return;
     }
-  }, [searchParams]);
+
+    setEmail(emailParam);
+    setToken(tokenParam);
+  }, [searchParams, router]);
 
   const handleVerifyTempPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      // TODO: Add API call to verify temp password
-      // For now, just simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await validateInvitation.mutateAsync({
+        email,
+        token,
+        tempPassword: formData.tempPassword,
+      });
       
-      // Move to password setup step
+      // Move to password setup step on success
       setCurrentStep("set-password");
-      toast.success("Temporary password verified successfully");
     } catch {
-      toast.error("Invalid temporary password");
+      // Error handling is done in the mutation
     }
   };
 
@@ -62,19 +77,26 @@ export default function NewUserPage() {
     }
 
     try {
-      // TODO: Add API call to set new password
-      // For now, just simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await completeInvitation.mutateAsync({
+        email,
+        token,
+        tempPassword: formData.tempPassword,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,
+      });
       
-      toast.success("Password set successfully! You can now login.");
       // Redirect to login page after short delay
       setTimeout(() => {
-        window.location.href = "/auth/login";
+        router.push("/auth/login");
       }, 2000);
     } catch {
-      toast.error("Failed to set new password");
+      // Error handling is done in the mutation
     }
   };
+
+  if (!email || !token) {
+    return null; // Don't render anything while redirecting
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -140,9 +162,17 @@ export default function NewUserPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700"
+                    disabled={validateInvitation.isPending}
                   >
                     <KeyRound className="mr-2 h-4 w-4" />
-                    Verify Password
+                    {validateInvitation.isPending ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify Password"
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -206,9 +236,17 @@ export default function NewUserPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 text-base font-medium bg-blue-600 hover:bg-blue-700"
+                    disabled={completeInvitation.isPending}
                   >
                     <Lock className="mr-2 h-4 w-4" />
-                    Set New Password
+                    {completeInvitation.isPending ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Setting Password...
+                      </>
+                    ) : (
+                      "Set New Password"
+                    )}
                   </Button>
                 </form>
               </CardContent>

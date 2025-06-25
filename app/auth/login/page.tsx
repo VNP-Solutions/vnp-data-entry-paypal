@@ -194,14 +194,7 @@ export default function LoginPage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
-                {!showOtpForm && (
-                  <div className="text-center mt-4">
-                    <span className="text-gray-600">Don&apos;t have an account?</span>{" "}
-                    <Link href="/auth/register" className="text-blue-600 hover:text-blue-800 font-medium">
-                      Sign Up
-                    </Link>
-                  </div>
-                )}
+                
               </form>
             </CardContent>
           </Card>
