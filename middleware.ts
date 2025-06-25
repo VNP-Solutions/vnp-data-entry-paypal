@@ -5,6 +5,7 @@ export function middleware(request: NextRequest) {
   const authToken = request.cookies.get('auth_token')
   const { pathname } = request.nextUrl
 
+  
   // Protect dashboard routes
   if (pathname.startsWith('/dashboard')) {
     if (!authToken) {

@@ -405,10 +405,7 @@ class ApiClient {
     cardholderName: string;
   }) => {
     try {
-      const response = await axios.post<ApiResponse<{
-        orderId: string;
-        status: string;
-      }>>(`${API_BASE_URL}/paypal/process-payment`, data);
+      const response = await axios.post(`${API_BASE_URL}/paypal/process-payment`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -417,7 +414,7 @@ class ApiClient {
 
   retryUpload = async (uploadId: string) => {
     try {
-      const response = await axios.post<ApiResponse<unknown>>(
+      const response = await axios.post(
         `${API_BASE_URL}/upload/resume/${uploadId}`
       );
       return response.data;
@@ -428,7 +425,7 @@ class ApiClient {
 
   discardUpload = async (uploadId: string) => {
     try {
-      const response = await axios.delete<ApiResponse<unknown>>(
+      const response = await axios.delete(
         `${API_BASE_URL}/upload/cleanup`,
         {
           params: { uploadId }
@@ -451,7 +448,7 @@ class ApiClient {
 
   validateInvitation = async (data: ValidateInvitationData) => {
     try {
-      const response = await axios.post<ApiResponse<AuthResponse>>(
+      const response = await axios.post(
         `${API_BASE_URL}/invitations/validate`,
         data
       );
@@ -463,7 +460,7 @@ class ApiClient {
 
   completeInvitation = async (data: CompleteInvitationData) => {
     try {
-      const response = await axios.post<ApiResponse<AuthResponse>>(
+      const response = await axios.post(
         `${API_BASE_URL}/invitations/complete`,
         data
       );
@@ -475,7 +472,7 @@ class ApiClient {
 
   getMyInvitations = async () => {
     try {
-      const response = await axios.get<ApiResponse<InvitationResponse>>(
+      const response = await axios.get(
         `${API_BASE_URL}/invitations/my-invitations`
       );
       return response.data;
@@ -491,9 +488,6 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401) {
           this.clearAuthToken();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/';
-          }
         }
         return Promise.reject(error);
       }
