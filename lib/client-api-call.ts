@@ -9,6 +9,12 @@ interface RegisterData {
   password: string;
 }
 
+interface InviteData {
+  name?: string;
+  email: string;
+  isInvite: true;
+}
+
 interface LoginData {
   email: string;
   password: string;
@@ -186,7 +192,7 @@ class ApiClient {
     }
   }
 
-  register = async (data: RegisterData) => {
+  register = async (data: RegisterData | InviteData) => {
     try {
       const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/register`, data);
       return response.data;

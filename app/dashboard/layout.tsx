@@ -43,6 +43,10 @@ export default function DashboardLayout({
       label: "Uploaded Entries",
       href: "/dashboard/entity",
     },
+    {
+      label: "Invite",
+      href: "/dashboard/invite",
+    },
   ]
 
   return (
