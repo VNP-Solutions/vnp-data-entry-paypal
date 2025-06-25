@@ -90,6 +90,12 @@ export default function InvitePage() {
 
   return (
     <div className="min-h-[80vh]">
+      <p className="text-2xl font-bold text-gray-900 mb-2">
+        User Management
+      </p>
+      <p className="text-gray-600 mb-6">
+        Manage your users and their invitations
+      </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card className="bg-white/80">
                 <CardContent className="pt-6">
@@ -133,14 +139,13 @@ export default function InvitePage() {
         <div>
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Invite Users</h1>
-            <p className="text-gray-600">Send invitations to new team members</p>
           </div>
 
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-left pb-6">
               <CardTitle className="text-xl font-semibold text-gray-900">Send Invitation</CardTitle>
-              <CardDescription className="text-gray-600">
-                Enter the email address of the person you&apos;d like to invite
+                <CardDescription className="text-gray-600">
+                  Enter the email address of the person you&apos;d like to invite
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -196,8 +201,7 @@ export default function InvitePage() {
         <div>
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Invitation Statistics</h2>
-            <p className="text-gray-600 mb-6">Total invitations sent: {invitationData?.data.statistics.total || 0}</p>
-            
+           
           </div>
 
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
