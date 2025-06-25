@@ -151,26 +151,6 @@ interface CompleteInvitationData {
   confirmPassword: string;
 }
 
-interface InvitationResponse {
-  inviter: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  statistics: {
-    total: number;
-    pending: number;
-    completed: number;
-    active: number;
-  };
-  invitations: Array<{
-    id: string;
-    email: string;
-    name?: string;
-    status: string;
-    createdAt: string;
-  }>;
-}
 
 class ApiClient {
   private sessionToken: string = '';
@@ -470,10 +450,16 @@ class ApiClient {
     }
   };
 
-  getMyInvitations = async () => {
+  getMyInvitations = async (page: number = 1, limit: number = 10) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/invitations/my-invitations`
+        `${API_BASE_URL}/invitations/my-invitations`,
+        {
+          params: {
+            page,
+            limit
+          }
+        }
       );
       return response.data;
     } catch (error) {

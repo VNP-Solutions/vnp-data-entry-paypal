@@ -180,9 +180,9 @@ export function useCompleteInvitation() {
 }
 
 // Invitation Hooks
-export function useMyInvitations() {
+export function useMyInvitations(page: number = 1, limit: number = 10) {
   return useQuery({
-    queryKey: [queryKeys.invitations],
-    queryFn: () => apiClient.getMyInvitations(),
+    queryKey: [queryKeys.invitations, { page, limit }],
+    queryFn: () => apiClient.getMyInvitations(page, limit),
   });
 } 

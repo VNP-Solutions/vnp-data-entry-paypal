@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Loader2, Users, Clock, CheckCircle, UserCheck } from "lucide-react";
+import { ArrowRight, Loader2, Users, Clock, CheckCircle, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,13 +19,37 @@ interface InviteData {
   isInvite: true;
 }
 
+interface Invitation {
+  id: string;
+  email: string;
+  name?: string;
+  status: string;
+  createdAt: string;
+}
+
+interface InvitationStatistics {
+  total: number;
+  pending: number;
+  completed: number;
+  active: number;
+}
+
+interface InvitationResponse {
+  data: {
+    statistics: InvitationStatistics;
+    invitations: Invitation[];
+  };
+}
+
 export default function InvitePage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: invitationData, isLoading } = useMyInvitations();
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 10;
+  const { data: invitationData, isLoading } = useMyInvitations(currentPage, limit) as { data: InvitationResponse | undefined, isLoading: boolean };
   const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,12 +89,50 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-[80vh] p-6">
+    <div className="min-h-[80vh]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-white/80">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-600">Total Invitations</p>
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <p className="text-2xl font-bold">{invitationData?.data.statistics.total || 0}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/80">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-600">Pending Invitations</p>
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <p className="text-2xl font-bold">{invitationData?.data.statistics.pending || 0}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/80">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-600">Completed Invitations</p>
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <p className="text-2xl font-bold">{invitationData?.data.statistics.completed || 0}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/80">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-600">Active Invitations</p>
+                    <UserCheck className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <p className="text-2xl font-bold">{invitationData?.data.statistics.active || 0}</p>
+                </CardContent>
+              </Card>
+            </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Side - Invitation Form */}
         <div>
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Invite Users</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invite Users</h1>
             <p className="text-gray-600">Send invitations to new team members</p>
           </div>
 
@@ -134,44 +196,8 @@ export default function InvitePage() {
         <div>
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Invitation Statistics</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-white/80">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600">Total</p>
-                    <Users className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <p className="text-2xl font-bold">{invitationData?.data.statistics.total || 0}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/80">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600">Pending</p>
-                    <Clock className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <p className="text-2xl font-bold">{invitationData?.data.statistics.pending || 0}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/80">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600">Completed</p>
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <p className="text-2xl font-bold">{invitationData?.data.statistics.completed || 0}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/80">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600">Active</p>
-                    <UserCheck className="h-5 w-5 text-indigo-600" />
-                  </div>
-                  <p className="text-2xl font-bold">{invitationData?.data.statistics.active || 0}</p>
-                </CardContent>
-              </Card>
-            </div>
+            <p className="text-gray-600 mb-6">Total invitations sent: {invitationData?.data.statistics.total || 0}</p>
+            
           </div>
 
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -191,14 +217,14 @@ export default function InvitePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {invitationData?.data.invitations.length === 0 ? (
+                    {!invitationData?.data?.invitations?.length ? (
                       <tr className="bg-white">
                         <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                           No invitations sent yet
                         </td>
                       </tr>
-                    ) : (
-                      invitationData?.data.invitations.map((invitation) => (
+                    ) : invitationData?.data?.invitations ? (
+                      invitationData.data.invitations.map((invitation: Invitation) => (
                         <tr key={invitation.id} className="bg-white border-b">
                           <td className="px-6 py-4">{invitation.name || "-"}</td>
                           <td className="px-6 py-4">{invitation.email}</td>
@@ -216,9 +242,36 @@ export default function InvitePage() {
                           </td>
                         </tr>
                       ))
-                    )}
+                    ) : null}
                   </tbody>
                 </table>
+                {invitationData?.data?.invitations && invitationData.data.invitations.length > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+                    <div className="flex items-center">
+                      <p className="text-sm text-gray-700">
+                        Page <span className="font-medium">{currentPage}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                        disabled={currentPage === 1 || isLoading}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(page => page + 1)}
+                        disabled={!invitationData?.data?.invitations || invitationData.data.invitations.length < limit || isLoading}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
