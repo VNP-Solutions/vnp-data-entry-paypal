@@ -11,12 +11,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/client-api-call"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "Reset Password | VNP VCC Charge System",
-  description: "Reset your password for VNP VCC Charge System",
-}
 
 interface ApiError {
   response?: {
