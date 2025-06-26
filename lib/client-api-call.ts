@@ -18,6 +18,18 @@ interface User {
   name: string;
   email: string;
   lastLogin: string;
+  profile?: {
+    id: string;
+    name: string;
+    email: string;
+    isActive: boolean;
+    lastLogin: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface LoginResponse {
@@ -461,6 +473,15 @@ class ApiClient {
           }
         }
       );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getProfile = async () => {
+    try {
+      const response = await axios.get<ApiResponse<{ user: User }>>(`${API_BASE_URL}/auth/profile`);
       return response.data;
     } catch (error) {
       throw error;

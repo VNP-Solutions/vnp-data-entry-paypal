@@ -8,6 +8,7 @@ export const queryKeys = {
   uploadSessions: "upload-sessions",
   singleRowData: (id: string) => ["single-row-data", id],
   invitations: "invitations",
+  profile: "profile",
 } as const;
 
 // Row Data Hooks
@@ -184,5 +185,13 @@ export function useMyInvitations(page: number = 1, limit: number = 10) {
   return useQuery({
     queryKey: [queryKeys.invitations, { page, limit }],
     queryFn: () => apiClient.getMyInvitations(page, limit),
+  });
+}
+
+// Profile Hook
+export function useProfile() {
+  return useQuery({
+    queryKey: [queryKeys.profile],
+    queryFn: () => apiClient.getProfile(),
   });
 } 

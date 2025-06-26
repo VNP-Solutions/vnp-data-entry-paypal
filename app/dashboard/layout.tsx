@@ -4,13 +4,13 @@ import { useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LogOut, Upload } from "lucide-react"
+import { Upload } from "lucide-react"
 import { UploadDialog } from "@/components/upload-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { apiClient } from "@/lib/client-api-call"
 import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/hooks/use-api"
+import { ProfileButton } from "../../components/profile-button"
 
 export default function DashboardLayout({
   children,
@@ -20,10 +20,6 @@ export default function DashboardLayout({
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const pathname = usePathname()
   const queryClient = useQueryClient()
-
-  const handleLogout = async () => {
-    await apiClient.logout();
-  };
 
   const handleUploadSuccess = () => {
     // Invalidate the upload sessions query to trigger a refetch
@@ -91,17 +87,12 @@ export default function DashboardLayout({
                 onClick={() => setShowUploadDialog(true)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                <Upload className="h-4 w-4" />
+                <Upload className="h-4 w-4 mr-2" />
                 Upload
               </Button>
-              <Button
-                className="md:me-10"
-                onClick={handleLogout}
-                variant="ghost"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
+              <div className="md:me-10">
+                <ProfileButton />
+              </div>
             </div>
           </div>
         </div>
