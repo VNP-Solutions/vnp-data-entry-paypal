@@ -318,7 +318,7 @@ export default function EntityPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -355,19 +355,6 @@ export default function EntityPage() {
                   data.rows.reduce((sum, row) => sum + parseFloat(row["Amount to charge"]), 0).toString(),
                   "USD"
                 )}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <CreditCard className="h-5 w-5 text-purple-600" />
-            </div>
-            <div> 
-              <p className="text-sm text-gray-600">Ready to charge</p>
-              <p className="text-xl font-bold text-gray-900">
-                {data.rows.filter(row => row["Charge status"] === "Ready to charge").length}
               </p>
             </div>
           </div>
