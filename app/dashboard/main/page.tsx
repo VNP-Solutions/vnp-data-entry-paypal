@@ -93,11 +93,21 @@ export default function MainPage() {
         chargeStatus: "All"
       });
       
-      if (response.data.rows.length > 0) {
-        setAllRows(prev => [...prev, ...response.data.rows]);
-        setTotalPages(response.data.pagination.totalPages);
+      const responseData = response.data as unknown as {
+        rows: RowData[];
+        pagination: {
+          currentPage: number;
+          totalPages: number;
+          totalCount: number;
+          limit: number;
+        };
+      };
+      
+      if (responseData.rows.length > 0) {
+        setAllRows(prev => [...prev, ...responseData.rows]);
+        setTotalPages(responseData.pagination.totalPages);
       }
-      return response.data.rows.length > 0;
+      return responseData.rows.length > 0;
     } catch (error) {
       const apiError = error as { response?: { data?: { message?: string } } };
       toast.error(apiError.response?.data?.message || "Failed to fetch data");
@@ -116,10 +126,20 @@ export default function MainPage() {
         chargeStatus: "All"
       });
       
-      if (response.data.rows.length > 0) {
-        setAllRows(response.data.rows);
-        setTotalPages(response.data.pagination.totalPages);
-        updateFormDataFromRow(response.data.rows[0]);
+      const responseData = response.data as unknown as {
+        rows: RowData[];
+        pagination: {
+          currentPage: number;
+          totalPages: number;
+          totalCount: number;
+          limit: number;
+        };
+      };
+      
+      if (responseData.rows.length > 0) {
+        setAllRows(responseData.rows);
+        setTotalPages(responseData.pagination.totalPages);
+        updateFormDataFromRow(responseData.rows[0]);
       }
     } catch (error) {
       const apiError = error as { response?: { data?: { message?: string } } };
@@ -397,8 +417,8 @@ export default function MainPage() {
                       <SelectItem value="All">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                         {/* show status */}
-                         {currentStatus}
+                          {/* show status */}
+                          {allRows[currentIndex]["Charge status"]}
                         </div>
                       </SelectItem>
                       {/* <SelectItem value="charged">
@@ -535,6 +555,9 @@ export default function MainPage() {
             size="lg"
             className="bg-green-600 hover:bg-green-700"
             onClick={handleProcessCharge}
+            disabled={!allRows[currentIndex] || 
+              (allRows[currentIndex]["Charge status"] !== "Ready to charge" && 
+               allRows[currentIndex]["Charge status"] !== "Partially charged")}
           >
             <Check className="h-4 w-4 mr-2" />
             Process Charge
