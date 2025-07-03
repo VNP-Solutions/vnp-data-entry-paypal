@@ -198,12 +198,21 @@ export default function EntityPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true)
+      console.log(chargeStatus)
       const response = await apiClient.getRowData({
         limit,
         page: currentPage,
         chargeStatus
       })
-      setData(response.data)
+
+      // Filter out partially charged records when "charged" filter is selected
+      const responseData = response.data as unknown as ApiResponse;
+      if (chargeStatus.toLowerCase() === "charged") {
+        responseData.rows = responseData.rows.filter(
+          (row: RowData) => row["Charge status"].toLowerCase() === "charged"
+        )
+      }
+      setData(responseData)
     } catch (error) {
       const apiError = error as ApiError;
       toast.error(apiError.response?.data?.message || "Failed to fetch data")
@@ -228,13 +237,15 @@ export default function EntityPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'All':
+    switch (status) {
+      case 'Ready to charge':
         return 'bg-yellow-100 text-yellow-800'
-      case 'charged':
+      case 'Charged':
         return 'bg-green-100 text-green-800'
-      case 'failed':
+      case 'Failed':
         return 'bg-red-100 text-red-800'
+      case 'Partially charged':
+        return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -354,9 +365,9 @@ export default function EntityPage() {
               <CreditCard className="h-5 w-5 text-purple-600" />
             </div>
             <div> 
-              <p className="text-sm text-gray-600">All</p>
+              <p className="text-sm text-gray-600">Ready to charge</p>
               <p className="text-xl font-bold text-gray-900">
-                {data.rows.filter(row => row["Charge status"].toLowerCase() === "All").length}
+                {data.rows.filter(row => row["Charge status"] === "Ready to charge").length}
               </p>
             </div>
           </div>
@@ -383,10 +394,11 @@ export default function EntityPage() {
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                {/* <SelectItem value="All">Ready to Charge</SelectItem> */}
                 <SelectItem value="All">All</SelectItem>
-                <SelectItem value="charged">Charged</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="Ready to charge">Ready to charge</SelectItem>
+                <SelectItem value="Partially charged">Partially charged</SelectItem>
+                <SelectItem value="Charged">Charged</SelectItem>
+                <SelectItem value="Failed">Failed</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -517,7 +529,7 @@ export default function EntityPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {row["Charge status"] === "Ready to charge" ? (
+                        {(row["Charge status"] === "Ready to charge" || row["Charge status"] === "Partially charged") ? (
                           <Button
                             variant="outline"
                             size="sm"
