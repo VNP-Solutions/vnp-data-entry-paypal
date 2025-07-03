@@ -158,14 +158,14 @@ export default function EntityPage() {
       limit: 10
     },
     filters: {
-      chargeStatus: "ready to charge",
+      chargeStatus: "All",
       search: null
     }
   })
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [showCardDetails, setShowCardDetails] = useState(false)
-  const [chargeStatus, setChargeStatus] = useState("ready to charge")
+  const [chargeStatus, setChargeStatus] = useState("All")
   const limit = 10
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
@@ -229,7 +229,7 @@ export default function EntityPage() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'ready to charge':
+      case 'All':
         return 'bg-yellow-100 text-yellow-800'
       case 'charged':
         return 'bg-green-100 text-green-800'
@@ -353,10 +353,10 @@ export default function EntityPage() {
             <div className="p-2 bg-purple-100 rounded-lg">
               <CreditCard className="h-5 w-5 text-purple-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Ready to Charge</p>
+            <div> 
+              <p className="text-sm text-gray-600">All</p>
               <p className="text-xl font-bold text-gray-900">
-                {data.rows.filter(row => row["Charge status"].toLowerCase() === "ready to charge").length}
+                {data.rows.filter(row => row["Charge status"].toLowerCase() === "All").length}
               </p>
             </div>
           </div>
@@ -383,7 +383,8 @@ export default function EntityPage() {
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ready to charge">Ready to Charge</SelectItem>
+                {/* <SelectItem value="All">Ready to Charge</SelectItem> */}
+                <SelectItem value="All">All</SelectItem>
                 <SelectItem value="charged">Charged</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>

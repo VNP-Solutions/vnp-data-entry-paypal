@@ -53,7 +53,7 @@ interface RowData {
 
 export default function MainPage() {
   const [showCardDetails, setShowCardDetails] = useState(false);
-  const [currentStatus] = useState("ready to charge");
+  const [currentStatus] = useState("All");
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [allRows, setAllRows] = useState<RowData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -90,7 +90,7 @@ export default function MainPage() {
       const response = await apiClient.getRowData({
         limit: 100,
         page,
-        chargeStatus: "ready to charge"
+        chargeStatus: "All"
       });
       
       if (response.data.rows.length > 0) {
@@ -113,7 +113,7 @@ export default function MainPage() {
       const response = await apiClient.getRowData({
         limit:100,
         page: 1,
-        chargeStatus: "ready to charge"
+        chargeStatus: "All"
       });
       
       if (response.data.rows.length > 0) {
@@ -394,10 +394,11 @@ export default function MainPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ready to charge">
+                      <SelectItem value="All">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                          Ready to charge
+                         {/* show status */}
+                         {currentStatus}
                         </div>
                       </SelectItem>
                       {/* <SelectItem value="charged">
