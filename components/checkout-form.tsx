@@ -66,12 +66,19 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
         toast.success("Payment processed successfully!");
         onClose();
         onSuccess();
+      } else if (response.status === "error") {
+        // Handle error response from API
+        const errorMessage = response.error || response.message || "Payment processing failed";
+        toast.error(errorMessage);
       } else {
         toast.error("Payment processing failed");
       }
     } catch (error) {
-      const apiError = error as { response?: { data?: { message?: string } } };
-      toast.error(apiError.response?.data?.message || "Payment processing failed");
+      const apiError = error as { response?: { data?: { message?: string; error?: string } } };
+      const errorMessage = apiError.response?.data?.error || 
+                          apiError.response?.data?.message || 
+                          "Payment processing failed";
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
