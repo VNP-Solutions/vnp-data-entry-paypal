@@ -9,6 +9,7 @@ export const queryKeys = {
   singleRowData: (id: string) => ["single-row-data", id],
   invitations: "invitations",
   profile: "profile",
+  adminExcelData: "admin-excel-data",
 } as const;
 
 // Row Data Hooks
@@ -193,5 +194,23 @@ export function useProfile() {
   return useQuery({
     queryKey: [queryKeys.profile],
     queryFn: () => apiClient.getProfile(),
+  });
+}
+
+// Admin Excel Data Hook
+export function useAdminExcelData(params: {
+  page: number;
+  limit: number;
+  status?: string;
+  search?: string;
+  portfolio?: string;
+  batch?: string;
+  hotel?: string;
+  sort?: string;
+  order?: string;
+}) {
+  return useQuery({
+    queryKey: [queryKeys.adminExcelData, params],
+    queryFn: () => apiClient.getAdminExcelData(params),
   });
 } 

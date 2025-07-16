@@ -166,7 +166,7 @@ export default function EntityPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showCardDetails, setShowCardDetails] = useState(false)
   const [chargeStatus, setChargeStatus] = useState("All")
-  const limit = 10
+  const [limit, setLimit] = useState(20)
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
@@ -227,7 +227,7 @@ export default function EntityPage() {
 
   useEffect(() => {
     fetchData()
-  }, [currentPage, chargeStatus, refreshKey])
+  }, [currentPage, chargeStatus, refreshKey, limit])
 
   const formatCurrency = (amount: string, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -552,6 +552,17 @@ export default function EntityPage() {
             Showing {data.rows.length} of {data.pagination.totalCount} entries
           </div>
           <div className="flex items-center gap-2">
+            <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Limit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="sm"

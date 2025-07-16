@@ -9,8 +9,8 @@ import { UploadDialog } from "@/components/upload-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useQueryClient } from "@tanstack/react-query"
-import { queryKeys } from "@/lib/hooks/use-api"
-import { ProfileButton } from "../../components/profile-button"
+import { queryKeys, useProfile } from "@/lib/hooks/use-api"
+import { ProfileButton } from "@/components/profile-button"
 
 export default function DashboardLayout({
   children,
@@ -18,9 +18,11 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const { data: profileData } = useProfile();
+  const { user } = profileData?.data || { user: null };
+  console.log(user)
   const pathname = usePathname()
   const queryClient = useQueryClient()
-
   const handleUploadSuccess = () => {
     // Invalidate the upload sessions query to trigger a refetch
     queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
@@ -30,20 +32,31 @@ export default function DashboardLayout({
     {
       label: "Home",
       href: "/dashboard/main",
+      isVisible: true
     },
     {
       label: "File History",
-      href: "/dashboard/uploads",
+      href: "/dashboard/uploads",   
+      isVisible: true
     },
     {
       label: "Uploaded Entries",
       href: "/dashboard/entity",
+      isVisible: true
     },
     {
       label: "Invite",
       href: "/dashboard/invite",
+      isVisible: true
     },
+    {
+      label: "All Transactions",
+      href: "/dashboard/transactions",
+      isVisible: process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").includes(user?.email ?? "") ?? false,
+    }
   ]
+
+  // console.log(process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").includes(user?.email ?? ""))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -69,7 +82,7 @@ export default function DashboardLayout({
             </div>
 
             <div className="flex items-center gap-10">
-              {navItems.map((item) => (
+              {navItems.filter((item) => item.isVisible).map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

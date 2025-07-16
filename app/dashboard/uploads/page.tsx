@@ -27,7 +27,8 @@ import {
   Upload,
   MoreVertical,
   RefreshCw,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -114,9 +115,20 @@ export default function UploadsPage() {
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
+      <div className="flex justify-between items-start mb-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Files</h1>
         <p className="text-gray-600">Monitor and manage uploaded files</p>
+      </div>
+      <Button
+        variant="outline"
+        onClick={() => {
+          window.open("https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1752643981146-sheet-template.xlsx")
+        }}
+        className="text-blue-600">
+        <Download className="h-4 w-4" />
+          Download Template
+      </Button>
       </div>
 
       {/* Stats Cards */}

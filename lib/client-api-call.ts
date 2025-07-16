@@ -163,6 +163,94 @@ interface CompleteInvitationData {
   confirmPassword: string;
 }
 
+interface AdminExcelDataParams {
+  page: number;
+  limit: number;
+  status?: string;
+  search?: string;
+  portfolio?: string;
+  batch?: string;
+  hotel?: string;
+  sort?: string;
+  order?: string;
+}
+
+interface AdminExcelDataItem {
+  _id: string;
+  userId: string;
+  uploadId: string;
+  fileName: string;
+  uploadStatus: string;
+  rowNumber: number;
+  "Expedia ID": string;
+  "Batch": string;
+  "Posting Type": string;
+  "Portfolio": string;
+  "Hotel Name": string;
+  "Reservation ID": string;
+  "Hotel Confirmation Code": string;
+  "Name": string;
+  "Check In": string;
+  "Check Out": string;
+  "Curency": string;
+  "Amount to charge": string;
+  "Charge status": string;
+  "Card first 4": string;
+  "Card last 12": string;
+  "Card Expire": string;
+  "Card CVV": string;
+  "Soft Descriptor": string;
+  "VNP Work ID": string | null;
+  "Status": string | null;
+  paypalOrderId: string | null;
+  paypalCaptureId: string | null;
+  paypalNetworkTransactionId: string | null;
+  paypalFee: string | null;
+  paypalNetAmount: string | null;
+  paypalCardBrand: string | null;
+  paypalCardType: string | null;
+  paypalAvsCode: string | null;
+  paypalCvvCode: string | null;
+  paypalCreateTime: string | null;
+  paypalUpdateTime: string | null;
+  paypalStatus: string | null;
+  paypalAmount: string | null;
+  paypalCurrency: string | null;
+  paypalCardLastDigits: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminExcelDataResponse {
+  data: AdminExcelDataItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  filters: {
+    applied: {
+      search: string;
+      status: string;
+      portfolio: string;
+      batch: string;
+      hotel: string;
+      sort: string;
+      order: string;
+    };
+    available: {
+      statusOptions: string[];
+      portfolioOptions: string[];
+      batchOptions: string[];
+    };
+  };
+  requestedBy: string;
+  timestamp: string;
+}
+
 
 class ApiClient {
   private sessionToken: string = '';
@@ -482,6 +570,17 @@ class ApiClient {
   getProfile = async () => {
     try {
       const response = await axios.get<ApiResponse<{ user: User }>>(`${API_BASE_URL}/auth/profile`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getAdminExcelData = async (params: AdminExcelDataParams) => {
+    try {
+      const response = await axios.get<ApiResponse<AdminExcelDataResponse>>(`${API_BASE_URL}/admin/excel-data`, {
+        params: params
+      });
       return response.data;
     } catch (error) {
       throw error;
