@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Eye, 
   EyeOff,
@@ -35,6 +36,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  Rocket,
 } from "lucide-react"
 import { apiClient } from "@/lib/client-api-call"
 import { toast } from "sonner"
@@ -172,6 +174,7 @@ export default function PaypalPaymentPage() {
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   // const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     cardNumber: '',
@@ -276,45 +279,60 @@ export default function PaypalPaymentPage() {
     setShowCheckoutForm(true);
   };
 
-  // const handlePayPalCheckout = async () => {
-  //   try {
-  //     setIsProcessing(true);
-  //     const [month, year] = formData.expiryDate.split('/');
-  //     const formattedExpiry = `${year}-${month.padStart(2, '0')}`;
+  const handleRowSelection = (rowId: string, checked: boolean) => {
+    const newSelectedRows = new Set(selectedRows);
+    if (checked) {
+      newSelectedRows.add(rowId);
+    } else {
+      newSelectedRows.delete(rowId);
+    }
+    setSelectedRows(newSelectedRows);
+  };
 
-  //     const response = await apiClient.processPayPalPayment({
-  //       amount: parseFloat(formData.amount),
-  //       currency: formData.currency,
-  //       descriptor: formData.softDescriptor,
-  //       documentId: formData.documentId,
-  //       cardNumber: `${formData.cardFirst4}${formData.cardLast12}`,
-  //       cardExpiry: formattedExpiry,
-  //       cardCvv: formData.cvv,
-  //       cardholderName: formData.name
-  //     });
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Only select rows that are not already charged
+      const selectableRowIds = data.rows
+        .filter(row => row["Charge status"] !== "Charged")
+        .map(row => row.id);
+      setSelectedRows(new Set(selectableRowIds));
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
 
-  //     if (response.status === "success") {
-  //       toast.success("Payment processed successfully!");
-  //       setShowCheckoutForm(false);
-  //       // Refresh the data
-  //       fetchData();
-  //     } else {
-  //       toast.error("Payment processing failed");
-  //     }
-  //   } catch (error) {
-  //     const apiError = error as { response?: { data?: { message?: string } } };
-  //     toast.error(apiError.response?.data?.message || "Payment processing failed");
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // };
+  const handleBulkPayment = () => {
+    const selectedIds = Array.from(selectedRows);
+    console.log('Selected IDs:', selectedIds);
+    toast.info(`Processing payment for ${selectedIds.length} selected records`);
+    toast.info(`Feature development in progress...`);
+
+  };
+
+  // Only count non-charged rows for select all logic
+  const selectableRows = data.rows.filter(row => row["Charge status"] !== "Charged");
+  const isAllSelected = selectableRows.length > 0 && selectedRows.size === selectableRows.length;
+
 
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-2">Transaction Records for <span className="text-blue-600">{chargeStatus.charAt(0).toUpperCase() + chargeStatus.slice(1)}</span> </h1>
-        <p className="text-gray-600">Manage and monitor payment transactions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Transaction Records for <span className="text-blue-600">{chargeStatus.charAt(0).toUpperCase() + chargeStatus.slice(1)}</span> </h1>
+            <p className="text-gray-600">Manage and monitor payment transactions</p>
+          </div>
+          {selectedRows.size > 0 && (
+            <Button
+              onClick={handleBulkPayment}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Make Bulk Payment ({selectedRows.size})
+              <Rocket className="h-4 w-4 mr-2" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -413,6 +431,12 @@ export default function PaypalPaymentPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
@@ -429,7 +453,7 @@ export default function PaypalPaymentPage() {
               {isLoading ? (
                 Array(5).fill(0).map((_, idx) => (
                   <TableRow key={idx}>
-                    {Array(9).fill(0).map((_, cellIdx) => (
+                    {Array(10).fill(0).map((_, cellIdx) => (
                       <TableCell key={cellIdx}>
                         <Skeleton className="h-6 w-full" />
                       </TableCell>
@@ -438,7 +462,7 @@ export default function PaypalPaymentPage() {
                 ))
               ) : data.rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <FileSpreadsheet className="h-8 w-8 mb-2" />
                       <p className="text-lg font-medium">No records found</p>
@@ -454,94 +478,104 @@ export default function PaypalPaymentPage() {
                     row["Hotel Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
                     row["Hotel Confirmation Code"].includes(searchTerm)
                   )
-                  .map((row: RowData) => (
-                    <TableRow key={row.id} className="hover:bg-gray-50/50">
-                      <TableCell className="font-mono">{row["Expedia ID"]}</TableCell>
-                      <TableCell className="font-mono">{row["Batch"]}</TableCell>
-                      <TableCell>
-                        <div className="flex items-start gap-2">
-                          <Building2 className="h-4 w-4 text-gray-400 mt-1" />
-                          <div>
-                            <div className="font-medium">{row["Hotel Name"]}</div>
-                            <div className="text-sm text-gray-500">
-                              Conf: {row["Hotel Confirmation Code"]}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User2 className="h-4 w-4 text-gray-400" />
-                          <span>{row["Name"]}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>{row["Check In"]}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>{row["Check Out"]}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium">
-                            {formatCurrency(row["Amount to charge"], row["Curency"])}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4 text-gray-400" />
-                          {showCardDetails ? (
+                  .map((row: RowData) => {
+                    const isCharged = row["Charge status"] === "Charged";
+                    return (
+                      <TableRow key={row.id} className="hover:bg-gray-50/50">
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedRows.has(row.id)}
+                            onCheckedChange={(checked) => handleRowSelection(row.id, checked as boolean)}
+                            disabled={isCharged}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono">{row["Expedia ID"]}</TableCell>
+                        <TableCell className="font-mono">{row["Batch"]}</TableCell>
+                        <TableCell>
+                          <div className="flex items-start gap-2">
+                            <Building2 className="h-4 w-4 text-gray-400 mt-1" />
                             <div>
-                              <div>{row["Card first 4"]} **** **** {row["Card last 12"].slice(-4)}</div>
+                              <div className="font-medium">{row["Hotel Name"]}</div>
                               <div className="text-sm text-gray-500">
-                                Exp: {row["Card Expire"]}
+                                Conf: {row["Hotel Confirmation Code"]}
                               </div>
                             </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User2 className="h-4 w-4 text-gray-400" />
+                            <span>{row["Name"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span>{row["Check In"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span>{row["Check Out"]}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium">
+                              {formatCurrency(row["Amount to charge"], row["Curency"])}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-gray-400" />
+                            {showCardDetails ? (
+                              <div>
+                                <div>{row["Card first 4"]} **** **** {row["Card last 12"].slice(-4)}</div>
+                                <div className="text-sm text-gray-500">
+                                  Exp: {row["Card Expire"]}
+                                </div>
+                              </div>
+                            ) : (
+                              `**** **** **** ${row["Card last 12"].slice(-4)}`
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(row["Charge status"])}>
+                            {row["Charge status"]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {(row["Charge status"] === "Ready to charge" || row["Charge status"] === "Partially charged") ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => handlePaymentClick(row)}
+                            >
+                              Make Payment
+                              <ArrowRight className="h-4 w-4 text-blue-600" />
+                            </Button>
                           ) : (
-                            `**** **** **** ${row["Card last 12"].slice(-4)}`
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => {
+                                setSelectedRow(row);
+                                setShowViewDialog(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 text-blue-600" />
+                            </Button>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(row["Charge status"])}>
-                          {row["Charge status"]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(row["Charge status"] === "Ready to charge" || row["Charge status"] === "Partially charged") ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="p-2 hover:bg-blue-100"
-                            onClick={() => handlePaymentClick(row)}
-                          >
-                            Make Payment
-                            <ArrowRight className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 hover:bg-blue-100"
-                            onClick={() => {
-                              setSelectedRow(row);
-                              setShowViewDialog(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
               )}
             </TableBody>
           </Table>
