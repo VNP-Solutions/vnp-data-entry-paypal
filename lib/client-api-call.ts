@@ -163,6 +163,12 @@ interface CompleteInvitationData {
   confirmPassword: string;
 }
 
+interface StripeCreateAccountData {
+  email: string;
+  country: string;
+  type: string;
+}
+
 interface AdminExcelDataParams {
   page: number;
   limit: number;
@@ -580,6 +586,29 @@ class ApiClient {
     try {
       const response = await axios.get<ApiResponse<AdminExcelDataResponse>>(`${API_BASE_URL}/admin/excel-data`, {
         params: params
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  createStripeAccount = async (data: StripeCreateAccountData) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/stripe/create-account`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getStripeAccounts = async (page: number = 1, limit: number = 10) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/stripe/accounts`, {
+        params: {
+          page,
+          limit
+        }
       });
       return response.data;
     } catch (error) {
