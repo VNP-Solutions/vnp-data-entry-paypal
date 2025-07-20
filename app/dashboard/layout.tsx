@@ -30,18 +30,18 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      label: "Home",
-      href: "/dashboard/main",
-      isVisible: true
-    },
-    {
       label: "File History",
       href: "/dashboard/uploads",   
       isVisible: true
     },
     {
-      label: "Uploaded Entries",
-      href: "/dashboard/entity",
+      label: "Paypal Payment",
+      href: "/dashboard/paypal-payment",
+      isVisible: true
+    },
+    {
+      label: "Stripe Payment",
+      href: "/dashboard/stripe-payment",
       isVisible: true
     },
     {
@@ -50,7 +50,7 @@ export default function DashboardLayout({
       isVisible: true
     },
     {
-      label: "All Transactions",
+      label: "Transaction History",
       href: "/dashboard/transactions",
       isVisible: process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").includes(user?.email ?? "") ?? false,
     }

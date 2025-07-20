@@ -148,7 +148,7 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
   );
 };
 
-export default function EntityPage() {
+export default function PaypalPaymentPage() {
   const [data, setData] = useState<ApiResponse>({
     rows: [],
     pagination: {

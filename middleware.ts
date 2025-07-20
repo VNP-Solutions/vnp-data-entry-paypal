@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
 
   // Prevent authenticated users from accessing auth pages
   if ((pathname.startsWith('/auth') || pathname === '/') && authToken) {
-    return NextResponse.redirect(new URL('/dashboard/main', request.url))
+    return NextResponse.redirect(new URL('/dashboard/uploads', request.url))
   }
 
   return NextResponse.next()
