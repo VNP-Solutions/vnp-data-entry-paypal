@@ -426,7 +426,7 @@ export default function PaypalPaymentPage() {
       </Card>
 
       {/* Table Section */}
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm ps-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
