@@ -219,12 +219,8 @@ export function useDownloadReport() {
   return useMutation({
     mutationFn: apiClient.downloadReport,
     onSuccess: (data) => {
-      console.log(data);
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'report.xlsx';
-      a.click();
+      // console.log(data.url);
+      window.open(data.url, '_blank');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to download report");

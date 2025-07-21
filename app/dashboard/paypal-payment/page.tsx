@@ -540,7 +540,7 @@ export default function PaypalPaymentPage() {
                                 </div>
                               </div>
                             ) : (
-                              `************${row["Card Number"].slice(-4)}`
+                              `************${row["Card Number"]?.slice(-4)}`
                             )}
                           </div>
                         </TableCell>

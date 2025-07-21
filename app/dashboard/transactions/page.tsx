@@ -466,7 +466,7 @@ export default function TransactionsPage() {
                             </div>
                           </div>
                         ) : (
-                          `************${row["Card Number"].slice(-4)}`
+                          `************${row["Card Number"]?.slice(-4)}`
                         )}
                       </div>
                     </TableCell>
