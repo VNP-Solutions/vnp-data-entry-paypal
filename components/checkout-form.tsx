@@ -48,8 +48,26 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
   const handlePayPalCheckout = async () => {
     try {
       setIsProcessing(true);
-      const [month, year] = formData.expiryDate.split('/');
+      let month = "";
+      let year = "";
+
+      if (formData.expiryDate.includes("/")) {
+        // MM/YYYY format
+        [month, year] = formData.expiryDate.split("/");
+      } else if (formData.expiryDate.includes("-")) {
+        // YYYY-MM format
+        [year, month] = formData.expiryDate.split("-");
+      }
+
+      if (!month || !year) {
+        toast.error("Invalid expiry date format. Please use MM/YYYY or YYYY-MM.");
+        setIsProcessing(false);
+        return;
+      }
       const formattedExpiry = `${year}-${month.padStart(2, '0')}`;
+      // console.log(formattedExpiry);
+
+      // return;
 
       const response = await apiClient.processPayPalPayment({
         amount: parseFloat(formData.amount),
