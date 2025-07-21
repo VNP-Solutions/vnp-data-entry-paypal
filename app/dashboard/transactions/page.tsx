@@ -64,8 +64,9 @@ interface AdminExcelDataItem {
   "Curency": string;
   "Amount to charge": string;
   "Charge status": string;
-  "Card first 4": string;
-  "Card last 12": string;
+  // "Card first 4": string;
+  // "Card last 12": string;  
+  "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
   "Soft Descriptor": string;
@@ -214,7 +215,7 @@ export default function TransactionsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
-              <p className="text-xl font-bold text-gray-900">{pagination?.totalCount || 0}</p>
+              <div className="text-xl font-bold text-gray-900">{pagination?.totalCount || 0}</div>
             </div>
           </div>
         </Card>
@@ -225,9 +226,9 @@ export default function TransactionsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Hotels</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {new Set(excelData.map(row => row["Hotel Name"])).size}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -238,12 +239,12 @@ export default function TransactionsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(
                   excelData.reduce((sum, row) => sum + parseFloat(row["Amount to charge"] || "0"), 0).toString(),
                   "USD"
                 )}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -254,9 +255,9 @@ export default function TransactionsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Unique Guests</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {new Set(excelData.map(row => row["Name"])).size}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -458,14 +459,14 @@ export default function TransactionsPage() {
                         {showCardDetails ? (
                           <div>
                             <div>
-                              {row["Card first 4"] ? row["Card first 4"].slice(0, 4) : '****'} **** **** {row["Card last 12"] ? row["Card last 12"].slice(-4) : '****'}
+                              {row["Card Number"]}
                             </div>
                             <div className="text-sm text-gray-500">
                               Exp: {row["Card Expire"] || 'MM/YY'}
                             </div>
                           </div>
                         ) : (
-                          `**** **** **** ${row["Card last 12"] ? row["Card last 12"].slice(-4) : '****'}`
+                          `************${row["Card Number"].slice(-4)}`
                         )}
                       </div>
                     </TableCell>

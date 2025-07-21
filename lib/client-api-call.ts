@@ -98,8 +98,9 @@ interface RowDataResponse {
       "Curency": string;
       "Amount to charge": string;
       "Charge status": string;
-      "Card first 4": string;
-      "Card last 12": string;
+      // "Card first 4": string;
+      // "Card last 12": string;
+      "Card Number": string;
       "Card Expire": string;
       "Card CVV": string;
       "Soft Descriptor": string;
@@ -201,8 +202,9 @@ interface AdminExcelDataItem {
   "Curency": string;
   "Amount to charge": string;
   "Charge status": string;
-  "Card first 4": string;
-  "Card last 12": string;
+  // "Card first 4": string;
+  // "Card last 12": string;
+  "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
   "Soft Descriptor": string;
@@ -436,8 +438,9 @@ class ApiClient {
         "Curency": string;
         "Amount to charge": string;
         "Charge status": string;
-        "Card first 4": string;
-        "Card last 12": string;
+        // "Card first 4": string;
+        // "Card last 12": string;
+        "Card Number": string;
         "Card Expire": string;
         "Card CVV": string;
         "Soft Descriptor": string;
@@ -610,6 +613,15 @@ class ApiClient {
           limit
         }
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  downloadReport = async (uploadId: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/files/${uploadId}/download`);
       return response.data;
     } catch (error) {
       throw error;

@@ -28,7 +28,8 @@ import {
   MoreVertical,
   RefreshCw,
   Trash2,
-  Download
+  Download,
+  DownloadCloud
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -37,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
-import { useUploadSessions, useRetryUpload, useDiscardUpload } from "@/lib/hooks/use-api"
+import { useUploadSessions, useRetryUpload, useDiscardUpload, useDownloadReport } from "@/lib/hooks/use-api"
 import { toast } from "sonner"
 
 interface UploadSession {
@@ -50,6 +51,7 @@ interface UploadSession {
   startedAt: string;
   completedAt: string | null;
   vnpWorkId: string | null;
+  chargedCount: number;
 }
 
 interface UploadSessionsResponse {
@@ -70,6 +72,7 @@ export default function UploadsPage() {
   const { data, isLoading, refetch } = useUploadSessions(currentPage)
   const retryUploadMutation = useRetryUpload()
   const discardUploadMutation = useDiscardUpload()
+  const downloadReportMutation = useDownloadReport()
 
   const handleRetryUpload = async (uploadId: string) => {
     await retryUploadMutation.mutateAsync(uploadId)
@@ -77,6 +80,10 @@ export default function UploadsPage() {
 
   const handleDiscardUpload = async (uploadId: string) => {
     await discardUploadMutation.mutateAsync(uploadId)
+  }
+
+  const handleDownloadReport = async (uploadId: string) => {
+    await downloadReportMutation.mutateAsync(uploadId)
   }
 
   const getStatusColor = (status: string) => {
@@ -140,9 +147,9 @@ export default function UploadsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Files</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {isLoading ? <Skeleton className="h-6 w-16" /> : sessions.length}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -153,9 +160,9 @@ export default function UploadsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Completed</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {isLoading ? <Skeleton className="h-6 w-16" /> : completedCount}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -166,9 +173,9 @@ export default function UploadsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Processing</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {isLoading ? <Skeleton className="h-6 w-16" /> : processingCount}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -179,9 +186,9 @@ export default function UploadsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Failed</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {isLoading ? <Skeleton className="h-6 w-16" /> : failedCount}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -212,16 +219,15 @@ export default function UploadsPage() {
       </Card>
 
       {/* Table Section */}
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm ps-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead>File Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
+                <TableHead>Charge Progress</TableHead>
                 <TableHead className="text-center">Uploaded At</TableHead>
-                <TableHead className="text-center">Processed Rows</TableHead>
                 <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -267,19 +273,10 @@ export default function UploadsPage() {
                           </div>
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${session.progress}%` }}
-                            ></div>
-                          </div>
-                          <div className="text-xs text-gray-500 min-w-[40px] text-right">
-                            {session.progress}%
-                          </div>
-                        </div>
+                      <TableCell className="">
+                        <span>{session.chargedCount} charged out of {session.processedRows} entries</span>
                       </TableCell>
+                      
                       <TableCell className="text-center">
                         {session.startedAt ? (
                           <div className="text-sm">
@@ -292,9 +289,7 @@ export default function UploadsPage() {
                           "-"
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span>{session.processedRows} Rows</span>
-                      </TableCell>
+                      
                       <TableCell className="text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -306,16 +301,31 @@ export default function UploadsPage() {
                           <DropdownMenuItem
                                 onClick={() => {
                                   if (session.status.toLowerCase() === "failed") {
+                                    toast.error("This action only works for completed uploads")
+                                  } else {
+                                    handleDownloadReport(session.uploadId)
+                                  }
+                                }}
+                                className="flex items-center gap-2 text-green-700 cursor-pointer p-2"
+                              >
+                                <DownloadCloud className="h-4 w-4" />
+                                <span>Download Report</span>
+                              </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                                onClick={() => {
+                                  if (session.status.toLowerCase() === "failed") {
                                     handleRetryUpload(session.uploadId)
                                   } else {
                                     toast.error("This action only works for failed uploads")
                                   }
                                 }}
-                                className="flex items-center gap-2 text-blue-600 cursor-pointer p-2 hover:bg-blue-100"
+                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
                               >
                                 <RefreshCw className="h-4 w-4" />
                                 <span>Retry Upload</span>
                               </DropdownMenuItem>
+
                             <DropdownMenuItem
                               onClick={() => {
                                 if (session.status.toLowerCase() === "failed") {

@@ -214,3 +214,20 @@ export function useAdminExcelData(params: {
     queryFn: () => apiClient.getAdminExcelData(params),
   });
 } 
+
+export function useDownloadReport() {
+  return useMutation({
+    mutationFn: apiClient.downloadReport,
+    onSuccess: (data) => {
+      console.log(data);
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'report.xlsx';
+      a.click();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to download report");
+    },
+  });
+}

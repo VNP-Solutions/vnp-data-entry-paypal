@@ -22,8 +22,8 @@ interface FormData {
   checkIn: string;
   checkOut: string;
   softDescriptor: string;
-  cardFirst4: string;
-  cardLast12: string;
+  // cardFirst4: string;
+  // cardLast12: string;
   postingType: string;
   portfolio: string;
   documentId: string;
@@ -56,7 +56,7 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
         currency: formData.currency,
         descriptor: formData.softDescriptor,
         documentId: formData.documentId,
-        cardNumber: `${formData.cardFirst4}${formData.cardLast12}`,
+        cardNumber: formData.cardNumber,
         cardExpiry: formattedExpiry,
         cardCvv: formData.cvv,
         cardholderName: formData.name
@@ -229,8 +229,8 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                     id="cardNumber"
                     value={
                       showCardDetails
-                        ? `${formData.cardFirst4}${formData.cardLast12}`
-                        : `${formData.cardFirst4} •••• •••• ••••`
+                        ? `${formData.cardNumber}`
+                        : `${formData.cardNumber}`
                     }
                     readOnly
                     className="bg-gray-50 font-mono"

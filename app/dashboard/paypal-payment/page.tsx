@@ -67,8 +67,9 @@ interface RowData {
   "Curency": string;
   "Amount to charge": string;
   "Charge status": string;
-  "Card first 4": string;
-  "Card last 12": string;
+  // "Card first 4": string;
+  // "Card last 12": string;
+  "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
   "Soft Descriptor": string;
@@ -118,8 +119,8 @@ interface FormData {
   checkIn: string;
   checkOut: string;
   softDescriptor: string;
-  cardFirst4: string;
-  cardLast12: string;
+  // cardFirst4: string;
+  // cardLast12: string;
   postingType: string;
   portfolio: string;
   documentId: string;
@@ -191,8 +192,8 @@ export default function PaypalPaymentPage() {
     checkIn: '',
     checkOut: '',
     softDescriptor: '',
-    cardFirst4: '',
-    cardLast12: '',
+    // cardFirst4: '',
+    // cardLast12: '',
     postingType: '',
     portfolio: '',
     documentId: '',
@@ -256,7 +257,7 @@ export default function PaypalPaymentPage() {
 
   const handlePaymentClick = (row: RowData) => {
     setFormData({
-      cardNumber: `${row["Card first 4"]}${row["Card last 12"]}`,
+      cardNumber: row["Card Number"],
       expiryDate: row["Card Expire"],
       cvv: row["Card CVV"],
       amount: row["Amount to charge"],
@@ -270,8 +271,8 @@ export default function PaypalPaymentPage() {
       checkIn: row["Check In"],
       checkOut: row["Check Out"],
       softDescriptor: row["Soft Descriptor"],
-      cardFirst4: row["Card first 4"],
-      cardLast12: row["Card last 12"],
+      // cardFirst4: row["Card first 4"],
+      // cardLast12: row["Card last 12"],
       postingType: row["Posting Type"],
       portfolio: row["Portfolio"],
       documentId: row.id,
@@ -344,7 +345,7 @@ export default function PaypalPaymentPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
-              <p className="text-xl font-bold text-gray-900">{data.pagination.totalCount}</p>
+              <div className="text-xl font-bold text-gray-900">{data.pagination.totalCount}</div>
             </div>
           </div>
         </Card>
@@ -355,9 +356,9 @@ export default function PaypalPaymentPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Hotels</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {new Set(data.rows.map(row => row["Hotel Name"])).size}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -368,12 +369,12 @@ export default function PaypalPaymentPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(
                   data.rows.reduce((sum, row) => sum + parseFloat(row["Amount to charge"]), 0).toString(),
                   "USD"
                 )}
-              </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -533,13 +534,13 @@ export default function PaypalPaymentPage() {
                             <CreditCard className="h-4 w-4 text-gray-400" />
                             {showCardDetails ? (
                               <div>
-                                <div>{row["Card first 4"]} **** **** {row["Card last 12"].slice(-4)}</div>
+                                <div>{row["Card Number"]}</div>
                                 <div className="text-sm text-gray-500">
                                   Exp: {row["Card Expire"]}
                                 </div>
                               </div>
                             ) : (
-                              `**** **** **** ${row["Card last 12"].slice(-4)}`
+                              `************${row["Card Number"].slice(-4)}`
                             )}
                           </div>
                         </TableCell>
