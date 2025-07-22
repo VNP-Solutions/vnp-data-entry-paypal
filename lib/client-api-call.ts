@@ -628,6 +628,17 @@ class ApiClient {
     }
   };
 
+  makeBulkPayment = async (documentIds: string[]) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/paypal/process-bulk-payments`, { 
+        documentIds
+       });
+      return response.data;
+    } catch (error) { 
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

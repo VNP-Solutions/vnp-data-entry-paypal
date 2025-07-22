@@ -227,3 +227,18 @@ export function useDownloadReport() {
     },
   });
 }
+
+export function useMakeBulkPayment() {
+  return useMutation({
+    mutationFn: apiClient.makeBulkPayment,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success('Bulk payment processing successful!');
+        window.location.reload();
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to make bulk payment");
+    },
+  });
+}

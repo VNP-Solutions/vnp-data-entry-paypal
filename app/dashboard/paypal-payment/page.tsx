@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,22 +8,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Eye, 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Eye,
   EyeOff,
   Search,
   FileSpreadsheet,
@@ -37,16 +37,17 @@ import {
   ChevronRight,
   ArrowRight,
   Rocket,
-} from "lucide-react"
-import { apiClient } from "@/lib/client-api-call"
-import { toast } from "sonner"
+} from "lucide-react";
+import { apiClient } from "@/lib/client-api-call";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { CheckoutForm } from "@/components/checkout-form"
+} from "@/components/ui/dialog";
+import { CheckoutForm } from "@/components/checkout-form";
+import { useMakeBulkPayment } from "@/lib/hooks/use-api";
 
 interface RowData {
   id: string;
@@ -55,16 +56,17 @@ interface RowData {
   uploadStatus: string;
   rowNumber: number;
   "Expedia ID": string;
-  "Batch": string;
+  Batch: string;
   "Posting Type": string;
-  "Portfolio": string;
+  Portfolio: string;
   "Hotel Name": string;
   "Reservation ID": string;
   "Hotel Confirmation Code": string;
-  "Name": string;
+  Name: string;
   "Check In": string;
   "Check Out": string;
-  "Curency": string;
+  paypalOrderId: string;
+  Curency: string;
   "Amount to charge": string;
   "Charge status": string;
   // "Card first 4": string;
@@ -137,14 +139,30 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
         </DialogHeader>
         <div className="grid grid-cols-3 gap-4 py-4">
           {Object.entries(rowData)
-          .filter(([key]) => key !== "id" && key !== "uploadId" && key !== "rowNumber" && key !== "uploadStatus" && key !== "createdAt" && key !== "VNP Work ID" &&
-           key !== "paypalFee" && key !== "paypalNetAmount"  && key !== "paypalAvsCode" && key !== "paypalCvvCode" && key !== "paypalAmount" && key !== "paypalCurrency" && key !== "paypalCardLastDigits")
-          .map(([key, value]) => (
-            <div key={key} className="space-y-1">
-              <p className="text-sm font-medium text-gray-500 uppercase">{key}</p>
-              <p className="text-sm">{String(value)}</p>
-            </div>
-          ))}
+            .filter(
+              ([key]) =>
+                key !== "id" &&
+                key !== "uploadId" &&
+                key !== "rowNumber" &&
+                key !== "uploadStatus" &&
+                key !== "createdAt" &&
+                key !== "VNP Work ID" &&
+                key !== "paypalFee" &&
+                key !== "paypalNetAmount" &&
+                key !== "paypalAvsCode" &&
+                key !== "paypalCvvCode" &&
+                key !== "paypalAmount" &&
+                key !== "paypalCurrency" &&
+                key !== "paypalCardLastDigits"
+            )
+            .map(([key, value]) => (
+              <div key={key} className="space-y-1">
+                <p className="text-sm font-medium text-gray-500 uppercase">
+                  {key}
+                </p>
+                <p className="text-sm">{String(value)}</p>
+              </div>
+            ))}
         </div>
       </DialogContent>
     </Dialog>
@@ -158,102 +176,103 @@ export default function PaypalPaymentPage() {
       currentPage: 1,
       totalPages: 1,
       totalCount: 0,
-      limit: 10
+      limit: 10,
     },
     filters: {
       chargeStatus: "All",
-      search: null
-    }
-  })
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showCardDetails, setShowCardDetails] = useState(false)
-  const [chargeStatus, setChargeStatus] = useState("All")
-  const [limit, setLimit] = useState(20)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [refreshKey, setRefreshKey] = useState(0)
+      search: null,
+    },
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [chargeStatus, setChargeStatus] = useState("All");
+  const [limit, setLimit] = useState(20);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const makeBulkPayment = useMakeBulkPayment();
   // const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    amount: '',
-    currency: '',
-    name: '',
-    hotelName: '',
-    otaId: '',
-    reservationId: '',
-    batch: '',
-    confirmation: '',
-    checkIn: '',
-    checkOut: '',
-    softDescriptor: '',
+    cardNumber: "",
+    expiryDate: "",
+    cvv: "",
+    amount: "",
+    currency: "",
+    name: "",
+    hotelName: "",
+    otaId: "",
+    reservationId: "",
+    batch: "",
+    confirmation: "",
+    checkIn: "",
+    checkOut: "",
+    softDescriptor: "",
     // cardFirst4: '',
     // cardLast12: '',
-    postingType: '',
-    portfolio: '',
-    documentId: '',
+    postingType: "",
+    portfolio: "",
+    documentId: "",
   });
 
   const fetchData = async () => {
     try {
-      setIsLoading(true)
-      console.log(chargeStatus)
+      setIsLoading(true);
+      // console.log(chargeStatus);
       const response = await apiClient.getRowData({
         limit,
         page: currentPage,
-        chargeStatus
-      })
+        chargeStatus,
+      });
 
       // Filter out partially charged records when "charged" filter is selected
       const responseData = response.data as unknown as ApiResponse;
       if (chargeStatus.toLowerCase() === "charged") {
         responseData.rows = responseData.rows.filter(
           (row: RowData) => row["Charge status"].toLowerCase() === "charged"
-        )
+        );
       }
-      setData(responseData)
+      setData(responseData);
     } catch (error) {
       const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to fetch data")
+      toast.error(apiError.response?.data?.message || "Failed to fetch data");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1)
-  }
+    setRefreshKey((prev) => prev + 1);
+  };
 
   useEffect(() => {
-    fetchData()
-  }, [currentPage, chargeStatus, refreshKey, limit])
+    fetchData();
+  }, [currentPage, chargeStatus, refreshKey, limit]);
 
   const formatCurrency = (amount: string, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(parseFloat(amount))
-  }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(parseFloat(amount));
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Ready to charge':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Charged':
-        return 'bg-green-100 text-green-800'
-      case 'Failed':
-        return 'bg-red-100 text-red-800'
-      case 'Partially charged':
-        return 'bg-blue-100 text-blue-800'
+      case "Ready to charge":
+        return "bg-yellow-100 text-yellow-800";
+      case "Charged":
+        return "bg-green-100 text-green-800";
+      case "Failed":
+        return "bg-red-100 text-red-800";
+      case "Partially charged":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const handlePaymentClick = (row: RowData) => {
     setFormData({
@@ -294,26 +313,31 @@ export default function PaypalPaymentPage() {
     if (checked) {
       // Only select rows that are not already charged
       const selectableRowIds = data.rows
-        .filter(row => row["Charge status"] !== "Charged")
-        .map(row => row.id);
+        .filter((row) => row["Charge status"] !== "Charged")
+        .map((row) => row.id);
       setSelectedRows(new Set(selectableRowIds));
     } else {
       setSelectedRows(new Set());
     }
   };
 
-  const handleBulkPayment = () => {
-    const selectedIds = Array.from(selectedRows);
-    console.log('Selected IDs:', selectedIds);
-    toast.info(`Processing payment for ${selectedIds.length} selected records`);
-    toast.info(`Feature development in progress...`);
-
+  const handleBulkPayment = async () => {
+    try {
+      const selectedIds = Array.from(selectedRows);
+      toast.info(`Starting bulk payment for ${selectedIds.length} records...`);
+      makeBulkPayment.mutate(selectedIds);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to make bulk payment");
+    }
   };
 
   // Only count non-charged rows for select all logic
-  const selectableRows = data.rows.filter(row => row["Charge status"] !== "Charged");
-  const isAllSelected = selectableRows.length > 0 && selectedRows.size === selectableRows.length;
-
+  const selectableRows = data.rows.filter(
+    (row) => row["Charge status"] !== "Charged"
+  );
+  const isAllSelected =
+    selectableRows.length > 0 && selectedRows.size === selectableRows.length;
 
   return (
     <div className="min-h-[80vh]">
@@ -321,18 +345,25 @@ export default function PaypalPaymentPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">Transaction Records for <span className="text-blue-600">{chargeStatus.charAt(0).toUpperCase() + chargeStatus.slice(1)}</span> </h1>
-            <p className="text-gray-600">Manage and monitor payment transactions</p>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">
+              Transaction Records for{" "}
+              <span className="text-blue-600">
+                {chargeStatus.charAt(0).toUpperCase() + chargeStatus.slice(1)}
+              </span>{" "}
+            </h1>
+            <p className="text-gray-600">
+              Manage and monitor payment transactions
+            </p>
           </div>
-          {selectedRows.size > 0 && (
-            <Button
-              onClick={handleBulkPayment}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Make Bulk Payment ({selectedRows.size})
-              <Rocket className="h-4 w-4 mr-2" />
-            </Button>
-          )}
+          <Button
+            onClick={handleBulkPayment}
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={selectedRows.size === 0}
+          >
+            Make Bulk Payment{" "}
+            {selectedRows.size > 0 && `(${selectedRows.size})`}
+            <Rocket className="h-4 w-4 mr-2" />
+          </Button>
         </div>
       </div>
 
@@ -345,7 +376,9 @@ export default function PaypalPaymentPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
-              <div className="text-xl font-bold text-gray-900">{data.pagination.totalCount}</div>
+              <div className="text-xl font-bold text-gray-900">
+                {data.pagination.totalCount}
+              </div>
             </div>
           </div>
         </Card>
@@ -357,7 +390,7 @@ export default function PaypalPaymentPage() {
             <div>
               <p className="text-sm text-gray-600">Hotels</p>
               <div className="text-xl font-bold text-gray-900">
-                {new Set(data.rows.map(row => row["Hotel Name"])).size}
+                {new Set(data.rows.map((row) => row["Hotel Name"])).size}
               </div>
             </div>
           </div>
@@ -371,7 +404,12 @@ export default function PaypalPaymentPage() {
               <p className="text-sm text-gray-600">Total Amount</p>
               <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(
-                  data.rows.reduce((sum, row) => sum + parseFloat(row["Amount to charge"]), 0).toString(),
+                  data.rows
+                    .reduce(
+                      (sum, row) => sum + parseFloat(row["Amount to charge"]),
+                      0
+                    )
+                    .toString(),
                   "USD"
                 )}
               </div>
@@ -402,7 +440,9 @@ export default function PaypalPaymentPage() {
               <SelectContent>
                 <SelectItem value="All">All</SelectItem>
                 <SelectItem value="Ready to charge">Ready to charge</SelectItem>
-                <SelectItem value="Partially charged">Partially charged</SelectItem>
+                <SelectItem value="Partially charged">
+                  Partially charged
+                </SelectItem>
                 <SelectItem value="Charged">Charged</SelectItem>
                 <SelectItem value="Failed">Failed</SelectItem>
               </SelectContent>
@@ -412,7 +452,11 @@ export default function PaypalPaymentPage() {
               onClick={() => setShowCardDetails(!showCardDetails)}
               className="min-w-[140px]"
             >
-              {showCardDetails ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+              {showCardDetails ? (
+                <EyeOff className="h-4 w-4 mr-2" />
+              ) : (
+                <Eye className="h-4 w-4 mr-2" />
+              )}
               {showCardDetails ? "Hide Cards" : "Show Cards"}
             </Button>
             <Button
@@ -445,6 +489,7 @@ export default function PaypalPaymentPage() {
                 <TableHead>Check In</TableHead>
                 <TableHead>Check Out</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Order ID</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Action</TableHead>
@@ -452,15 +497,19 @@ export default function PaypalPaymentPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array(5).fill(0).map((_, idx) => (
-                  <TableRow key={idx}>
-                    {Array(10).fill(0).map((_, cellIdx) => (
-                      <TableCell key={cellIdx}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                Array(5)
+                  .fill(0)
+                  .map((_, idx) => (
+                    <TableRow key={idx}>
+                      {Array(10)
+                        .fill(0)
+                        .map((_, cellIdx) => (
+                          <TableCell key={cellIdx}>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
               ) : data.rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="h-32 text-center">
@@ -473,11 +522,16 @@ export default function PaypalPaymentPage() {
                 </TableRow>
               ) : (
                 data.rows
-                  .filter(row => 
-                    searchTerm === "" ||
-                    row["Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    row["Hotel Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    row["Hotel Confirmation Code"].includes(searchTerm)
+                  .filter(
+                    (row) =>
+                      searchTerm === "" ||
+                      row["Name"]
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()) ||
+                      row["Hotel Name"]
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()) ||
+                      row["Hotel Confirmation Code"].includes(searchTerm)
                   )
                   .map((row: RowData) => {
                     const isCharged = row["Charge status"] === "Charged";
@@ -486,17 +540,25 @@ export default function PaypalPaymentPage() {
                         <TableCell>
                           <Checkbox
                             checked={selectedRows.has(row.id)}
-                            onCheckedChange={(checked) => handleRowSelection(row.id, checked as boolean)}
+                            onCheckedChange={(checked) =>
+                              handleRowSelection(row.id, checked as boolean)
+                            }
                             disabled={isCharged}
                           />
                         </TableCell>
-                        <TableCell className="font-mono">{row["Expedia ID"]}</TableCell>
-                        <TableCell className="font-mono">{row["Batch"]}</TableCell>
+                        <TableCell className="font-mono">
+                          {row["Expedia ID"]}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {row["Batch"]}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-start gap-2">
                             <Building2 className="h-4 w-4 text-gray-400 mt-1" />
                             <div>
-                              <div className="font-medium">{row["Hotel Name"]}</div>
+                              <div className="font-medium">
+                                {row["Hotel Name"]}
+                              </div>
                               <div className="text-sm text-gray-500">
                                 Conf: {row["Hotel Confirmation Code"]}
                               </div>
@@ -525,9 +587,15 @@ export default function PaypalPaymentPage() {
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-gray-400" />
                             <span className="font-medium">
-                              {formatCurrency(row["Amount to charge"], row["Curency"])}
+                              {formatCurrency(
+                                row["Amount to charge"],
+                                row["Curency"]
+                              )}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row["paypalOrderId"] ?? "N/A"}
                         </TableCell>
                         <TableCell className="font-mono">
                           <div className="flex items-center gap-2">
@@ -545,12 +613,15 @@ export default function PaypalPaymentPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(row["Charge status"])}>
+                          <Badge
+                            className={getStatusColor(row["Charge status"])}
+                          >
                             {row["Charge status"]}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          {(row["Charge status"] === "Ready to charge" || row["Charge status"] === "Partially charged") ? (
+                          {row["Charge status"] === "Ready to charge" ||
+                          row["Charge status"] === "Partially charged" ? (
                             <Button
                               variant="outline"
                               size="sm"
@@ -587,7 +658,10 @@ export default function PaypalPaymentPage() {
             Showing {data.rows.length} of {data.pagination.totalCount} entries
           </div>
           <div className="flex items-center gap-2">
-            <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+            <Select
+              value={limit.toString()}
+              onValueChange={(value) => setLimit(parseInt(value))}
+            >
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Limit" />
               </SelectTrigger>
@@ -601,7 +675,7 @@ export default function PaypalPaymentPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -612,7 +686,11 @@ export default function PaypalPaymentPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.min(data.pagination.totalPages, p + 1))}
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(data.pagination.totalPages, p + 1)
+                )
+              }
               disabled={currentPage === data.pagination.totalPages}
             >
               <ChevronRight className="h-4 w-4" />
@@ -636,5 +714,5 @@ export default function PaypalPaymentPage() {
         onSuccess={fetchData}
       />
     </div>
-  )
-} 
+  );
+}
