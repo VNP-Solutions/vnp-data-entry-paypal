@@ -43,12 +43,14 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckoutForm } from "@/components/checkout-form";
 import { useMakeBulkPayment } from "@/lib/hooks/use-api";
 import { useMakeBulkRefund } from "@/lib/hooks/use-api";
+import { useProcessRefund } from "@/lib/hooks/use-api";
 
 interface RowData {
   id: string;
@@ -105,6 +107,14 @@ interface ViewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rowData: RowData | null;
+}
+
+interface RefundConfirmationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  rowData: RowData | null;
+  onConfirm: () => void;
+  isLoading: boolean;
 }
 
 interface FormData {
@@ -170,6 +180,87 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
   );
 };
 
+const RefundConfirmationDialog = ({
+  open,
+  onOpenChange,
+  rowData,
+  onConfirm,
+  isLoading,
+}: RefundConfirmationDialogProps) => {
+  if (!rowData) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!max-w-md !w-full">
+        <DialogHeader>
+          <DialogTitle className="text-red-600 flex items-center gap-2">
+            <RefreshCcw className="h-5 w-5" />
+            Confirm Refund
+          </DialogTitle>
+          <DialogDescription>
+            This action will process a full refund for this transaction.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="bg-gray-100 p-2 rounded-sm">
+                <p className="text-sm font-medium text-gray-700">Guest Name</p>
+                <p className="text-sm text-gray-900">{rowData.Name}</p>
+              </div>
+              <div className="bg-gray-100 p-2 rounded-sm">
+                <p className="text-sm font-medium text-gray-700">Hotel</p>
+                <p className="text-sm text-gray-900">{rowData["Hotel Name"]}</p>
+              </div>
+              <div className="bg-gray-100 p-2 rounded-sm ">
+                <p className="text-sm font-medium text-gray-700">Amount</p>
+                <p className="text-sm text-gray-900">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: rowData.Curency,
+                  }).format(parseFloat(rowData["Amount to charge"]))}
+                </p>
+              </div>
+              <div className="bg-gray-100 p-2 rounded-sm">
+                <p className="text-sm font-medium text-gray-700"> Order ID</p>
+                <p className="text-sm text-gray-900 font-mono">
+                  {rowData.paypalOrderId || "N/A"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Confirm Refund
+              </>
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function PaypalPaymentPage() {
   const [data, setData] = useState<ApiResponse>({
     rows: [],
@@ -197,7 +288,11 @@ export default function PaypalPaymentPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const makeBulkPayment = useMakeBulkPayment();
   const makeBulkRefund = useMakeBulkRefund();
+  const processRefund = useProcessRefund();
   // const [isProcessing, setIsProcessing] = useState(false);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [refundRowData, setRefundRowData] = useState<RowData | null>(null);
+  const [isRefundLoading, setIsRefundLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     cardNumber: "",
     expiryDate: "",
@@ -343,19 +438,40 @@ export default function PaypalPaymentPage() {
     }
   };
 
+  const handleRefundClick = (row: RowData) => {
+    setRefundRowData(row);
+    setShowRefundDialog(true);
+  };
+
+  const handleRefundConfirm = async () => {
+    if (refundRowData) {
+      try {
+        setIsRefundLoading(true);
+        await processRefund.mutateAsync(refundRowData.id);
+        setShowRefundDialog(false);
+        setRefundRowData(null);
+        fetchData(); // Refresh the data
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setIsRefundLoading(false);
+      }
+    }
+  };
+
   // Check if all rows are selected
   const isAllSelected =
     data.rows.length > 0 && selectedRows.size === data.rows.length;
 
   // Check if any selected rows are charged (refundable)
-  const hasSelectedChargedRows = Array.from(selectedRows).some(rowId => {
-    const row = data.rows.find(r => r.id === rowId);
+  const hasSelectedChargedRows = Array.from(selectedRows).some((rowId) => {
+    const row = data.rows.find((r) => r.id === rowId);
     return row && row["Charge status"] === "Charged";
   });
 
   // Check if any selected rows are chargeable (non-charged)
-  const hasSelectedChargeableRows = Array.from(selectedRows).some(rowId => {
-    const row = data.rows.find(r => r.id === rowId);
+  const hasSelectedChargeableRows = Array.from(selectedRows).some((rowId) => {
+    const row = data.rows.find((r) => r.id === rowId);
     return row && row["Charge status"] !== "Charged";
   });
 
@@ -382,10 +498,13 @@ export default function PaypalPaymentPage() {
               disabled={!hasSelectedChargeableRows}
             >
               Make Bulk Payment{" "}
-              {hasSelectedChargeableRows && `(${Array.from(selectedRows).filter(rowId => {
-                const row = data.rows.find(r => r.id === rowId);
-                return row && row["Charge status"] !== "Charged";
-              }).length})`}
+              {hasSelectedChargeableRows &&
+                `(${
+                  Array.from(selectedRows).filter((rowId) => {
+                    const row = data.rows.find((r) => r.id === rowId);
+                    return row && row["Charge status"] !== "Charged";
+                  }).length
+                })`}
               <Rocket className="h-4 w-4 ml-2" />
             </Button>
             <Button
@@ -394,10 +513,13 @@ export default function PaypalPaymentPage() {
               disabled={!hasSelectedChargedRows}
             >
               Make Bulk Refund{" "}
-              {hasSelectedChargedRows && `(${Array.from(selectedRows).filter(rowId => {
-                const row = data.rows.find(r => r.id === rowId);
-                return row && row["Charge status"] === "Charged";
-              }).length})`}
+              {hasSelectedChargedRows &&
+                `(${
+                  Array.from(selectedRows).filter((rowId) => {
+                    const row = data.rows.find((r) => r.id === rowId);
+                    return row && row["Charge status"] === "Charged";
+                  }).length
+                })`}
               <RefreshCcw className="h-4 w-4 ml-2" />
             </Button>
           </div>
@@ -481,6 +603,7 @@ export default function PaypalPaymentPage() {
                   Partially charged
                 </SelectItem>
                 <SelectItem value="Charged">Charged</SelectItem>
+                <SelectItem value="Refunded">Refunded</SelectItem>
                 <SelectItem value="Failed">Failed</SelectItem>
               </SelectContent>
             </Select>
@@ -643,7 +766,9 @@ export default function PaypalPaymentPage() {
                                 </div>
                               </div>
                             ) : (
-                              `************${row["Card Number"]?.slice(-4)}`
+                              <p className="text-sm ">
+                                ************{row["Card Number"]?.slice(-4)}
+                              </p>
                             )}
                           </div>
                         </TableCell>
@@ -669,17 +794,28 @@ export default function PaypalPaymentPage() {
                               <ArrowRight className="h-4 w-4 text-blue-600" />
                             </Button>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-2 hover:bg-blue-100"
-                              onClick={() => {
-                                setSelectedRow(row);
-                                setShowViewDialog(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 text-blue-600" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="p-2 hover:bg-blue-100"
+                                onClick={() => {
+                                  setSelectedRow(row);
+                                  setShowViewDialog(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="p-2 "
+                                onClick={() => handleRefundClick(row)}
+                              >
+                                Refund
+                                <RefreshCcw className="h-4 w-4 " />
+                              </Button>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
@@ -740,6 +876,14 @@ export default function PaypalPaymentPage() {
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}
+      />
+
+      <RefundConfirmationDialog
+        open={showRefundDialog}
+        onOpenChange={setShowRefundDialog}
+        rowData={refundRowData}
+        onConfirm={handleRefundConfirm}
+        isLoading={isRefundLoading}
       />
 
       {/* Replace the old checkout form with the new shared component */}

@@ -650,6 +650,18 @@ class ApiClient {
     }
   };
 
+  processRefund = async (documentId: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/paypal/process-refund`, { 
+        documentId,
+        refundType: "full"
+       });
+      return response.data;
+    } catch (error) { 
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

@@ -257,3 +257,21 @@ export function useMakeBulkRefund() {
     },
   });
 }
+
+export function useProcessRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: apiClient.processRefund,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success('Refund processed successfully!');
+        // Invalidate queries that need to be updated
+        queryClient.invalidateQueries({ queryKey: [queryKeys.rowData] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to process refund");
+    },
+  });
+}
