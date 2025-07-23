@@ -9,6 +9,7 @@ import {
   DollarSign,
   CreditCard,
   MapPin,
+  CheckCircle,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -43,6 +44,25 @@ interface FormData {
   state: string;
 }
 
+interface PaymentDetails {
+  orderId: string;
+  captureId: string;
+  networkTransactionId: string;
+  status: string;
+  amount: string;
+  currency: string;
+  paypalFee: string;
+  netAmount: string;
+  cardLastDigits: string;
+  cardBrand: string;
+  cardType: string;
+  cvvCode: string;
+  createTime: string;
+  updateTime: string;
+  captureStatus: string;
+  customId: string;
+}
+
 interface CheckoutFormProps {
   open: boolean;
   onClose: () => void;
@@ -60,6 +80,8 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
   useEffect(() => {
     setFormData(initialFormData);
@@ -109,9 +131,15 @@ export function CheckoutForm({
       });
 
       if (response.status === "success") {
-        toast.success("Payment processed successfully!");
-        onClose();
-        onSuccess();
+        // Set payment details and show success modal
+        if (response.data?.paymentDetails) {
+          setPaymentDetails(response.data.paymentDetails);
+          setShowSuccessModal(true);
+        } else {
+          toast.success("Payment processed successfully!");
+          onClose();
+          onSuccess();
+        }
       } else if (response.status === "error") {
         // Handle error response from API
         const errorMessage =
@@ -132,6 +160,13 @@ export function CheckoutForm({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setPaymentDetails(null);
+    onClose();
+    onSuccess();
   };
 
   return (
@@ -490,6 +525,57 @@ export function CheckoutForm({
       {/* Overlay */}
       {open && (
         <div className="fixed inset-0 bg-black/20 z-10" onClick={onClose} />
+      )}
+
+      {/* Payment Success Modal */}
+      {showSuccessModal && paymentDetails && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold text-center text-gray-900 mb-2">
+                Payment Successful!
+              </h2>
+              <p className="text-gray-600 text-center mb-6">
+                Your payment has been processed successfully.
+              </p>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Order ID:</span>
+                  <span className="text-sm font-mono text-gray-900">{paymentDetails.orderId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Capture ID:</span>
+                  <span className="text-sm font-mono text-gray-900">{paymentDetails.captureId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Capture Status:</span>
+                  <span className={`text-sm font-semibold ${
+                    paymentDetails.captureStatus === "COMPLETED" 
+                      ? "text-green-600" 
+                      : "text-red-600"
+                  }`}>
+                    {paymentDetails.captureStatus}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Custom ID:</span>
+                  <span className="text-sm font-mono text-gray-900">{paymentDetails.customId}</span>
+                </div>
+              </div>
+              
+              <Button
+                onClick={handleSuccessModalClose}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

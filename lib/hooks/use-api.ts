@@ -99,26 +99,6 @@ export function useFileUpload() {
   });
 }
 
-// PayPal Payment Hook
-export function useProcessPayPalPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: apiClient.processPayPalPayment,
-    onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success("Payment processed successfully!");
-        console.log(data);
-        // Invalidate queries that need to be updated
-        queryClient.invalidateQueries({ queryKey: [queryKeys.rowData] });
-      }
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Payment processing failed");
-    },
-  });
-}
-
 // Upload Management Hooks
 export function useRetryUpload() {
   const queryClient = useQueryClient();
