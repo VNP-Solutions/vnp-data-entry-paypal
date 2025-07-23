@@ -242,3 +242,18 @@ export function useMakeBulkPayment() {
     },
   });
 }
+
+export function useMakeBulkRefund() {
+  return useMutation({
+    mutationFn: apiClient.makeBulkRefund,
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success('Bulk refund processing successful!');
+        window.location.reload();
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to make bulk refund");
+    },
+  });
+}

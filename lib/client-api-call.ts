@@ -639,6 +639,17 @@ class ApiClient {
     }
   };
 
+  makeBulkRefund = async (documentIds: string[]) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/paypal/process-bulk-refunds`, { 
+        documentIds
+       });
+      return response.data;
+    } catch (error) { 
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(
@@ -646,6 +657,7 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401) {
           this.clearAuthToken();
+          window.location.href = '/auth/login';
         }
         return Promise.reject(error);
       }

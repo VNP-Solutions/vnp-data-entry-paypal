@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { CheckoutForm } from "@/components/checkout-form";
 import { useMakeBulkPayment } from "@/lib/hooks/use-api";
+import { useMakeBulkRefund } from "@/lib/hooks/use-api";
 
 interface RowData {
   id: string;
@@ -195,6 +196,7 @@ export default function PaypalPaymentPage() {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const makeBulkPayment = useMakeBulkPayment();
+  const makeBulkRefund = useMakeBulkRefund();
   // const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     cardNumber: "",
@@ -311,11 +313,9 @@ export default function PaypalPaymentPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select rows that are not already charged
-      const selectableRowIds = data.rows
-        .filter((row) => row["Charge status"] !== "Charged")
-        .map((row) => row.id);
-      setSelectedRows(new Set(selectableRowIds));
+      // Select all rows (both chargeable and refundable)
+      const allRowIds = data.rows.map((row) => row.id);
+      setSelectedRows(new Set(allRowIds));
     } else {
       setSelectedRows(new Set());
     }
@@ -332,12 +332,32 @@ export default function PaypalPaymentPage() {
     }
   };
 
-  // Only count non-charged rows for select all logic
-  const selectableRows = data.rows.filter(
-    (row) => row["Charge status"] !== "Charged"
-  );
+  const handleBulkRefund = async () => {
+    try {
+      const selectedIds = Array.from(selectedRows);
+      toast.info(`Starting bulk refund for ${selectedIds.length} records...`);
+      makeBulkRefund.mutate(selectedIds);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to make bulk refund");
+    }
+  };
+
+  // Check if all rows are selected
   const isAllSelected =
-    selectableRows.length > 0 && selectedRows.size === selectableRows.length;
+    data.rows.length > 0 && selectedRows.size === data.rows.length;
+
+  // Check if any selected rows are charged (refundable)
+  const hasSelectedChargedRows = Array.from(selectedRows).some(rowId => {
+    const row = data.rows.find(r => r.id === rowId);
+    return row && row["Charge status"] === "Charged";
+  });
+
+  // Check if any selected rows are chargeable (non-charged)
+  const hasSelectedChargeableRows = Array.from(selectedRows).some(rowId => {
+    const row = data.rows.find(r => r.id === rowId);
+    return row && row["Charge status"] !== "Charged";
+  });
 
   return (
     <div className="min-h-[80vh]">
@@ -355,15 +375,32 @@ export default function PaypalPaymentPage() {
               Manage and monitor payment transactions
             </p>
           </div>
-          <Button
-            onClick={handleBulkPayment}
-            className="bg-blue-600 hover:bg-blue-700"
-            disabled={selectedRows.size === 0}
-          >
-            Make Bulk Payment{" "}
-            {selectedRows.size > 0 && `(${selectedRows.size})`}
-            <Rocket className="h-4 w-4 mr-2" />
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={handleBulkPayment}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!hasSelectedChargeableRows}
+            >
+              Make Bulk Payment{" "}
+              {hasSelectedChargeableRows && `(${Array.from(selectedRows).filter(rowId => {
+                const row = data.rows.find(r => r.id === rowId);
+                return row && row["Charge status"] !== "Charged";
+              }).length})`}
+              <Rocket className="h-4 w-4 ml-2" />
+            </Button>
+            <Button
+              onClick={handleBulkRefund}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={!hasSelectedChargedRows}
+            >
+              Make Bulk Refund{" "}
+              {hasSelectedChargedRows && `(${Array.from(selectedRows).filter(rowId => {
+                const row = data.rows.find(r => r.id === rowId);
+                return row && row["Charge status"] === "Charged";
+              }).length})`}
+              <RefreshCcw className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -534,7 +571,6 @@ export default function PaypalPaymentPage() {
                       row["Hotel Confirmation Code"].includes(searchTerm)
                   )
                   .map((row: RowData) => {
-                    const isCharged = row["Charge status"] === "Charged";
                     return (
                       <TableRow key={row.id} className="hover:bg-gray-50/50">
                         <TableCell>
@@ -543,7 +579,6 @@ export default function PaypalPaymentPage() {
                             onCheckedChange={(checked) =>
                               handleRowSelection(row.id, checked as boolean)
                             }
-                            disabled={isCharged}
                           />
                         </TableCell>
                         <TableCell className="font-mono">
@@ -621,7 +656,9 @@ export default function PaypalPaymentPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           {row["Charge status"] === "Ready to charge" ||
-                          row["Charge status"] === "Partially charged" ? (
+                          row["Charge status"] === "Partially charged" ||
+                          row["Charge status"] === "Refunded" ||
+                          row["Charge status"] === "Failed" ? (
                             <Button
                               variant="outline"
                               size="sm"
