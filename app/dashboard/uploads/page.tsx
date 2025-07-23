@@ -130,7 +130,7 @@ export default function UploadsPage() {
       <Button
         variant="outline"
         onClick={() => {
-          window.open("https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753105811749-Template.xlsx")
+          window.open("https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753255148635-Template.xlsx")
         }}
         className="text-blue-600">
         <Download className="h-4 w-4" />
