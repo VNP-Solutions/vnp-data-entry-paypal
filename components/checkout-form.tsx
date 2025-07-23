@@ -1,11 +1,18 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { X, User, Calendar, DollarSign, CreditCard } from "lucide-react"
-import { apiClient } from "@/lib/client-api-call"
-import { toast } from "sonner"
-import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  X,
+  User,
+  Calendar,
+  DollarSign,
+  CreditCard,
+  MapPin,
+} from "lucide-react";
+import { apiClient } from "@/lib/client-api-call";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface FormData {
   cardNumber: string;
@@ -15,7 +22,7 @@ interface FormData {
   currency: string;
   name: string;
   hotelName: string;
-  otaId: string;
+  expediaId: string;
   reservationId: string;
   batch: string;
   confirmation: string;
@@ -27,6 +34,13 @@ interface FormData {
   postingType: string;
   portfolio: string;
   documentId: string;
+  zipCode: string;
+  countryCode: string;
+  otaDisplayName: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
 }
 
 interface CheckoutFormProps {
@@ -37,7 +51,13 @@ interface CheckoutFormProps {
   onSuccess: () => void;
 }
 
-export function CheckoutForm({ open, onClose, formData: initialFormData, showCardDetails, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({
+  open,
+  onClose,
+  formData: initialFormData,
+  showCardDetails,
+  onSuccess,
+}: CheckoutFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
 
@@ -60,11 +80,13 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
       }
 
       if (!month || !year) {
-        toast.error("Invalid expiry date format. Please use MM/YYYY or YYYY-MM.");
+        toast.error(
+          "Invalid expiry date format. Please use MM/YYYY or YYYY-MM."
+        );
         setIsProcessing(false);
         return;
       }
-      const formattedExpiry = `${year}-${month.padStart(2, '0')}`;
+      const formattedExpiry = `${year}-${month.padStart(2, "0")}`;
       // console.log(formattedExpiry);
 
       // return;
@@ -77,7 +99,13 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
         cardNumber: formData.cardNumber,
         cardExpiry: formattedExpiry,
         cardCvv: formData.cvv,
-        cardholderName: formData.name
+        cardholderName: formData.otaDisplayName,
+        zipCode: formData.zipCode,
+        countryCode: formData.countryCode,
+        addressLine1: formData.addressLine1,
+        addressLine2: formData.addressLine2,
+        city: formData.city,
+        state: formData.state,
       });
 
       if (response.status === "success") {
@@ -86,16 +114,20 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
         onSuccess();
       } else if (response.status === "error") {
         // Handle error response from API
-        const errorMessage = response.error || response.message || "Payment processing failed";
+        const errorMessage =
+          response.error || response.message || "Payment processing failed";
         toast.error(errorMessage);
       } else {
         toast.error("Payment processing failed");
       }
     } catch (error) {
-      const apiError = error as { response?: { data?: { message?: string; error?: string } } };
-      const errorMessage = apiError.response?.data?.error || 
-                          apiError.response?.data?.message || 
-                          "Payment processing failed";
+      const apiError = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      const errorMessage =
+        apiError.response?.data?.error ||
+        apiError.response?.data?.message ||
+        "Payment processing failed";
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -140,10 +172,12 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="guestName" className="text-sm">Full Name</Label>
+                  <Label htmlFor="guestName" className="text-sm">
+                    Card Holder Name
+                  </Label>
                   <Input
                     id="guestName"
-                    value={formData.name}
+                    value={formData.otaDisplayName}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -158,43 +192,20 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                   />
                 </div>
                 <div>
-                  <Label htmlFor="softDescriptor" className="text-sm">Soft Descriptor</Label>
+                  <Label htmlFor="softDescriptor" className="text-sm">
+                    Soft Descriptor
+                  </Label>
                   <Input
                     id="softDescriptor"
                     value={formData.softDescriptor}
-                    onChange={(e) => setFormData({ ...formData, softDescriptor: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        softDescriptor: e.target.value,
+                      })
+                    }
                     className="bg-white"
                     placeholder="Enter soft descriptor"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Booking Details */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Booking Details</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="checkIn" className="text-sm mb-1">Check In</Label>
-                  <Input
-                    id="checkIn"
-                    value={formData.checkIn}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="checkOut" className="text-sm mb-1">Check Out</Label>
-                  <Input
-                    id="checkOut"
-                    value={formData.checkOut}
-                    readOnly
-                    className="bg-gray-50"
                   />
                 </div>
               </div>
@@ -212,7 +223,9 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="amount" className="text-sm mb-1">Amount to Charge</Label>
+                  <Label htmlFor="amount" className="text-sm mb-1">
+                    Amount to Charge
+                  </Label>
                   <Input
                     id="amount"
                     value={`$${formData.amount}`}
@@ -221,7 +234,9 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                   />
                 </div>
                 <div>
-                  <Label htmlFor="currency" className="text-sm mb-1">Currency</Label>
+                  <Label htmlFor="currency" className="text-sm mb-1">
+                    Currency
+                  </Label>
                   <Input
                     id="currency"
                     value={formData.currency}
@@ -238,11 +253,15 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Card Information</h3>
+                <h3 className="font-semibold text-gray-900">
+                  Card Information
+                </h3>
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="cardNumber" className="text-sm mb-1">Card Number</Label>
+                  <Label htmlFor="cardNumber" className="text-sm mb-1">
+                    Card Number
+                  </Label>
                   <Input
                     id="cardNumber"
                     value={
@@ -256,7 +275,9 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="expiry" className="text-sm mb-1">Expiry</Label>
+                    <Label htmlFor="expiry" className="text-sm mb-1">
+                      Expiry
+                    </Label>
                     <Input
                       id="expiry"
                       value={formData.expiryDate}
@@ -265,7 +286,9 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cvv" className="text-sm mb-1">CVV</Label>
+                    <Label htmlFor="cvv" className="text-sm mb-1">
+                      CVV
+                    </Label>
                     <Input
                       id="cvv"
                       value={showCardDetails ? formData.cvv : "•••"}
@@ -273,6 +296,159 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
                       className="bg-gray-50 font-mono"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Billing Address */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">Billing Address</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="addressLine1" className="text-sm mb-1">
+                    Address Line 1
+                  </Label>
+                  <Input
+                    id="addressLine1"
+                    value={formData.addressLine1}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        addressLine1: e.target.value,
+                      })
+                    }
+                    className="bg-white"
+                    placeholder="Enter address line 1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addressLine2" className="text-sm mb-1">
+                    Address Line 2
+                  </Label>
+                  <Input
+                    id="addressLine2"
+                    value={formData.addressLine2}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        addressLine2: e.target.value,
+                      })
+                    }
+                    className="bg-white"
+                    placeholder="Enter address line 2"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="city" className="text-sm mb-1">
+                      City
+                    </Label>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          city: e.target.value,
+                        })
+                      }
+                      className="bg-white"
+                      placeholder="Enter city"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state" className="text-sm mb-1">
+                      State
+                    </Label>
+                    <Input
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          state: e.target.value,
+                        })
+                      }
+                      className="bg-white"
+                      placeholder="Enter state"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="zipCode" className="text-sm mb-1">
+                      Zip Code
+                    </Label>
+                    <Input
+                      id="zipCode"
+                      value={formData.zipCode}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          zipCode: e.target.value,
+                        })
+                      }
+                      className="bg-white font-mono"
+                      placeholder="Enter zip code"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="countryCode" className="text-sm mb-1">
+                      Country Code
+                    </Label>
+                    <Input
+                      id="countryCode"
+                      value={formData.countryCode}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          countryCode: e.target.value,
+                        })
+                      }
+                      className="bg-white font-mono"
+                      placeholder="Enter country code"
+                    />
+                  </div>
+                </div>
+              
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Booking Details */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">Booking Details</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="checkIn" className="text-sm mb-1">
+                    Check In
+                  </Label>
+                  <Input
+                    id="checkIn"
+                    value={formData.checkIn}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="checkOut" className="text-sm mb-1">
+                    Check Out
+                  </Label>
+                  <Input
+                    id="checkOut"
+                    value={formData.checkOut}
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </div>
               </div>
             </div>
@@ -313,11 +489,8 @@ export function CheckoutForm({ open, onClose, formData: initialFormData, showCar
 
       {/* Overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/20 z-10"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/20 z-10" onClick={onClose} />
       )}
     </>
   );
-} 
+}

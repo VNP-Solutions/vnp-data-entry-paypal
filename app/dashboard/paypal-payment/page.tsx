@@ -72,13 +72,26 @@ interface RowData {
   Curency: string;
   "Amount to charge": string;
   "Charge status": string;
-  // "Card first 4": string;
-  // "Card last 12": string;
   "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
   "Soft Descriptor": string;
   createdAt: string;
+  otaId?: {
+    billingAddress: {
+      zipCode: string;
+      countryCode: string;
+      addressLine1: string;
+      addressLine2: string;
+      city: string;
+      state: string;
+    };
+    _id: string;
+    name: string;
+    displayName: string;
+    customer: string;
+    isActive: boolean;
+  };
 }
 
 interface ApiResponse {
@@ -125,18 +138,23 @@ interface FormData {
   currency: string;
   name: string;
   hotelName: string;
-  otaId: string;
+  expediaId: string;
   reservationId: string;
   batch: string;
   confirmation: string;
   checkIn: string;
   checkOut: string;
   softDescriptor: string;
-  // cardFirst4: string;
-  // cardLast12: string;
   postingType: string;
   portfolio: string;
   documentId: string;
+  zipCode: string;
+  countryCode: string;
+  otaDisplayName: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
 }
 
 const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
@@ -301,18 +319,23 @@ export default function PaypalPaymentPage() {
     currency: "",
     name: "",
     hotelName: "",
-    otaId: "",
+    expediaId: "",
     reservationId: "",
     batch: "",
     confirmation: "",
     checkIn: "",
     checkOut: "",
     softDescriptor: "",
-    // cardFirst4: '',
-    // cardLast12: '',
     postingType: "",
     portfolio: "",
     documentId: "",
+    zipCode: "",
+    countryCode: "",
+    otaDisplayName: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
   });
 
   const fetchData = async () => {
@@ -380,18 +403,23 @@ export default function PaypalPaymentPage() {
       currency: row["Curency"],
       name: row["Name"],
       hotelName: row["Hotel Name"],
-      otaId: row["Expedia ID"],
+      expediaId: row["Expedia ID"],
       reservationId: row["Reservation ID"],
       batch: row["Batch"],
       confirmation: row["Hotel Confirmation Code"],
       checkIn: row["Check In"],
       checkOut: row["Check Out"],
       softDescriptor: row["Soft Descriptor"],
-      // cardFirst4: row["Card first 4"],
-      // cardLast12: row["Card last 12"],
       postingType: row["Posting Type"],
       portfolio: row["Portfolio"],
       documentId: row.id,
+      zipCode: row.otaId?.billingAddress?.zipCode || "",
+      countryCode: row.otaId?.billingAddress?.countryCode || "",
+      otaDisplayName: row.otaId?.displayName || "",
+      addressLine1: row.otaId?.billingAddress?.addressLine1 || "",
+      addressLine2: row.otaId?.billingAddress?.addressLine2 || "",
+      city: row.otaId?.billingAddress?.city || "",
+      state: row.otaId?.billingAddress?.state || "",
     });
     setShowCheckoutForm(true);
   };

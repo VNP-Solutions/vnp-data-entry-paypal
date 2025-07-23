@@ -492,6 +492,12 @@ class ApiClient {
     cardExpiry: string;
     cardCvv: string;
     cardholderName: string;
+    zipCode: string;
+    countryCode: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
   }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/paypal/process-payment`, data);
