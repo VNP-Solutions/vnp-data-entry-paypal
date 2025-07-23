@@ -160,6 +160,29 @@ interface FormData {
 const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
   if (!rowData) return null;
 
+  const flattenObject = (obj: Record<string, unknown> | RowData): Array<{ key: string; value: unknown }> => {
+    const result: Array<{ key: string; value: unknown }> = [];
+    
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === null || value === undefined || value === '') {
+        result.push({ key, value: 'N/A' });
+      } else if (typeof value === 'object' && !Array.isArray(value)) {
+        // Recursively flatten nested objects without adding prefixes
+        result.push(...flattenObject(value as Record<string, unknown>));
+      } else if (Array.isArray(value)) {
+        // Handle arrays by joining elements
+        result.push({ key, value: value.join(', ') });
+      } else {
+        result.push({ key, value });
+      }
+    }
+    
+    return result;
+  };
+
+  // Flatten the rowData object to handle nested objects
+  const flattenedData = flattenObject(rowData);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-4xl !w-full max-h-[90vh] overflow-y-auto">
@@ -167,29 +190,34 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
           <DialogTitle>Entry Details</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-4 py-4">
-          {Object.entries(rowData)
+          {flattenedData
             .filter(
-              ([key]) =>
+              ({ key }) =>
                 key !== "id" &&
+                key !== "createdAt" &&
                 key !== "uploadId" &&
                 key !== "rowNumber" &&
-                key !== "uploadStatus" &&
-                key !== "createdAt" &&
-                key !== "VNP Work ID" &&
-                key !== "paypalFee" &&
-                key !== "paypalNetAmount" &&
-                key !== "paypalAvsCode" &&
-                key !== "paypalCvvCode" &&
-                key !== "paypalAmount" &&
-                key !== "paypalCurrency" &&
-                key !== "paypalCardLastDigits"
+                key !== "uploadStatus"
+                // key !== "VNP Work ID" &&
+                // key !== "paypalNetAmount" &&
+                // key !== "paypalAvsCode" &&
+                // key !== "paypalCvvCode" &&
+                // key !== "paypalAmount" &&
+                // key !== "paypalCurrency" &&
+                // key !== "paypalCardLastDigits"
             )
-            .map(([key, value]) => (
+            .map(({ key, value }) => (
               <div key={key} className="space-y-1">
                 <p className="text-sm font-medium text-gray-500 uppercase">
                   {key}
                 </p>
-                <p className="text-sm">{String(value)}</p>
+                <p className={`text-sm ${
+                  key === "paypalCaptureStatus" 
+                    ? (value === "COMPLETED" ? "text-green-600 font-semibold" : "text-red-600 font-semibold")
+                    : ""
+                }`}>
+                  {String(value)}
+                </p>
               </div>
             ))}
         </div>
@@ -815,29 +843,30 @@ export default function PaypalPaymentPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="p-2 hover:bg-blue-100"
+                              className="p-2 hover:bg-blue-100 w-full"
                               onClick={() => handlePaymentClick(row)}
                             >
                               Make Payment
                               <ArrowRight className="h-4 w-4 text-blue-600" />
                             </Button>
                           ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-end justify-end gap-1">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="p-2 hover:bg-blue-100"
+                                className="p-2 hover:bg-blue-100 w-1/2"
                                 onClick={() => {
                                   setSelectedRow(row);
                                   setShowViewDialog(true);
                                 }}
                               >
+                                Details
                                 <Eye className="h-4 w-4 text-blue-600" />
                               </Button>
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                className="p-2 "
+                                className="p-2 w-1/2"
                                 onClick={() => handleRefundClick(row)}
                               >
                                 Refund

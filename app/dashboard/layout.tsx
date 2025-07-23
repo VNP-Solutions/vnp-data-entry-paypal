@@ -20,7 +20,7 @@ export default function DashboardLayout({
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const { data: profileData } = useProfile();
   const { user } = profileData?.data || { user: null };
-  console.log(user)
+  // console.log(user)
   const pathname = usePathname()
   const queryClient = useQueryClient()
   const handleUploadSuccess = () => {

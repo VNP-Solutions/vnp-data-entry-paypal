@@ -108,6 +108,7 @@ export function useProcessPayPalPayment() {
     onSuccess: (data) => {
       if (data.status === "success") {
         toast.success("Payment processed successfully!");
+        console.log(data);
         // Invalidate queries that need to be updated
         queryClient.invalidateQueries({ queryKey: [queryKeys.rowData] });
       }
