@@ -140,19 +140,18 @@ export function CheckoutForm({
           onClose();
           onSuccess();
         }
-      } else if (response.status === "error") {
+      } else {
         // Handle error response from API
         const errorMessage =
-          response.error || response.message || "Payment processing failed";
+        response.data.declineReason || response.error || response.message || "Payment processing failed";
         toast.error(errorMessage);
-      } else {
-        toast.error("Payment processing failed");
-      }
+      } 
     } catch (error) {
       const apiError = error as {
-        response?: { data?: { message?: string; error?: string } };
+        response?: { data?: { message?: string; error?: string; declineReason?: string } };
       };
       const errorMessage =
+        apiError.response?.data?.declineReason ||
         apiError.response?.data?.error ||
         apiError.response?.data?.message ||
         "Payment processing failed";
