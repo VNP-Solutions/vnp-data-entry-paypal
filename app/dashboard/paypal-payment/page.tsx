@@ -503,15 +503,16 @@ export default function PaypalPaymentPage() {
       makeBulkPayment.mutate(finalSelectedRows, {
         onSuccess: () => {
           toast.dismiss(loadingToastId);
+          setIsBulkPaymentLoading(false);
         },
         onError: () => {
           toast.dismiss(loadingToastId);
+          setIsBulkPaymentLoading(false);
         }
       });
     } catch (error) {
       console.log(error);
       toast.error("Failed to make bulk payment");
-    }finally{
       setIsBulkPaymentLoading(false);
     }
   };
@@ -528,6 +529,7 @@ export default function PaypalPaymentPage() {
       
       if (chargeableRows.length === 0) {
         toast.error("No refundable rows selected");
+        setIsBulkRefundLoading(false);
         return;
       }
       
@@ -543,15 +545,16 @@ export default function PaypalPaymentPage() {
       makeBulkRefund.mutate(finalSelectedRows, {
         onSuccess: () => {
           toast.dismiss(loadingToastId);
+          setIsBulkRefundLoading(false);
         },
         onError: () => {
           toast.dismiss(loadingToastId);
+          setIsBulkRefundLoading(false);
         }
       });
     } catch (error) {
       console.log(error);
       toast.error("Failed to make bulk refund");
-    }finally{
       setIsBulkRefundLoading(false);
     }
   };
