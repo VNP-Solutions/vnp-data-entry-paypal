@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Upload, X, FileSpreadsheet } from "lucide-react"
+import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
@@ -125,7 +125,10 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {isLoading ? (
-                  "Uploading..."
+                <>
+                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                   Uploading...
+                 </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />

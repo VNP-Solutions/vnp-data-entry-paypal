@@ -141,13 +141,13 @@ export function CheckoutForm({
           onSuccess();
         }
       } else if (response.status === "error" || response.status === "declined") {
-        console.log(response, "error response");
+        // console.log(response, "error response");
         // Handle error response from API
-        console.log("Debug error values:", {
-          declineReason: response.data.declineReason,
-          error: response.error,
-          message: response.message
-        });
+        // console.log("Debug error values:", {
+        //   declineReason: response.data.declineReason,
+        //   error: response.error,
+        //   message: response.message
+        // });
         const errorMessage =
         response.data.declineReason || response.error || response.message || "Payment processing failed";
         toast.error(errorMessage);

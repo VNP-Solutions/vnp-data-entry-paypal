@@ -37,6 +37,7 @@ import {
   ChevronRight,
   ArrowRight,
   Rocket,
+  Loader2,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -322,6 +323,8 @@ export default function PaypalPaymentPage() {
     },
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isBulkPaymentLoading, setIsBulkPaymentLoading] = useState(false);
+  const [isBulkRefundLoading, setIsBulkRefundLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [chargeStatus, setChargeStatus] = useState("All");
@@ -474,23 +477,82 @@ export default function PaypalPaymentPage() {
 
   const handleBulkPayment = async () => {
     try {
-      const selectedIds = Array.from(selectedRows);
-      toast.info(`Starting bulk payment for ${selectedIds.length} records...`);
-      makeBulkPayment.mutate(selectedIds);
+      const selectedRowsArray = Array.from(selectedRows);
+      // filter the selectedIds to only include chargeable rows 
+      const chargeableRows = data.rows.filter((row) => 
+        selectedRowsArray.includes(row.id) && row["Charge status"] !== "Charged"
+      );
+      
+      if (chargeableRows.length === 0) {
+        toast.error("No chargeable rows selected");
+        return;
+      }
+      
+      const finalSelectedRows = chargeableRows.map((row) => row.id);
+      const loadingToastId = `bulk-payment-${Date.now()}`;
+      setIsBulkPaymentLoading(true);
+      
+      toast.loading(`Starting bulk payment for ${chargeableRows.length} records...`, {
+        id: loadingToastId,
+        duration: Infinity,
+        description: `Please do not refresh the page`,
+      });
+
+      // console.log(finalSelectedRows, "finalSelectedRows");
+      // return;
+      makeBulkPayment.mutate(finalSelectedRows, {
+        onSuccess: () => {
+          toast.dismiss(loadingToastId);
+        },
+        onError: () => {
+          toast.dismiss(loadingToastId);
+        }
+      });
     } catch (error) {
       console.log(error);
       toast.error("Failed to make bulk payment");
+    }finally{
+      setIsBulkPaymentLoading(false);
     }
   };
 
   const handleBulkRefund = async () => {
     try {
-      const selectedIds = Array.from(selectedRows);
-      toast.info(`Starting bulk refund for ${selectedIds.length} records...`);
-      makeBulkRefund.mutate(selectedIds);
+      setIsBulkRefundLoading(true);
+
+      const selectedRowsArray = Array.from(selectedRows);
+      // filter the selectedIds to only include charged rows 
+      const chargeableRows = data.rows.filter((row) => 
+        selectedRowsArray.includes(row.id) && row["Charge status"] === "Charged"
+      );
+      
+      if (chargeableRows.length === 0) {
+        toast.error("No refundable rows selected");
+        return;
+      }
+      
+      const finalSelectedRows = chargeableRows.map((row) => row.id);
+      const loadingToastId = `bulk-refund-${Date.now()}`;
+      
+      toast.loading(`Starting bulk refund for ${chargeableRows.length} records...`, {
+        id: loadingToastId,
+        duration: Infinity,
+        description: `Please do not refresh the page`,
+      });
+
+      makeBulkRefund.mutate(finalSelectedRows, {
+        onSuccess: () => {
+          toast.dismiss(loadingToastId);
+        },
+        onError: () => {
+          toast.dismiss(loadingToastId);
+        }
+      });
     } catch (error) {
       console.log(error);
       toast.error("Failed to make bulk refund");
+    }finally{
+      setIsBulkRefundLoading(false);
     }
   };
 
@@ -520,7 +582,13 @@ export default function PaypalPaymentPage() {
     data.rows.length > 0 && selectedRows.size === data.rows.length;
 
   // Check if any selected rows are charged (refundable)
-  const hasSelectedChargedRows = Array.from(selectedRows).some((rowId) => {
+  // const hasSelectedChargedRows = Array.from(selectedRows).some((rowId) => {
+  //   const row = data.rows.find((r) => r.id === rowId);
+  //   return row && row["Charge status"] === "Charged";
+  // });
+
+  // Check if any selected rows are refundable (charged)
+  const hasSelectedRefundableRows = Array.from(selectedRows).some((rowId) => {
     const row = data.rows.find((r) => r.id === rowId);
     return row && row["Charge status"] === "Charged";
   });
@@ -551,7 +619,7 @@ export default function PaypalPaymentPage() {
             <Button
               onClick={handleBulkPayment}
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={!hasSelectedChargeableRows}
+              disabled={!hasSelectedChargeableRows || isBulkPaymentLoading}
             >
               Make Bulk Payment{" "}
               {hasSelectedChargeableRows &&
@@ -561,22 +629,22 @@ export default function PaypalPaymentPage() {
                     return row && row["Charge status"] !== "Charged";
                   }).length
                 })`}
-              <Rocket className="h-4 w-4 ml-2" />
+              {isBulkPaymentLoading ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Rocket className="h-4 w-4 ml-2" />}
             </Button>
             <Button
               onClick={handleBulkRefund}
               className="bg-red-600 hover:bg-red-700"
-              disabled={!hasSelectedChargedRows}
+              disabled={!hasSelectedRefundableRows || isBulkRefundLoading}
             >
               Make Bulk Refund{" "}
-              {hasSelectedChargedRows &&
+              {hasSelectedRefundableRows &&
                 `(${
                   Array.from(selectedRows).filter((rowId) => {
                     const row = data.rows.find((r) => r.id === rowId);
                     return row && row["Charge status"] === "Charged";
                   }).length
                 })`}
-              <RefreshCcw className="h-4 w-4 ml-2" />
+              {isBulkRefundLoading ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <RefreshCcw className="h-4 w-4 ml-2" />} 
             </Button>
           </div>
         </div>

@@ -213,9 +213,24 @@ export function useMakeBulkPayment() {
   return useMutation({
     mutationFn: apiClient.makeBulkPayment,
     onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success('Bulk payment processing successful!');
-        window.location.reload();
+      if (data.status === "partial_success") {
+        toast.success('Bulk payment partial success!', {
+          description: data.message,
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }else if(data.status === "all_success"){
+        toast.success('Bulk payment successful!', {
+          description: data.message,
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }else if(data.status === "all_failed"){
+        toast.error('Bulk payment failed!', {
+          description: data.message,
+        });
       }
     },
     onError: (error: any) => {
@@ -228,9 +243,24 @@ export function useMakeBulkRefund() {
   return useMutation({
     mutationFn: apiClient.makeBulkRefund,
     onSuccess: (data) => {
-      if (data.status === "success") {
-        toast.success('Bulk refund processing successful!');
-        window.location.reload();
+      if (data.status === "partial_success") {
+        toast.success('Bulk refund partial success!', {
+          description: data.message,
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }else if(data.status === "all_success"){
+        toast.success('Bulk refund successful!', {
+          description: data.message,
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }else if(data.status === "all_failed"){
+        toast.error('Bulk refund failed!', {
+          description: data.message,
+        });
       }
     },
     onError: (error: any) => {
