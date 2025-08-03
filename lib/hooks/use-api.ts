@@ -286,3 +286,15 @@ export function useProcessRefund() {
     },
   });
 }
+
+export function useDeleteFile() {
+  return useMutation({
+    mutationFn: apiClient.deleteFile,
+    onSuccess: (data) => {
+      toast.success('File deleted successfully!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    },
+  });
+}

@@ -668,6 +668,17 @@ class ApiClient {
     }
   };
 
+  deleteFile = async (uploadId: string) => {
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/upload/delete/${uploadId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

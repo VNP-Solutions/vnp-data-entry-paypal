@@ -38,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
-import { useUploadSessions, useRetryUpload, useDiscardUpload, useDownloadReport } from "@/lib/hooks/use-api"
+import { useUploadSessions, useRetryUpload, useDiscardUpload, useDownloadReport, useDeleteFile } from "@/lib/hooks/use-api"
 import { toast } from "sonner"
 
 interface UploadSession {
@@ -73,16 +73,30 @@ export default function UploadsPage() {
   const retryUploadMutation = useRetryUpload()
   const discardUploadMutation = useDiscardUpload()
   const downloadReportMutation = useDownloadReport()
+  const deleteFileMutation = useDeleteFile()
 
   const handleRetryUpload = async (uploadId: string) => {
+    toast.loading("Retrying upload, please wait..", {
+       duration: 2000,
+     });
     await retryUploadMutation.mutateAsync(uploadId)
   }
 
-  const handleDiscardUpload = async (uploadId: string) => {
-    await discardUploadMutation.mutateAsync(uploadId)
+  // const handleDiscardUpload = async (uploadId: string) => {
+  //   await discardUploadMutation.mutateAsync(uploadId)
+  // }
+
+  const handleDeleteFile = async (uploadId: string) => {
+    toast.loading("Deleting file with all entries, please wait..", {
+      duration: 2000,
+    })
+    await deleteFileMutation.mutateAsync(uploadId)
   }
 
   const handleDownloadReport = async (uploadId: string) => {
+    toast.loading("Downloading report, please wait..", {
+      duration: 2000,
+    });
     await downloadReportMutation.mutateAsync(uploadId)
   }
 
@@ -123,19 +137,24 @@ export default function UploadsPage() {
     <div className="min-h-[80vh]">
       {/* Header Section */}
       <div className="flex justify-between items-start mb-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Files</h1>
-        <p className="text-gray-600">Monitor and manage uploaded files</p>
-      </div>
-      <Button
-        variant="outline"
-        onClick={() => {
-          window.open("https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753255148635-Template.xlsx")
-        }}
-        className="text-blue-600">
-        <Download className="h-4 w-4" />
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Upload Files
+          </h1>
+          <p className="text-gray-600">Monitor and manage uploaded files</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            window.open(
+              "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753255148635-Template.xlsx"
+            );
+          }}
+          className="text-blue-600"
+        >
+          <Download className="h-4 w-4" />
           Download Template
-      </Button>
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -148,7 +167,11 @@ export default function UploadsPage() {
             <div>
               <p className="text-sm text-gray-600">Total Files</p>
               <div className="text-xl font-bold text-gray-900">
-                {isLoading ? <Skeleton className="h-6 w-16" /> : sessions.length}
+                {isLoading ? (
+                  <Skeleton className="h-6 w-16" />
+                ) : (
+                  sessions.length
+                )}
               </div>
             </div>
           </div>
@@ -174,7 +197,11 @@ export default function UploadsPage() {
             <div>
               <p className="text-sm text-gray-600">Processing</p>
               <div className="text-xl font-bold text-gray-900">
-                {isLoading ? <Skeleton className="h-6 w-16" /> : processingCount}
+                {isLoading ? (
+                  <Skeleton className="h-6 w-16" />
+                ) : (
+                  processingCount
+                )}
               </div>
             </div>
           </div>
@@ -233,32 +260,43 @@ export default function UploadsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array(5).fill(0).map((_, idx) => (
-                  <TableRow key={idx}>
-                    {Array(6).fill(0).map((_, cellIdx) => (
-                      <TableCell key={cellIdx}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                Array(5)
+                  .fill(0)
+                  .map((_, idx) => (
+                    <TableRow key={idx}>
+                      {Array(6)
+                        .fill(0)
+                        .map((_, cellIdx) => (
+                          <TableCell key={cellIdx}>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
               ) : sessions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <Upload className="h-8 w-8 mb-2" />
-                      <p className="text-lg font-medium">No upload sessions found</p>
+                      <p className="text-lg font-medium">
+                        No upload sessions found
+                      </p>
                       <p className="text-sm">Try uploading a new file</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 sessions
-                  .filter((session: UploadSession) => 
-                    session.fileName.toLowerCase().includes(searchTerm.toLowerCase())
+                  .filter((session: UploadSession) =>
+                    session.fileName
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase())
                   )
                   .map((session: UploadSession) => (
-                    <TableRow key={session.uploadId} className="hover:bg-gray-50/50">
+                    <TableRow
+                      key={session.uploadId}
+                      className="hover:bg-gray-50/50"
+                    >
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <FileSpreadsheet className="h-4 w-4 text-gray-400" />
@@ -274,9 +312,12 @@ export default function UploadsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="">
-                        <span>{session.chargedCount} charged out of {session.processedRows} entries</span>
+                        <span>
+                          {session.chargedCount} charged out of{" "}
+                          {session.processedRows} entries
+                        </span>
                       </TableCell>
-                      
+
                       <TableCell className="text-center">
                         {session.startedAt ? (
                           <div className="text-sm">
@@ -289,55 +330,60 @@ export default function UploadsPage() {
                           "-"
                         )}
                       </TableCell>
-                      
+
                       <TableCell className="text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="p-2 outline-none border-none">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 outline-none border-none"
+                            >
                               <MoreVertical className="h-4 w-4 text-blue-600" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                                onClick={() => {
-                                  if (session.status.toLowerCase() === "failed") {
-                                    toast.error("This action only works for completed uploads")
-                                  } else {
-                                    handleDownloadReport(session.uploadId)
-                                  }
-                                }}
-                                className="flex items-center gap-2 text-green-700 cursor-pointer p-2"
-                              >
-                                <DownloadCloud className="h-4 w-4" />
-                                <span>Download Report</span>
-                              </DropdownMenuItem>
-
-                          <DropdownMenuItem
-                                onClick={() => {
-                                  if (session.status.toLowerCase() === "failed") {
-                                    handleRetryUpload(session.uploadId)
-                                  } else {
-                                    toast.error("This action only works for failed uploads")
-                                  }
-                                }}
-                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
-                              >
-                                <RefreshCw className="h-4 w-4" />
-                                <span>Retry Upload</span>
-                              </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (session.status.toLowerCase() === "failed") {
+                                  toast.error(
+                                    "This action only works for completed uploads"
+                                  );
+                                } else {
+                                  handleDownloadReport(session.uploadId);
+                                }
+                              }}
+                              className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                            >
+                              <DownloadCloud className="h-4 w-4" />
+                              <span>Download Report</span>
+                            </DropdownMenuItem>
 
                             <DropdownMenuItem
                               onClick={() => {
                                 if (session.status.toLowerCase() === "failed") {
-                                  handleDiscardUpload(session.uploadId)
+                                  handleRetryUpload(session.uploadId);
                                 } else {
-                                  toast.error("This action only works for failed uploads")
+                                  toast.error(
+                                    "This action only works for failed uploads"
+                                  );
                                 }
                               }}
-                              className="flex items-center gap-2 text-red-600 cursor-pointer p-2 hover:bg-red-100"
+                              className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              <span>Retry Upload</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => {
+                                handleDeleteFile(session.uploadId);
+                                // handleDiscardUpload(session.uploadId);
+                              }}
+                              className="flex items-center gap-2 text-red-600 cursor-pointer p-2 hover:bg-red-700! hover:text-white!"
                             >
                               <Trash2 className="h-4 w-4" />
-                              <span>Discard Upload</span>
+                              <span>Delete File</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -359,7 +405,7 @@ export default function UploadsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -370,7 +416,9 @@ export default function UploadsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(pagination.pages, p + 1))
+                }
                 disabled={currentPage === pagination.pages}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -380,5 +428,5 @@ export default function UploadsPage() {
         )}
       </Card>
     </div>
-  )
+  );
 } 
