@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,12 +8,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,17 +29,23 @@ import {
   RefreshCw,
   Trash2,
   Download,
-  DownloadCloud
-} from "lucide-react"
+  DownloadCloud,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { format } from "date-fns"
-import { useUploadSessions, useRetryUpload, useDiscardUpload, useDownloadReport, useDeleteFile } from "@/lib/hooks/use-api"
-import { toast } from "sonner"
+} from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import {
+  useUploadSessions,
+  useRetryUpload,
+  useDiscardUpload,
+  useDownloadReport,
+  useDeleteFile,
+} from "@/lib/hooks/use-api";
+import { toast } from "sonner";
 
 interface UploadSession {
   uploadId: string;
@@ -65,78 +71,85 @@ interface UploadSessionsResponse {
 }
 
 export default function UploadsPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState("")
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+
   // React Query hooks
-  const { data, isLoading, refetch } = useUploadSessions(currentPage)
-  const retryUploadMutation = useRetryUpload()
-  const discardUploadMutation = useDiscardUpload()
-  const downloadReportMutation = useDownloadReport()
-  const deleteFileMutation = useDeleteFile()
+  const { data, isLoading, refetch } = useUploadSessions(currentPage);
+  const retryUploadMutation = useRetryUpload();
+  // const discardUploadMutation = useDiscardUpload()
+  const downloadReportMutation = useDownloadReport();
+  const deleteFileMutation = useDeleteFile();
 
   const handleRetryUpload = async (uploadId: string) => {
-    toast.loading("Retrying upload, please wait..", {
-       duration: 2000,
-     });
-    await retryUploadMutation.mutateAsync(uploadId)
-  }
+    await retryUploadMutation.mutateAsync(uploadId);
+  };
 
   // const handleDiscardUpload = async (uploadId: string) => {
   //   await discardUploadMutation.mutateAsync(uploadId)
   // }
 
   const handleDeleteFile = async (uploadId: string) => {
-    toast.loading("Deleting file with all entries, please wait..", {
-      duration: 2000,
-    })
-    await deleteFileMutation.mutateAsync(uploadId)
-  }
+    try {
+      toast.loading("Deleting file with all entries, please wait..");
+       await deleteFileMutation.mutateAsync(uploadId);
+    } catch {
+      toast.dismiss();
+    }
+  };
 
   const handleDownloadReport = async (uploadId: string) => {
-    toast.loading("Downloading report, please wait..", {
-      duration: 2000,
-    });
-    await downloadReportMutation.mutateAsync(uploadId)
-  }
+    try {
+      toast.loading("Downloading report, Make sure popup is not blocked by browser");
+      await downloadReportMutation.mutateAsync(uploadId);
+    } finally {
+      toast.dismiss();
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'processing':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'failed':
-        return 'bg-red-100 text-red-800'
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "processing":
+        return "bg-yellow-100 text-yellow-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
-      case 'processing':
-        return <Clock className="h-4 w-4 text-yellow-600" />
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />
+      case "completed":
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case "processing":
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case "failed":
+        return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />
+        return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
-  }
+  };
 
-  const responseData = data?.data as UploadSessionsResponse | undefined
-  const sessions = responseData?.sessions || []
-  const completedCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "completed").length
-  const processingCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "processing").length
-  const failedCount = sessions.filter((session: UploadSession) => session.status.toLowerCase() === "failed").length
-  const pagination = responseData?.pagination
+  const responseData = data?.data as UploadSessionsResponse | undefined;
+  const sessions = responseData?.sessions || [];
+  const completedCount = sessions.filter(
+    (session: UploadSession) => session.status.toLowerCase() === "completed"
+  ).length;
+  const processingCount = sessions.filter(
+    (session: UploadSession) => session.status.toLowerCase() === "processing"
+  ).length;
+  const failedCount = sessions.filter(
+    (session: UploadSession) => session.status.toLowerCase() === "failed"
+  ).length;
+  const pagination = responseData?.pagination;
 
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Upload Files
@@ -429,4 +442,4 @@ export default function UploadsPage() {
       </Card>
     </div>
   );
-} 
+}

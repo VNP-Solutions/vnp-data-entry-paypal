@@ -13,7 +13,11 @@ export const queryKeys = {
 } as const;
 
 // Row Data Hooks
-export function useRowData(params: { limit: number; page: number; chargeStatus: string }) {
+export function useRowData(params: {
+  limit: number;
+  page: number;
+  chargeStatus: string;
+}) {
   return useQuery({
     queryKey: [queryKeys.rowData, params],
     queryFn: () => apiClient.getRowData(params),
@@ -38,7 +42,6 @@ export function useUploadSessions(page: number = 1, limit: number = 20) {
 
 // Auth Hooks
 export function useLogin() {
-
   return useMutation({
     mutationFn: apiClient.login,
     onSuccess: (data) => {
@@ -71,7 +74,9 @@ export function useRegister() {
     mutationFn: apiClient.register,
     onSuccess: (data) => {
       if (data.status === "success") {
-        toast.success("Invitation sent! Please check your email to complete registration.");
+        toast.success(
+          "Invitation sent! Please check your email to complete registration."
+        );
       }
     },
     onError: (error: any) => {
@@ -144,7 +149,9 @@ export function useValidateInvitation() {
       return response;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Invalid temporary password");
+      toast.error(
+        error.response?.data?.message || "Invalid temporary password"
+      );
     },
   });
 }
@@ -157,7 +164,9 @@ export function useCompleteInvitation() {
       return response;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to set new password");
+      toast.error(
+        error.response?.data?.message || "Failed to set new password"
+      );
     },
   });
 }
@@ -194,14 +203,14 @@ export function useAdminExcelData(params: {
     queryKey: [queryKeys.adminExcelData, params],
     queryFn: () => apiClient.getAdminExcelData(params),
   });
-} 
+}
 
 export function useDownloadReport() {
   return useMutation({
     mutationFn: apiClient.downloadReport,
     onSuccess: (data) => {
-      // console.log(data.url);
-      window.open(data.url, '_blank');
+      console.log(data.url);
+      window.open(data.url, "blank");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to download report");
@@ -214,27 +223,29 @@ export function useMakeBulkPayment() {
     mutationFn: apiClient.makeBulkPayment,
     onSuccess: (data) => {
       if (data.status === "partial_success") {
-        toast.success('Bulk payment partial success!', {
+        toast.success("Bulk payment partial success!", {
           description: data.message,
         });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      }else if(data.status === "all_success"){
-        toast.success('Bulk payment successful!', {
+      } else if (data.status === "all_success") {
+        toast.success("Bulk payment successful!", {
           description: data.message,
         });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      }else if(data.status === "all_failed"){
-        toast.error('Bulk payment failed!', {
+      } else if (data.status === "all_failed") {
+        toast.error("Bulk payment failed!", {
           description: data.message,
         });
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to make bulk payment");
+      toast.error(
+        error.response?.data?.message || "Failed to make bulk payment"
+      );
     },
   });
 }
@@ -244,27 +255,29 @@ export function useMakeBulkRefund() {
     mutationFn: apiClient.makeBulkRefund,
     onSuccess: (data) => {
       if (data.status === "partial_success") {
-        toast.success('Bulk refund partial success!', {
+        toast.success("Bulk refund partial success!", {
           description: data.message,
         });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      }else if(data.status === "all_success"){
-        toast.success('Bulk refund successful!', {
+      } else if (data.status === "all_success") {
+        toast.success("Bulk refund successful!", {
           description: data.message,
         });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      }else if(data.status === "all_failed"){
-        toast.error('Bulk refund failed!', {
+      } else if (data.status === "all_failed") {
+        toast.error("Bulk refund failed!", {
           description: data.message,
         });
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to make bulk refund");
+      toast.error(
+        error.response?.data?.message || "Failed to make bulk refund"
+      );
     },
   });
 }
@@ -276,7 +289,7 @@ export function useProcessRefund() {
     mutationFn: apiClient.processRefund,
     onSuccess: (data) => {
       if (data.status === "success") {
-        toast.success('Refund processed successfully!');
+        toast.success("Refund processed successfully!");
         // Invalidate queries that need to be updated
         queryClient.invalidateQueries({ queryKey: [queryKeys.rowData] });
       }
@@ -291,7 +304,7 @@ export function useDeleteFile() {
   return useMutation({
     mutationFn: apiClient.deleteFile,
     onSuccess: (data) => {
-      toast.success('File deleted successfully!');
+      toast.success("File deleted successfully!");
       setTimeout(() => {
         window.location.reload();
       }, 2000);
