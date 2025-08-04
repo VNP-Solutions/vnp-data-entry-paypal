@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,21 +8,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  Eye, 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Eye,
   EyeOff,
   Search,
   FileSpreadsheet,
@@ -34,15 +34,22 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"
-import { useAdminExcelData } from "@/lib/hooks/use-api"
-import { toast } from "sonner"
+} from "lucide-react";
+import { useAdminExcelData } from "@/lib/hooks/use-api";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 
 interface AdminExcelDataItem {
   _id: string;
@@ -52,26 +59,26 @@ interface AdminExcelDataItem {
   uploadStatus: string;
   rowNumber: number;
   "Expedia ID": string;
-  "Batch": string;
+  Batch: string;
   "Posting Type": string;
-  "Portfolio": string;
+  Portfolio: string;
   "Hotel Name": string;
   "Reservation ID": string;
   "Hotel Confirmation Code": string;
-  "Name": string;
+  Name: string;
   "Check In": string;
   "Check Out": string;
-  "Curency": string;
+  Curency: string;
   "Amount to charge": string;
   "Charge status": string;
   // "Card first 4": string;
-  // "Card last 12": string;  
+  // "Card last 12": string;
   "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
   "Soft Descriptor": string;
   "VNP Work ID": string | null;
-  "Status": string | null;
+  Status: string | null;
   paypalOrderId: string | null;
   paypalCaptureId: string | null;
   paypalNetworkTransactionId: string | null;
@@ -103,8 +110,15 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
   // Helper function to check if a field should be displayed
   const shouldDisplayField = (key: string) => {
     const hiddenFields = [
-      '_id', 'userId', 'uploadId', 'rowNumber', 'uploadStatus', 
-      'createdAt', 'updatedAt', '__v', 'fileName'
+      "_id",
+      "userId",
+      "uploadId",
+      "rowNumber",
+      "uploadStatus",
+      "createdAt",
+      "updatedAt",
+      "__v",
+      "otaId",
     ];
     return !hiddenFields.includes(key);
   };
@@ -117,13 +131,23 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
         </DialogHeader>
         <div className="grid grid-cols-3 gap-4 py-4">
           {Object.entries(rowData)
-          .filter(([key]) => shouldDisplayField(key))
-          .map(([key, value]) => (
-            <div key={key} className="space-y-1">
-              <p className="text-sm font-medium text-gray-500 uppercase">{key}</p>
-              <p className="text-sm">{String(value || 'N/A')}</p>
-            </div>
-          ))}
+            .filter(([key]) => shouldDisplayField(key))
+            .map(([key, value]) => (
+              <div key={key} className="space-y-1">
+                <p className="text-sm font-medium text-gray-500 uppercase">
+                  {key}
+                </p>
+                <p className="text-sm">
+                  {key === "fileName"
+                    ? formatLongString(value, 25)
+                    : key === "Check In"
+                      ? formatCheckInOutDate(value)
+                      : key === "Check Out"
+                        ? formatCheckInOutDate(value)
+                        : String(value || "N/A")}
+                </p>
+              </div>
+            ))}
         </div>
       </DialogContent>
     </Dialog>
@@ -131,18 +155,20 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
 };
 
 export default function TransactionsPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showCardDetails, setShowCardDetails] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [portfolioFilter, setPortfolioFilter] = useState("all")
-  const [batchFilter, setBatchFilter] = useState("all")
-  const [hotelFilter, setHotelFilter] = useState("")
-  const [sortBy, setSortBy] = useState("createdAt")
-  const [sortOrder, setSortOrder] = useState("desc")
-  const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showCardDetails, setShowCardDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [portfolioFilter, setPortfolioFilter] = useState("all");
+  const [batchFilter, setBatchFilter] = useState("all");
+  const [hotelFilter, setHotelFilter] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(
+    null
+  );
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [limit, setLimit] = useState(10)
+  const [limit, setLimit] = useState(10);
 
   const { data, isLoading, error } = useAdminExcelData({
     page: currentPage,
@@ -162,37 +188,27 @@ export default function TransactionsPage() {
     }
   }, [error, limit]);
 
-
   const formatCurrency = (amount: string, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(parseFloat(amount))
-  }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(parseFloat(amount));
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Ready to charge':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Charged':
-        return 'bg-green-100 text-green-800'
-      case 'Failed':
-        return 'bg-red-100 text-red-800'
-      case 'Partially charged':
-        return 'bg-blue-100 text-blue-800'
+      case "Ready to charge":
+        return "bg-yellow-100 text-yellow-800";
+      case "Charged":
+        return "bg-green-100 text-green-800";
+      case "Failed":
+        return "bg-red-100 text-red-800";
+      case "Partially charged":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
-    }
-  }
+  };
 
   const excelData = data?.data?.data || [];
   const pagination = data?.data?.pagination;
@@ -202,8 +218,12 @@ export default function TransactionsPage() {
     <div className="min-h-[80vh]">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-2">All Transactions</h1>
-        <p className="text-gray-600">View and manage all payment transactions across all uploads</p>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          All Transactions
+        </h1>
+        <p className="text-gray-600">
+          View and manage all payment transactions across all uploads
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -215,7 +235,9 @@ export default function TransactionsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
-              <div className="text-xl font-bold text-gray-900">{pagination?.totalCount || 0}</div>
+              <div className="text-xl font-bold text-gray-900">
+                {pagination?.totalCount || 0}
+              </div>
             </div>
           </div>
         </Card>
@@ -227,7 +249,7 @@ export default function TransactionsPage() {
             <div>
               <p className="text-sm text-gray-600">Hotels</p>
               <div className="text-xl font-bold text-gray-900">
-                {new Set(excelData.map(row => row["Hotel Name"])).size}
+                {new Set(excelData.map((row) => row["Hotel Name"])).size}
               </div>
             </div>
           </div>
@@ -241,7 +263,13 @@ export default function TransactionsPage() {
               <p className="text-sm text-gray-600">Total Amount</p>
               <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(
-                  excelData.reduce((sum, row) => sum + parseFloat(row["Amount to charge"] || "0"), 0).toString(),
+                  excelData
+                    .reduce(
+                      (sum, row) =>
+                        sum + parseFloat(row["Amount to charge"] || "0"),
+                      0
+                    )
+                    .toString(),
                   "USD"
                 )}
               </div>
@@ -256,7 +284,7 @@ export default function TransactionsPage() {
             <div>
               <p className="text-sm text-gray-600">Unique Guests</p>
               <div className="text-xl font-bold text-gray-900">
-                {new Set(excelData.map(row => row["Name"])).size}
+                {new Set(excelData.map((row) => row["Name"])).size}
               </div>
             </div>
           </div>
@@ -285,20 +313,24 @@ export default function TransactionsPage() {
                 onClick={() => setShowCardDetails(!showCardDetails)}
                 className="min-w-[140px]"
               >
-                {showCardDetails ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                {showCardDetails ? (
+                  <EyeOff className="h-4 w-4 mr-2" />
+                ) : (
+                  <Eye className="h-4 w-4 mr-2" />
+                )}
                 {showCardDetails ? "Hide Cards" : "Show Cards"}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                    setSearchTerm("");
-                    setStatusFilter("all");
-                    setPortfolioFilter("all");
-                    setBatchFilter("all");
-                    setHotelFilter("");
-                    setSortBy("createdAt");
-                    setSortOrder("desc");
-                  }}
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setPortfolioFilter("all");
+                  setBatchFilter("all");
+                  setHotelFilter("");
+                  setSortBy("createdAt");
+                  setSortOrder("desc");
+                }}
                 className="w-10 h-10 p-0"
               >
                 <RefreshCcw className="h-4 w-4" />
@@ -315,7 +347,9 @@ export default function TransactionsPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 {filters?.available?.statusOptions?.map((status) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -327,7 +361,9 @@ export default function TransactionsPage() {
               <SelectContent>
                 <SelectItem value="all">All Portfolios</SelectItem>
                 {filters?.available?.portfolioOptions?.map((portfolio) => (
-                  <SelectItem key={portfolio} value={portfolio}>{portfolio}</SelectItem>
+                  <SelectItem key={portfolio} value={portfolio}>
+                    {portfolio}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -339,7 +375,9 @@ export default function TransactionsPage() {
               <SelectContent>
                 <SelectItem value="all">All Batches</SelectItem>
                 {filters?.available?.batchOptions?.map((batch) => (
-                  <SelectItem key={batch} value={batch}>{batch}</SelectItem>
+                  <SelectItem key={batch} value={batch}>
+                    {batch}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -366,7 +404,6 @@ export default function TransactionsPage() {
                 <SelectItem value="asc">Ascending</SelectItem>
               </SelectContent>
             </Select>
-
           </div>
         </div>
       </Card>
@@ -380,10 +417,11 @@ export default function TransactionsPage() {
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
-                <TableHead>Guest</TableHead>
+                <TableHead>Reservation ID</TableHead>
                 <TableHead>Check In</TableHead>
                 <TableHead>Check Out</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>PayPal Status</TableHead>
@@ -392,21 +430,27 @@ export default function TransactionsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array(5).fill(0).map((_, idx) => (
-                  <TableRow key={idx}>
-                    {Array(11).fill(0).map((_, cellIdx) => (
-                      <TableCell key={cellIdx}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                Array(5)
+                  .fill(0)
+                  .map((_, idx) => (
+                    <TableRow key={idx}>
+                      {Array(11)
+                        .fill(0)
+                        .map((_, cellIdx) => (
+                          <TableCell key={cellIdx}>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
               ) : excelData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={11} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <FileSpreadsheet className="h-8 w-8 mb-2" />
-                      <p className="text-lg font-medium">No transactions found</p>
+                      <p className="text-lg font-medium">
+                        No transactions found
+                      </p>
                       <p className="text-sm">Try adjusting your filters</p>
                     </div>
                   </TableCell>
@@ -414,7 +458,9 @@ export default function TransactionsPage() {
               ) : (
                 excelData.map((row: AdminExcelDataItem) => (
                   <TableRow key={row._id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-mono">{row["Expedia ID"]}</TableCell>
+                    <TableCell className="font-mono">
+                      {row["Expedia ID"]}
+                    </TableCell>
                     <TableCell className="font-mono">{row["Batch"]}</TableCell>
                     <TableCell>
                       <div className="flex items-start gap-2">
@@ -430,39 +476,52 @@ export default function TransactionsPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User2 className="h-4 w-4 text-gray-400" />
-                        <span>{row["Name"]}</span>
+                        <span>{row["Reservation ID"]}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>{formatDate(row["Check In"])}</span>
+                        <span>{formatCheckInOutDate(row["Check In"])}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>{formatDate(row["Check Out"])}</span>
+                        <span>{formatCheckInOutDate(row["Check Out"])}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-gray-400" />
                         <span className="font-medium">
-                          {formatCurrency(row["Amount to charge"], row["Curency"])}
+                          {formatCurrency(
+                            row["Amount to charge"],
+                            row["Curency"]
+                          )}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-pointer">
+                            {formatLongString(row["fileName"], 15)}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{row["fileName"]}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell className="font-mono">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-gray-400" />
                         {showCardDetails ? (
                           <div>
-                            <div>
-                              {row["Card Number"]}
-                            </div>
+                            <div>{row["Card Number"]}</div>
                             <div className="text-sm text-gray-500">
-                              Exp: {row["Card Expire"] || 'MM/YY'}
+                              Exp: {row["Card Expire"] || "MM/YY"}
                             </div>
                           </div>
                         ) : (
@@ -477,7 +536,13 @@ export default function TransactionsPage() {
                     </TableCell>
                     <TableCell>
                       {row.paypalStatus ? (
-                        <Badge className={row.paypalStatus === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                        <Badge
+                          className={
+                            row.paypalStatus === "COMPLETED"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }
+                        >
                           {row.paypalStatus}
                         </Badge>
                       ) : (
@@ -511,7 +576,10 @@ export default function TransactionsPage() {
               Showing {excelData.length} of {pagination.totalCount} entries
             </div>
             <div className="flex items-center gap-2">
-              <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+              <Select
+                value={limit.toString()}
+                onValueChange={(value) => setLimit(parseInt(value))}
+              >
                 <SelectTrigger className="w-[100px]">
                   <SelectValue placeholder="Limit" />
                 </SelectTrigger>
@@ -525,7 +593,7 @@ export default function TransactionsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={!pagination.hasPrevPage}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -536,7 +604,9 @@ export default function TransactionsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))
+                }
                 disabled={!pagination.hasNextPage}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -552,5 +622,5 @@ export default function TransactionsPage() {
         rowData={selectedRow}
       />
     </div>
-  )
+  );
 }

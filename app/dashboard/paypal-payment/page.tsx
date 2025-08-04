@@ -52,7 +52,13 @@ import { CheckoutForm } from "@/components/checkout-form";
 import { useMakeBulkPayment } from "@/lib/hooks/use-api";
 import { useMakeBulkRefund } from "@/lib/hooks/use-api";
 import { useProcessRefund } from "@/lib/hooks/use-api";
-
+import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 interface RowData {
   id: string;
   uploadId: string;
@@ -199,25 +205,35 @@ const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
                 key !== "uploadId" &&
                 key !== "rowNumber" &&
                 key !== "uploadStatus"
-                // key !== "VNP Work ID" &&
-                // key !== "paypalNetAmount" &&
-                // key !== "paypalAvsCode" &&
-                // key !== "paypalCvvCode" &&
-                // key !== "paypalAmount" &&
-                // key !== "paypalCurrency" &&
-                // key !== "paypalCardLastDigits"
+              // key !== "VNP Work ID" &&
+              // key !== "paypalNetAmount" &&
+              // key !== "paypalAvsCode" &&
+              // key !== "paypalCvvCode" &&
+              // key !== "paypalAmount" &&
+              // key !== "paypalCurrency" &&
+              // key !== "paypalCardLastDigits"
             )
             .map(({ key, value }) => (
               <div key={key} className="space-y-1">
                 <p className="text-sm font-medium text-gray-500 uppercase">
                   {key}
                 </p>
-                <p className={`text-sm ${
-                  key === "paypalCaptureStatus" 
-                    ? (value === "COMPLETED" ? "text-green-600 font-semibold" : "text-red-600 font-semibold")
-                    : ""
-                }`}>
-                  {String(value)}
+                <p
+                  className={`text-sm ${
+                    key === "paypalCaptureStatus"
+                      ? value === "COMPLETED"
+                        ? "text-green-600 font-semibold"
+                        : "text-red-600 font-semibold"
+                      : ""
+                  }`}
+                >
+                  {key === "fileName"
+                    ? formatLongString(value as string, 25)
+                    : key === "Check In"
+                    ? formatCheckInOutDate(value as string)
+                    : key === "Check Out"
+                    ? formatCheckInOutDate(value as string)
+                    : String(value || "N/A")}
                 </p>
               </div>
             ))}
@@ -632,7 +648,11 @@ export default function PaypalPaymentPage() {
                     return row && row["Charge status"] !== "Charged";
                   }).length
                 })`}
-              {isBulkPaymentLoading ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Rocket className="h-4 w-4 ml-2" />}
+              {isBulkPaymentLoading ? (
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              ) : (
+                <Rocket className="h-4 w-4 ml-2" />
+              )}
             </Button>
             <Button
               onClick={handleBulkRefund}
@@ -647,7 +667,11 @@ export default function PaypalPaymentPage() {
                     return row && row["Charge status"] === "Charged";
                   }).length
                 })`}
-              {isBulkRefundLoading ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <RefreshCcw className="h-4 w-4 ml-2" />} 
+              {isBulkRefundLoading ? (
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4 ml-2" />
+              )}
             </Button>
           </div>
         </div>
@@ -772,11 +796,11 @@ export default function PaypalPaymentPage() {
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
-                <TableHead>Guest</TableHead>
+                <TableHead>Reservation ID</TableHead>
                 <TableHead>Check In</TableHead>
                 <TableHead>Check Out</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Order ID</TableHead>
+                <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Action</TableHead>
@@ -853,19 +877,21 @@ export default function PaypalPaymentPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <User2 className="h-4 w-4 text-gray-400" />
-                            <span>{row["Name"]}</span>
+                            <span>{row["Reservation ID"]}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>{row["Check In"]}</span>
+                            <span>{formatCheckInOutDate(row["Check In"])}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>{row["Check Out"]}</span>
+                            <span>
+                              {formatCheckInOutDate(row["Check Out"])}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -879,8 +905,17 @@ export default function PaypalPaymentPage() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">
-                          {row["paypalOrderId"] ?? "N/A"}
+                        <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger className="cursor-pointer">
+                                {formatLongString(row["fileName"], 15)}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{row["fileName"]}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell className="font-mono">
                           <div className="flex items-center gap-2">
