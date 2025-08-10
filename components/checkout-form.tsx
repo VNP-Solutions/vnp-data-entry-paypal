@@ -14,6 +14,7 @@ import {
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { formatCheckInOutDate } from "@/lib/utils";
 
 interface FormData {
   cardNumber: string;
@@ -305,13 +306,15 @@ export function CheckoutForm({
                   </Label>
                   <Input
                     id="cardNumber"
-                    value={
-                      showCardDetails
-                        ? `${formData.cardNumber}`
-                        : `${formData.cardNumber}`
+                    value={formData.cardNumber}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        cardNumber: e.target.value,
+                      })
                     }
-                    readOnly
-                    className="bg-gray-50 font-mono"
+                    className="bg-white font-mono"
+                    placeholder="Enter card number"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -456,7 +459,6 @@ export function CheckoutForm({
                     />
                   </div>
                 </div>
-              
               </div>
             </div>
 
@@ -475,7 +477,7 @@ export function CheckoutForm({
                   </Label>
                   <Input
                     id="checkIn"
-                    value={formData.checkIn}
+                    value={formatCheckInOutDate(formData.checkIn)}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -486,7 +488,7 @@ export function CheckoutForm({
                   </Label>
                   <Input
                     id="checkOut"
-                    value={formData.checkOut}
+                    value={formatCheckInOutDate(formData.checkOut)}
                     readOnly
                     className="bg-gray-50"
                   />
@@ -547,32 +549,48 @@ export function CheckoutForm({
               <p className="text-gray-600 text-center mb-6">
                 Your payment has been processed successfully.
               </p>
-              
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Order ID:</span>
-                  <span className="text-sm font-mono text-gray-900">{paymentDetails.orderId}</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    Order ID:
+                  </span>
+                  <span className="text-sm font-mono text-gray-900">
+                    {paymentDetails.orderId}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Capture ID:</span>
-                  <span className="text-sm font-mono text-gray-900">{paymentDetails.captureId}</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    Capture ID:
+                  </span>
+                  <span className="text-sm font-mono text-gray-900">
+                    {paymentDetails.captureId}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Capture Status:</span>
-                  <span className={`text-sm font-semibold ${
-                    paymentDetails.captureStatus === "COMPLETED" 
-                      ? "text-green-600" 
-                      : "text-red-600"
-                  }`}>
+                  <span className="text-sm font-medium text-gray-500">
+                    Capture Status:
+                  </span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      paymentDetails.captureStatus === "COMPLETED"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
                     {paymentDetails.captureStatus}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Custom ID:</span>
-                  <span className="text-sm font-mono text-gray-900">{paymentDetails.customId}</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    Custom ID:
+                  </span>
+                  <span className="text-sm font-mono text-gray-900">
+                    {paymentDetails.customId}
+                  </span>
                 </div>
               </div>
-              
+
               <Button
                 onClick={handleSuccessModalClose}
                 className="w-full bg-green-600 hover:bg-green-700"
