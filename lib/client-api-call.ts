@@ -1,7 +1,8 @@
 import axios from "axios";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
 
 interface RegisterData {
   name?: string;
@@ -86,16 +87,16 @@ interface RowDataResponse {
       uploadStatus: string;
       rowNumber: number;
       "Expedia ID": string;
-      "Batch": string;
+      Batch: string;
       "Posting Type": string;
-      "Portfolio": string;
+      Portfolio: string;
       "Hotel Name": string;
       "Reservation ID": string;
       "Hotel Confirmation Code": string;
-      "Name": string;
+      Name: string;
       "Check In": string;
       "Check Out": string;
-      "Curency": string;
+      Curency: string;
       "Amount to charge": string;
       "Charge status": string;
       // "Card first 4": string;
@@ -190,16 +191,16 @@ interface AdminExcelDataItem {
   uploadStatus: string;
   rowNumber: number;
   "Expedia ID": string;
-  "Batch": string;
+  Batch: string;
   "Posting Type": string;
-  "Portfolio": string;
+  Portfolio: string;
   "Hotel Name": string;
   "Reservation ID": string;
   "Hotel Confirmation Code": string;
-  "Name": string;
+  Name: string;
   "Check In": string;
   "Check Out": string;
-  "Curency": string;
+  Curency: string;
   "Amount to charge": string;
   "Charge status": string;
   // "Card first 4": string;
@@ -209,7 +210,7 @@ interface AdminExcelDataItem {
   "Card CVV": string;
   "Soft Descriptor": string;
   "VNP Work ID": string | null;
-  "Status": string | null;
+  Status: string | null;
   paypalOrderId: string | null;
   paypalCaptureId: string | null;
   paypalNetworkTransactionId: string | null;
@@ -259,15 +260,14 @@ interface AdminExcelDataResponse {
   timestamp: string;
 }
 
-
 class ApiClient {
-  private sessionToken: string = '';
-  private authToken: string = '';
+  private sessionToken: string = "";
+  private authToken: string = "";
 
   constructor() {
     // Initialize auth token from cookie
-    if (typeof window !== 'undefined') {
-      const storedToken = Cookies.get('auth_token');
+    if (typeof window !== "undefined") {
+      const storedToken = Cookies.get("auth_token");
       if (storedToken) {
         this.setAuthToken(storedToken);
       }
@@ -284,16 +284,16 @@ class ApiClient {
 
   setAuthToken(token: string) {
     this.authToken = token;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Set cookie with httpOnly and secure flags
-      Cookies.set('auth_token', token, {
+      Cookies.set("auth_token", token, {
         expires: 7, // 7 days
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
       });
     }
     // Set the default authorization header for all future requests
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
 
   getAuthToken(): string {
@@ -301,10 +301,10 @@ class ApiClient {
   }
 
   clearAuthToken() {
-    this.authToken = '';
-    if (typeof window !== 'undefined') {
-      Cookies.remove('auth_token');
-      delete axios.defaults.headers.common['Authorization'];
+    this.authToken = "";
+    if (typeof window !== "undefined") {
+      Cookies.remove("auth_token");
+      delete axios.defaults.headers.common["Authorization"];
     }
   }
 
@@ -322,8 +322,11 @@ class ApiClient {
 
   login = async (data: LoginData) => {
     try {
-      const response = await axios.post<ApiResponse<LoginResponse>>(`${API_BASE_URL}/auth/login`, data);
-      if (response.data.status === 'success') {
+      const response = await axios.post<ApiResponse<LoginResponse>>(
+        `${API_BASE_URL}/auth/login`,
+        data
+      );
+      if (response.data.status === "success") {
         this.setSessionToken(response.data.data.sessionToken);
       }
       return response.data;
@@ -334,16 +337,19 @@ class ApiClient {
 
   verifyOtp = async (data: OtpVerificationData) => {
     try {
-      const response = await axios.post<ApiResponse<OtpVerificationResponse>>(`${API_BASE_URL}/auth/verify-otp`, {
-        sessionToken: this.sessionToken,
-        otp: data.otp
-      });
-      
-      if (response.data.status === 'success') {
+      const response = await axios.post<ApiResponse<OtpVerificationResponse>>(
+        `${API_BASE_URL}/auth/verify-otp`,
+        {
+          sessionToken: this.sessionToken,
+          otp: data.otp,
+        }
+      );
+
+      if (response.data.status === "success") {
         // Save the auth token after successful OTP verification
         this.setAuthToken(response.data.data.token);
       }
-      
+
       return response.data;
     } catch (error) {
       throw error;
@@ -352,9 +358,12 @@ class ApiClient {
 
   resendOtp = async () => {
     try {
-      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/resend-otp`, {
-        sessionToken: this.sessionToken
-      });
+      const response = await axios.post<ApiResponse<AuthResponse>>(
+        `${API_BASE_URL}/auth/resend-otp`,
+        {
+          sessionToken: this.sessionToken,
+        }
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -363,7 +372,10 @@ class ApiClient {
 
   forgotPassword = async (data: ForgotPasswordData) => {
     try {
-      const response = await axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/forgot-password`, data);
+      const response = await axios.post<ApiResponse<AuthResponse>>(
+        `${API_BASE_URL}/auth/forgot-password`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -392,8 +404,8 @@ class ApiClient {
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-          }
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
       return response.data;
@@ -404,13 +416,16 @@ class ApiClient {
 
   getRowData = async (params: RowDataParams) => {
     try {
-      const response = await axios.get<ApiResponse<RowDataResponse>>(`${API_BASE_URL}/get-row-data`, {
-        params: {
-          limit: params.limit,
-          page: params.page,
-          chargeStatus: params.chargeStatus
+      const response = await axios.get<ApiResponse<RowDataResponse>>(
+        `${API_BASE_URL}/get-row-data`,
+        {
+          params: {
+            limit: params.limit,
+            page: params.page,
+            chargeStatus: params.chargeStatus,
+          },
         }
-      });
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -419,50 +434,52 @@ class ApiClient {
 
   getSingleRowData = async (documentId: string) => {
     try {
-      const response = await axios.get<ApiResponse<{
-        id: string;
-        uploadId: string;
-        fileName: string;
-        uploadStatus: string;
-        rowNumber: number;
-        "Expedia ID": string;
-        "Batch": string;
-        "Posting Type": string;
-        "Portfolio": string;
-        "Hotel Name": string;
-        "Reservation ID": string;
-        "Hotel Confirmation Code": string;
-        "Name": string;
-        "Check In": string;
-        "Check Out": string;
-        "Curency": string;
-        "Amount to charge": string;
-        "Charge status": string;
-        // "Card first 4": string;
-        // "Card last 12": string;
-        "Card Number": string;
-        "Card Expire": string;
-        "Card CVV": string;
-        "Soft Descriptor": string;
-        "VNP Work ID": string | null;
-        "Status": string | null;
-        paypalOrderId: string | null;
-        paypalCaptureId: string | null;
-        paypalNetworkTransactionId: string | null;
-        paypalFee: string | null;
-        paypalNetAmount: string | null;
-        paypalCardBrand: string | null;
-        paypalCardType: string | null;
-        paypalAvsCode: string | null;
-        paypalCvvCode: string | null;
-        paypalCreateTime: string | null;
-        paypalUpdateTime: string | null;
-        paypalStatus: string | null;
-        paypalAmount: string | null;
-        paypalCurrency: string | null;
-        paypalCardLastDigits: string | null;
-        createdAt: string;
-      }>>(`${API_BASE_URL}/get-single-row-data/${documentId}`);
+      const response = await axios.get<
+        ApiResponse<{
+          id: string;
+          uploadId: string;
+          fileName: string;
+          uploadStatus: string;
+          rowNumber: number;
+          "Expedia ID": string;
+          Batch: string;
+          "Posting Type": string;
+          Portfolio: string;
+          "Hotel Name": string;
+          "Reservation ID": string;
+          "Hotel Confirmation Code": string;
+          Name: string;
+          "Check In": string;
+          "Check Out": string;
+          Curency: string;
+          "Amount to charge": string;
+          "Charge status": string;
+          // "Card first 4": string;
+          // "Card last 12": string;
+          "Card Number": string;
+          "Card Expire": string;
+          "Card CVV": string;
+          "Soft Descriptor": string;
+          "VNP Work ID": string | null;
+          Status: string | null;
+          paypalOrderId: string | null;
+          paypalCaptureId: string | null;
+          paypalNetworkTransactionId: string | null;
+          paypalFee: string | null;
+          paypalNetAmount: string | null;
+          paypalCardBrand: string | null;
+          paypalCardType: string | null;
+          paypalAvsCode: string | null;
+          paypalCvvCode: string | null;
+          paypalCreateTime: string | null;
+          paypalUpdateTime: string | null;
+          paypalStatus: string | null;
+          paypalAmount: string | null;
+          paypalCurrency: string | null;
+          paypalCardLastDigits: string | null;
+          createdAt: string;
+        }>
+      >(`${API_BASE_URL}/get-single-row-data/${documentId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -471,12 +488,15 @@ class ApiClient {
 
   getUploadSessions = async (page: number = 1, limit: number = 20) => {
     try {
-      const response = await axios.get<ApiResponse<UploadSessionsResponse>>(`${API_BASE_URL}/upload/sessions`, {
-        params: {
-          page,
-          limit
+      const response = await axios.get<ApiResponse<UploadSessionsResponse>>(
+        `${API_BASE_URL}/upload/sessions`,
+        {
+          params: {
+            page,
+            limit,
+          },
         }
-      });
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -500,7 +520,10 @@ class ApiClient {
     state?: string;
   }) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/paypal/process-payment`, data);
+      const response = await axios.post(
+        `${API_BASE_URL}/paypal/process-payment`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -520,12 +543,9 @@ class ApiClient {
 
   discardUpload = async (uploadId: string) => {
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/upload/cleanup`,
-        {
-          params: { uploadId }
-        }
-      );
+      const response = await axios.delete(`${API_BASE_URL}/upload/cleanup`, {
+        params: { uploadId },
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -535,7 +555,7 @@ class ApiClient {
   logout = async () => {
     try {
       this.clearAuthToken();
-      window.location.href = '/auth/login';
+      window.location.href = "/auth/login";
     } catch (error) {
       throw error;
     }
@@ -572,8 +592,8 @@ class ApiClient {
         {
           params: {
             page,
-            limit
-          }
+            limit,
+          },
         }
       );
       return response.data;
@@ -584,7 +604,9 @@ class ApiClient {
 
   getProfile = async () => {
     try {
-      const response = await axios.get<ApiResponse<{ user: User }>>(`${API_BASE_URL}/auth/profile`);
+      const response = await axios.get<ApiResponse<{ user: User }>>(
+        `${API_BASE_URL}/auth/profile`
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -593,9 +615,12 @@ class ApiClient {
 
   getAdminExcelData = async (params: AdminExcelDataParams) => {
     try {
-      const response = await axios.get<ApiResponse<AdminExcelDataResponse>>(`${API_BASE_URL}/admin/excel-data`, {
-        params: params
-      });
+      const response = await axios.get<ApiResponse<AdminExcelDataResponse>>(
+        `${API_BASE_URL}/admin/excel-data`,
+        {
+          params: params,
+        }
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -604,7 +629,10 @@ class ApiClient {
 
   createStripeAccount = async (data: StripeCreateAccountData) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/stripe/create-account`, data);
+      const response = await axios.post(
+        `${API_BASE_URL}/stripe/create-account`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -616,9 +644,20 @@ class ApiClient {
       const response = await axios.get(`${API_BASE_URL}/stripe/accounts`, {
         params: {
           page,
-          limit
-        }
+          limit,
+        },
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getStripeAccount = async (accountId: string) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/stripe/account/${accountId}`
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -627,7 +666,9 @@ class ApiClient {
 
   downloadReport = async (uploadId: string) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/files/${uploadId}/download`);
+      const response = await axios.get(
+        `${API_BASE_URL}/files/${uploadId}/download`
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -636,34 +677,43 @@ class ApiClient {
 
   makeBulkPayment = async (documentIds: string[]) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/paypal/process-bulk-payments`, { 
-        documentIds
-       });
+      const response = await axios.post(
+        `${API_BASE_URL}/paypal/process-bulk-payments`,
+        {
+          documentIds,
+        }
+      );
       return response.data;
-    } catch (error) { 
+    } catch (error) {
       throw error;
     }
   };
 
   makeBulkRefund = async (documentIds: string[]) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/paypal/process-bulk-refunds`, { 
-        documentIds
-       });
+      const response = await axios.post(
+        `${API_BASE_URL}/paypal/process-bulk-refunds`,
+        {
+          documentIds,
+        }
+      );
       return response.data;
-    } catch (error) { 
+    } catch (error) {
       throw error;
     }
   };
 
   processRefund = async (documentId: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/paypal/process-refund`, { 
-        documentId,
-        refundType: "full"
-       });
+      const response = await axios.post(
+        `${API_BASE_URL}/paypal/process-refund`,
+        {
+          documentId,
+          refundType: "full",
+        }
+      );
       return response.data;
-    } catch (error) { 
+    } catch (error) {
       throw error;
     }
   };
@@ -686,7 +736,7 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401) {
           this.clearAuthToken();
-          window.location.href = '/auth/login';
+          window.location.href = "/auth/login";
         }
         return Promise.reject(error);
       }

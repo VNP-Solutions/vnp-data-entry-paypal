@@ -167,23 +167,25 @@ interface FormData {
 const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
   if (!rowData) return null;
 
-  const flattenObject = (obj: Record<string, unknown> | RowData): Array<{ key: string; value: unknown }> => {
+  const flattenObject = (
+    obj: Record<string, unknown> | RowData
+  ): Array<{ key: string; value: unknown }> => {
     const result: Array<{ key: string; value: unknown }> = [];
-    
+
     for (const [key, value] of Object.entries(obj)) {
-      if (value === null || value === undefined || value === '') {
-        result.push({ key, value: 'N/A' });
-      } else if (typeof value === 'object' && !Array.isArray(value)) {
+      if (value === null || value === undefined || value === "") {
+        result.push({ key, value: "N/A" });
+      } else if (typeof value === "object" && !Array.isArray(value)) {
         // Recursively flatten nested objects without adding prefixes
         result.push(...flattenObject(value as Record<string, unknown>));
       } else if (Array.isArray(value)) {
         // Handle arrays by joining elements
-        result.push({ key, value: value.join(', ') });
+        result.push({ key, value: value.join(", ") });
       } else {
         result.push({ key, value });
       }
     }
-    
+
     return result;
   };
 
@@ -494,25 +496,30 @@ export default function PaypalPaymentPage() {
   const handleBulkPayment = async () => {
     try {
       const selectedRowsArray = Array.from(selectedRows);
-      // filter the selectedIds to only include chargeable rows 
-      const chargeableRows = data.rows.filter((row) => 
-        selectedRowsArray.includes(row.id) && row["Charge status"] !== "Charged"
+      // filter the selectedIds to only include chargeable rows
+      const chargeableRows = data.rows.filter(
+        (row) =>
+          selectedRowsArray.includes(row.id) &&
+          row["Charge status"] !== "Charged"
       );
-      
+
       if (chargeableRows.length === 0) {
         toast.error("No chargeable rows selected");
         return;
       }
-      
+
       const finalSelectedRows = chargeableRows.map((row) => row.id);
       const loadingToastId = `bulk-payment-${Date.now()}`;
       setIsBulkPaymentLoading(true);
-      
-      toast.loading(`Starting bulk payment for ${chargeableRows.length} records...`, {
-        id: loadingToastId,
-        duration: Infinity,
-        description: `Please do not refresh the page`,
-      });
+
+      toast.loading(
+        `Starting bulk payment for ${chargeableRows.length} records...`,
+        {
+          id: loadingToastId,
+          duration: Infinity,
+          description: `Please do not refresh the page`,
+        }
+      );
 
       // console.log(finalSelectedRows, "finalSelectedRows");
       // return;
@@ -524,7 +531,7 @@ export default function PaypalPaymentPage() {
         onError: () => {
           toast.dismiss(loadingToastId);
           setIsBulkPaymentLoading(false);
-        }
+        },
       });
     } catch (error) {
       console.log(error);
@@ -538,25 +545,30 @@ export default function PaypalPaymentPage() {
       setIsBulkRefundLoading(true);
 
       const selectedRowsArray = Array.from(selectedRows);
-      // filter the selectedIds to only include charged rows 
-      const chargeableRows = data.rows.filter((row) => 
-        selectedRowsArray.includes(row.id) && row["Charge status"] === "Charged"
+      // filter the selectedIds to only include charged rows
+      const chargeableRows = data.rows.filter(
+        (row) =>
+          selectedRowsArray.includes(row.id) &&
+          row["Charge status"] === "Charged"
       );
-      
+
       if (chargeableRows.length === 0) {
         toast.error("No refundable rows selected");
         setIsBulkRefundLoading(false);
         return;
       }
-      
+
       const finalSelectedRows = chargeableRows.map((row) => row.id);
       const loadingToastId = `bulk-refund-${Date.now()}`;
-      
-      toast.loading(`Starting bulk refund for ${chargeableRows.length} records...`, {
-        id: loadingToastId,
-        duration: Infinity,
-        description: `Please do not refresh the page`,
-      });
+
+      toast.loading(
+        `Starting bulk refund for ${chargeableRows.length} records...`,
+        {
+          id: loadingToastId,
+          duration: Infinity,
+          description: `Please do not refresh the page`,
+        }
+      );
 
       makeBulkRefund.mutate(finalSelectedRows, {
         onSuccess: () => {
@@ -566,7 +578,7 @@ export default function PaypalPaymentPage() {
         onError: () => {
           toast.dismiss(loadingToastId);
           setIsBulkRefundLoading(false);
-        }
+        },
       });
     } catch (error) {
       console.log(error);
@@ -945,16 +957,23 @@ export default function PaypalPaymentPage() {
                           {row["Charge status"] === "Ready to charge" ||
                           row["Charge status"] === "Partially charged" ||
                           row["Charge status"] === "Refunded" ||
-                          row["Charge status"] === "Failed" ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="p-2 hover:bg-blue-100 w-full"
-                              onClick={() => handlePaymentClick(row)}
-                            >
-                              Make Payment
-                              <ArrowRight className="h-4 w-4 text-blue-600" />
-                            </Button>
+                          row["Charge status"] === "Failed" ||
+                          row["Charge status"] === "Declined" ? (
+                            <>
+                              <Button
+                                variant={"outline"}
+                                size="sm"
+                                className="p-2 hover:bg-blue-700 w-full bg-blue-600 text-white hover:text-white"
+                                onClick={() => handlePaymentClick(row)}
+                              >
+                                  {
+                                    row["Charge status"] === "Failed" ||
+                                    row["Charge status"] === "Declined"? "Charge Again" : "Make Payment"
+                                  }
+
+                                <ArrowRight className="h-4 w-4 text-white" />
+                              </Button>
+                            </>
                           ) : (
                             <div className="flex items-end justify-end gap-1">
                               <Button

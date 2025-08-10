@@ -311,3 +311,11 @@ export function useDeleteFile() {
     },
   });
 }
+
+export function useGetStripeAccount(accountId: string) {
+  return useQuery({
+    queryKey: ["stripe-account", accountId],
+    queryFn: () => apiClient.getStripeAccount(accountId),
+    enabled: !!accountId,
+  });
+}
