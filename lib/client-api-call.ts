@@ -718,6 +718,18 @@ class ApiClient {
     }
   };
 
+  updateRowData = async (documentId: string, data: any) => {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/update-sheet/${documentId}`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   deleteFile = async (uploadId: string) => {
     try {
       const response = await axios.delete(

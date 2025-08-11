@@ -312,6 +312,20 @@ export function useDeleteFile() {
   });
 }
 
+export function useUpdateRowData() {
+  return useMutation({
+    // Change this line to specify the parameter types correctly
+    mutationFn: (params: { documentId: string; data: any }) =>
+      apiClient.updateRowData(params.documentId, params.data),
+    onSuccess: (data) => {
+      toast.success("Record updated successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to update record");
+    },
+  });
+}
+
 export function useGetStripeAccount(accountId: string) {
   return useQuery({
     queryKey: ["stripe-account", accountId],

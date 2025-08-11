@@ -38,6 +38,7 @@ import {
   ArrowRight,
   Rocket,
   Loader2,
+  PencilIcon,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { EditDialog } from "@/components/edit-paypal-modal";
 interface RowData {
   id: string;
   uploadId: string;
@@ -351,6 +353,7 @@ export default function PaypalPaymentPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const makeBulkPayment = useMakeBulkPayment();
@@ -953,7 +956,7 @@ export default function PaypalPaymentPage() {
                             {row["Charge status"]}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center flex items-center justify-center gap-2">
                           {row["Charge status"] === "Ready to charge" ||
                           row["Charge status"] === "Partially charged" ||
                           row["Charge status"] === "Refunded" ||
@@ -963,13 +966,13 @@ export default function PaypalPaymentPage() {
                               <Button
                                 variant={"outline"}
                                 size="sm"
-                                className="p-2 hover:bg-blue-700 w-full bg-blue-600 text-white hover:text-white"
+                                className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white"
                                 onClick={() => handlePaymentClick(row)}
                               >
-                                  {
-                                    row["Charge status"] === "Failed" ||
-                                    row["Charge status"] === "Declined"? "Charge Again" : "Make Payment"
-                                  }
+                                {row["Charge status"] === "Failed" ||
+                                row["Charge status"] === "Declined"
+                                  ? "Charge Again"
+                                  : "Make Payment"}
 
                                 <ArrowRight className="h-4 w-4 text-white" />
                               </Button>
@@ -999,6 +1002,19 @@ export default function PaypalPaymentPage() {
                               </Button>
                             </div>
                           )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="p-2 hover:bg-blue-100 w-fit"
+                            onClick={() => {
+                              setSelectedRow(row);
+                              setShowEditDialog(true);
+                              console.log("Edit row:", row);
+                              // setShowViewDialog(true);
+                            }}
+                          >
+                            <PencilIcon className="h-4 w-4 text-blue-600" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -1058,6 +1074,12 @@ export default function PaypalPaymentPage() {
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}
+      />
+      <EditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        rowData={selectedRow}
+        onSuccess={fetchData}
       />
 
       <RefundConfirmationDialog
