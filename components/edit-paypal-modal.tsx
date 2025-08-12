@@ -306,70 +306,7 @@ export function EditDialog({
           </div>
 
           {/* Checkout form extra fields */}
-          <div className="space-y-2">
-            <Label>Card Holder Name</Label>
-            <Input
-              value={formData.otaDisplayName || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, otaDisplayName: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="space-y-2 col-span-2">
-            <Label>Address Line 1</Label>
-            <Input
-              value={formData.addressLine1 || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, addressLine1: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2 col-span-2">
-            <Label>Address Line 2</Label>
-            <Input
-              value={formData.addressLine2 || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, addressLine2: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>City</Label>
-            <Input
-              value={formData.city || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, city: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>State</Label>
-            <Input
-              value={formData.state || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, state: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Zip Code</Label>
-            <Input
-              value={formData.zipCode || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, zipCode: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Country Code</Label>
-            <Input
-              value={formData.countryCode || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, countryCode: e.target.value })
-              }
-            />
-          </div>
+         
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">

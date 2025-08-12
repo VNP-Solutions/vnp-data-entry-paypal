@@ -966,7 +966,7 @@ export default function PaypalPaymentPage() {
                               <Button
                                 variant={"outline"}
                                 size="sm"
-                                className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white"
+                                className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white flex-1"
                                 onClick={() => handlePaymentClick(row)}
                               >
                                 {row["Charge status"] === "Failed" ||

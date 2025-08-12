@@ -721,7 +721,7 @@ class ApiClient {
   updateRowData = async (documentId: string, data: any) => {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/update-sheet/${documentId}`,
+        `${API_BASE_URL}/update-sheet-data/${documentId}`,
         data
       );
       return response.data;
