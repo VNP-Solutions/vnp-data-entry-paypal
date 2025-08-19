@@ -38,7 +38,7 @@ interface FormData {
   documentId: string;
   zipCode: string;
   countryCode: string;
-  otaDisplayName: string;
+  // otaDisplayName: string;
   addressLine1: string;
   addressLine2: string;
   city: string;
@@ -122,7 +122,7 @@ export function CheckoutForm({
         cardNumber: formData.cardNumber,
         cardExpiry: formattedExpiry,
         cardCvv: formData.cvv,
-        cardholderName: formData.otaDisplayName,
+        cardholderName: formData.name,
         zipCode: formData.zipCode,
         countryCode: formData.countryCode,
         addressLine1: formData.addressLine1,
@@ -219,7 +219,7 @@ export function CheckoutForm({
                   </Label>
                   <Input
                     id="guestName"
-                    value={formData.otaDisplayName}
+                    value={formData.name}
                     readOnly
                     className="bg-gray-50"
                   />
