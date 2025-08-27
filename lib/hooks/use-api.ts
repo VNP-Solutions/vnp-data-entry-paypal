@@ -333,3 +333,21 @@ export function useGetStripeAccount(accountId: string) {
     enabled: !!accountId,
   });
 }
+
+export function useCreateStripePayment(data: {
+  accountId: string;
+  totalAmount: number;
+  currency?: string;
+  paymentMethod?: string;
+  applicationFeeAmount?: number;
+}) {
+  return useMutation({
+    mutationFn: () => apiClient.createStripePayment(data),
+    onSuccess: (data) => {
+      toast.success("Stripe payment created successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to create stripe payment");
+    },
+  });
+}

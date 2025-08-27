@@ -68,7 +68,7 @@ export function StripeViewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-3xl w-full">
+      <DialogContent className="min-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Stripe Account Details</DialogTitle>
         </DialogHeader>

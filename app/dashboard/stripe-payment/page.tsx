@@ -75,9 +75,19 @@ export default function StripePaymentPage() {
     fetchStripeAccounts();
   };
 
-  const handleMakePayment = (account: any) => {
+  const handleMakePayment = async (account: any) => {
     // TODO: Implement Stripe payment processing
-    toast.info(`Processing payment for account: ${account.email}`);
+    toast.info(`Processing payment for account: ${account.id}`);
+    // console.log(account);
+
+    const response = await apiClient.createStripePayment({
+      accountId: account.id,
+      totalAmount: 100,
+      currency: 'usd',
+      paymentMethod: 'pm_card_visa',
+      applicationFeeAmount: 15,
+    });
+    console.log(response);
   };
   const handleViewAccount = (account: any) => {
     setSelectedAccountId(account.id);
@@ -284,7 +294,7 @@ export default function StripePaymentPage() {
                         {account.payouts_enabled ? "Enabled" : "Disabled"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center flex gap-2 items-center justify-center">
                       <Button
                         variant="outline"
                         size="sm"
