@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,20 +20,25 @@ import {
   Banknote,
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { useGetStripeAccount } from "@/lib/hooks/use-api";
 
 interface StripeViewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  accountData?: any;
-  isLoading?: boolean;
+  accountId: string | null;
 }
 
 export function StripeViewModal({
   open,
   onOpenChange,
-  accountData,
-  isLoading,
+  accountId,
 }: StripeViewModalProps) {
+  const { data: selectedAccountData, isLoading: isLoadingAccountData } =
+    useGetStripeAccount(accountId || "");
+
+  const accountData = selectedAccountData?.data?.account;
+  const isLoading = isLoadingAccountData;
+
   if (!accountData && !isLoading) return null;
 
   const formatDate = (timestamp: number) => {
