@@ -42,7 +42,7 @@ export default function DashboardLayout({
     {
       label: "Stripe Payment",
       href: "/dashboard/stripe-payment",
-      isVisible: false
+      isVisible: true
     },
     {
       label: "Invite",
