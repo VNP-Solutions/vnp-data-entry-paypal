@@ -710,11 +710,28 @@ class ApiClient {
     totalAmount: number;
     currency?: string;
     paymentMethod?: string;
-    applicationFeeAmount?: number;
   }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/stripe/payment`, data);
       console.log(response.data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getStripeSettings = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/stripe/settings`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  updateStripeSettings = async (vnpRatio: number) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/stripe/settings`, { vnpRatio });
       return response.data;
     } catch (error) {
       throw error;

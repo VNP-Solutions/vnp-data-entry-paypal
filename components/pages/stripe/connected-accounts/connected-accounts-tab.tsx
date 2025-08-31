@@ -49,8 +49,6 @@ const ConnectedAccountsTab = () => {
   );
   const [showViewModal, setShowViewModal] = useState(false);
 
-  const { data: selectedAccountData, isLoading: isLoadingAccountData } =
-    useGetStripeAccount(selectedAccountId || "");
 
   const fetchStripeAccounts = async () => {
     try {
@@ -74,23 +72,7 @@ const ConnectedAccountsTab = () => {
     fetchStripeAccounts();
   };
 
-  const handleMakePayment = async (account: any) => {
-    // TODO: Implement Stripe payment processing
-    toast.info(`Processing payment for account: ${account.id}`);
-    // console.log(account);
-    const amount = 100;
-    const amountInCents = amount * 100;
-    const applicationFeeAmount = amountInCents * 0.15;
 
-    const response = await apiClient.createStripePayment({
-      accountId: account.id,
-      totalAmount: amountInCents,
-      currency: "usd",
-      paymentMethod: "pm_card_visa",
-      applicationFeeAmount: applicationFeeAmount,
-    });
-    console.log(response);
-  };
   const handleViewAccount = (account: any) => {
     setSelectedAccountId(account.id);
     setShowViewModal(true);
@@ -354,16 +336,7 @@ const ConnectedAccountsTab = () => {
                       >
                         <Eye className="h-4 w-4 text-blue-600 ml-1" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="p-2 hover:bg-blue-100"
-                        onClick={() => handleMakePayment(account)}
-                        disabled={!isAccountSetupComplete(account)}
-                      >
-                        Make Payment
-                        <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
-                      </Button>
+                      
                     </TableCell>
                   </TableRow>
                 ))

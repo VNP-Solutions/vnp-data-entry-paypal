@@ -7,9 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { CheckCheck, Link } from "lucide-react";
+import { apiClient } from "@/lib/client-api-call";
 
 const StripeSettingsTab = () => {
   const [vnpRatio, setVnpRatio] = React.useState<number>(15);
+  const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const connectedRatio = 100 - vnpRatio;
 
   const handleVnpChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -19,6 +21,19 @@ const StripeSettingsTab = () => {
     const clamped = Math.max(0, Math.min(100, Math.round(next)));
     setVnpRatio(clamped);
   };
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiClient.getStripeSettings();
+        const next = Number(res?.data?.vnpRatio ?? 15);
+        const clamped = Math.max(0, Math.min(100, Math.round(next)));
+        setVnpRatio(clamped);
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message || "Failed to load Stripe settings");
+      }
+    })();
+  }, []);
 
   return (
     <Card className="w-full p-4">
@@ -100,11 +115,22 @@ const StripeSettingsTab = () => {
 
       <div className="mt-4 flex justify-end">
         <Button
-          onClick={() => {
-            toast.success(
-              `Updated payout ratio: VNP ${vnpRatio}% / Connected ${connectedRatio}%`
-            );
+          onClick={async () => {
+            try {
+              setIsSaving(true);
+              const res = await apiClient.updateStripeSettings(vnpRatio);
+              const saved = Number(res?.data?.vnpRatio ?? vnpRatio);
+              setVnpRatio(saved);
+              toast.success(
+                `Updated payout ratio: VNP ${saved}% / Connected ${100 - saved}%`
+              );
+            } catch (error: any) {
+              toast.error(error?.response?.data?.message || "Failed to save Stripe settings");
+            } finally {
+              setIsSaving(false);
+            }
           }}
+          disabled={isSaving}
           className="bg-blue-600 hover:bg-blue-700"
         >
           Save

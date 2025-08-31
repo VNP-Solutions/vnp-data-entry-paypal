@@ -22,21 +22,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Eye,
-  EyeOff,
   Search,
   FileSpreadsheet,
-  RefreshCcw,
   Calendar,
   Building2,
-  CreditCard,
   User2,
   DollarSign,
   ChevronLeft,
   ChevronRight,
-  Link,
+  ArrowRight,
 } from "lucide-react";
-import { useStripeRowData } from "@/lib/hooks/use-api";
+import { useGetStripeAccount, useStripeRowData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -45,6 +41,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
+import { apiClient } from "@/lib/client-api-call";
 
 interface AdminExcelDataItem {
   _id?: string;
@@ -128,7 +125,9 @@ interface AdminExcelDataItem {
 
 const StripeTransactionsTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [showCardDetails, setShowCardDetails] = useState(false);
+  // const { data: selectedAccountData, isLoading: isLoadingAccountData } =
+  // useGetStripeAccount(account["Connected Account"] || "");
+  // const [showCardDetails, setShowCardDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [portfolioFilter, setPortfolioFilter] = useState("all");
@@ -181,7 +180,31 @@ const StripeTransactionsTab = () => {
   const excelData = data?.data?.rows || [];
   const pagination = data?.data?.pagination;
   const filters = data?.data?.filters;
+  const handleMakePayment = async (account: any) => {
+    // TODO: Implement Stripe payment processing
+    toast.info(`Processing payment for account: ${account["Connected Account"] || "N/A"}`);
+    // console.log(account);
+    const amount = account["Amount to charge"];
+    const amountInCents = amount * 100;
 
+    try {
+      const response = await apiClient.createStripePayment({
+        accountId: account["Connected Account"],
+        totalAmount: amountInCents,
+        currency: "usd",
+        paymentMethod: "pm_card_visa",
+      });
+      console.log(response);
+      toast.success("Payment initiated successfully");
+    } catch (error: any) {
+      console.error("Stripe payment failed:", error);
+      const message =
+        error?.response?.data?.message || error?.message || "Failed to initiate payment";
+      toast.error(message);
+    }
+  };
+
+  
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
@@ -275,7 +298,7 @@ const StripeTransactionsTab = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* <div className="flex items-center gap-4 w-full md:w-auto">
               <Button
                 variant="outline"
                 onClick={() => setShowCardDetails(!showCardDetails)}
@@ -303,7 +326,7 @@ const StripeTransactionsTab = () => {
               >
                 <RefreshCcw className="h-4 w-4" />
               </Button>
-            </div>
+            </div> */}
           </div>
 
           {/* Advanced Filters */}
@@ -396,17 +419,18 @@ const StripeTransactionsTab = () => {
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead>Expedia ID</TableHead>
-                <TableHead>Batch</TableHead>
+                {/* <TableHead>Batch</TableHead> */}
+                <TableHead>Connected Account</TableHead>
                 <TableHead>Hotel</TableHead>
                 <TableHead>Reservation ID</TableHead>
                 <TableHead>Check In</TableHead>
                 <TableHead>Check Out</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>File Name</TableHead>
-                <TableHead>Card Details</TableHead>
-                <TableHead>Connected Account</TableHead>
+                {/* <TableHead>Card Details</TableHead> */}
+             
                 <TableHead>Status</TableHead>
-                <TableHead>Stripe Status</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -445,7 +469,10 @@ const StripeTransactionsTab = () => {
                     <TableCell className="font-mono">
                       {row["Expedia ID"]}
                     </TableCell>
-                    <TableCell className="font-mono">{row["Batch"]}</TableCell>
+                    <TableCell className="font-mono">
+                      {row["Connected Account"] || "Not connected"}
+                    </TableCell>
+                    {/* <TableCell className="font-mono">{row["Batch"]}</TableCell> */}
                     <TableCell>
                       <div className="flex items-start gap-2">
                         <Building2 className="h-4 w-4 text-gray-400 mt-1" />
@@ -498,48 +525,22 @@ const StripeTransactionsTab = () => {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell>
-                      {showCardDetails && row["Card Number"] ? (
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4 text-gray-400" />
-                          <div className="space-y-1">
-                            <div className="font-mono text-sm">
-                              {formatLongString(row["Card Number"], 10)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Exp: {row["Card Expire"]}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-gray-400">
-                          {showCardDetails
-                            ? "No card data"
-                            : "•••• •••• •••• ••••"}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Link className="h-4 w-4 text-gray-400" />
-                        <span className="font-mono text-sm">
-                          {row["Connected Account"] || "Not connected"}
-                        </span>
-                      </div>
-                    </TableCell>
+                    
                     <TableCell>
                       <Badge className={getStatusColor(row["Status"] || "")}>
                         {row["Status"] || "Unknown"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {row.stripeStatus ? (
-                        <Badge className={getStatusColor(row.stripeStatus)}>
-                          {row.stripeStatus}
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400">No stripe data</span>
-                      )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="p-2 hover:bg-blue-100"
+                        onClick={() => handleMakePayment(row)}
+                      >
+                        Make Payment
+                        <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
