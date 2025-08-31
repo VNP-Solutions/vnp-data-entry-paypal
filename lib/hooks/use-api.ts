@@ -205,6 +205,23 @@ export function useAdminExcelData(params: {
   });
 }
 
+export function useStripeRowData(params: {
+  page: number;
+  limit: number;
+  status?: string;
+  search?: string;
+  portfolio?: string;
+  batch?: string;
+  hotel?: string;
+  sort?: string;
+  order?: string;
+}) {
+  return useQuery({
+    queryKey: ["stripe-row-data", params],
+    queryFn: () => apiClient.getStripeRowData(params),
+  });
+}
+
 export function useDownloadReport() {
   return useMutation({
     mutationFn: apiClient.downloadReport,
@@ -347,7 +364,9 @@ export function useCreateStripePayment(data: {
       toast.success("Stripe payment created successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create stripe payment");
+      toast.error(
+        error.response?.data?.message || "Failed to create stripe payment"
+      );
     },
   });
 }

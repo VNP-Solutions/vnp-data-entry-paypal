@@ -183,6 +183,18 @@ interface AdminExcelDataParams {
   order?: string;
 }
 
+interface StripeRowDataParams {
+  page: number;
+  limit: number;
+  status?: string;
+  search?: string;
+  portfolio?: string;
+  batch?: string;
+  hotel?: string;
+  sort?: string;
+  order?: string;
+}
+
 interface AdminExcelDataItem {
   _id: string;
   userId: string;
@@ -258,6 +270,21 @@ interface AdminExcelDataResponse {
   };
   requestedBy: string;
   timestamp: string;
+}
+
+interface StripeRowDataResponse {
+  rows: AdminExcelDataItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+  };
+  filters: {
+    chargeStatus: string | null;
+    search: string | null;
+    paymentGateway: string;
+  };
 }
 
 class ApiClient {
@@ -627,6 +654,20 @@ class ApiClient {
     }
   };
 
+  getStripeRowData = async (params: StripeRowDataParams) => {
+    try {
+      const response = await axios.get<ApiResponse<StripeRowDataResponse>>(
+        `${API_BASE_URL}/get-stripe-row-data`,
+        {
+          params: params,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   createStripeAccount = async (data: StripeCreateAccountData) => {
     try {
       const response = await axios.post(
@@ -672,10 +713,7 @@ class ApiClient {
     applicationFeeAmount?: number;
   }) => {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/stripe/payment`,
-        data
-      );
+      const response = await axios.post(`${API_BASE_URL}/stripe/payment`, data);
       console.log(response.data);
       return response.data;
     } catch (error) {
