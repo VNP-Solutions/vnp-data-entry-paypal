@@ -28,7 +28,6 @@ import {
   MoreVertical,
   RefreshCw,
   Trash2,
-  Download,
   DownloadCloud,
 } from "lucide-react";
 import {
@@ -41,11 +40,11 @@ import { format } from "date-fns";
 import {
   useUploadSessions,
   useRetryUpload,
-  useDiscardUpload,
   useDownloadReport,
   useDeleteFile,
 } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
+import TemplateDownload from "@/components/pages/uploads/template-download";
 
 interface UploadSession {
   uploadId: string;
@@ -58,6 +57,7 @@ interface UploadSession {
   completedAt: string | null;
   vnpWorkId: string | null;
   chargedCount: number;
+  paymentGateway: "stripe" | "paypal";
 }
 
 interface UploadSessionsResponse {
@@ -92,7 +92,7 @@ export default function UploadsPage() {
   const handleDeleteFile = async (uploadId: string) => {
     try {
       toast.loading("Deleting file with all entries, please wait..");
-       await deleteFileMutation.mutateAsync(uploadId);
+      await deleteFileMutation.mutateAsync(uploadId);
     } catch {
       toast.dismiss();
     }
@@ -100,7 +100,9 @@ export default function UploadsPage() {
 
   const handleDownloadReport = async (uploadId: string) => {
     try {
-      toast.loading("Downloading report, Make sure popup is not blocked by browser");
+      toast.loading(
+        "Downloading report, Make sure popup is not blocked by browser"
+      );
       await downloadReportMutation.mutateAsync(uploadId);
     } finally {
       toast.dismiss();
@@ -149,27 +151,7 @@ export default function UploadsPage() {
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
-      <div className="flex justify-between items-start">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Upload Files
-          </h1>
-          <p className="text-gray-600">Monitor and manage uploaded files</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            window.open(
-              "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753255148635-Template.xlsx"
-            );
-          }}
-          className="text-blue-600"
-        >
-          <Download className="h-4 w-4" />
-          Download Template
-        </Button>
-      </div>
-
+      <TemplateDownload />
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
@@ -265,6 +247,7 @@ export default function UploadsPage() {
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead>File Name</TableHead>
+                <TableHead>Gateway</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Charge Progress</TableHead>
                 <TableHead className="text-center">Uploaded At</TableHead>
@@ -315,6 +298,9 @@ export default function UploadsPage() {
                           <FileSpreadsheet className="h-4 w-4 text-gray-400" />
                           <span>{session.fileName}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="font-medium capitalize">
+                        {session.paymentGateway}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(session.status)}>
