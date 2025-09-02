@@ -1080,6 +1080,7 @@ export default function PaypalPaymentPage() {
         onOpenChange={setShowEditDialog}
         rowData={selectedRow}
         onSuccess={fetchData}
+        paymentGateway="paypal"
       />
 
       <RefundConfirmationDialog

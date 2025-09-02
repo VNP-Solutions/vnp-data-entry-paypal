@@ -332,8 +332,16 @@ export function useDeleteFile() {
 export function useUpdateRowData() {
   return useMutation({
     // Change this line to specify the parameter types correctly
-    mutationFn: (params: { documentId: string; data: any }) =>
-      apiClient.updateRowData(params.documentId, params.data),
+    mutationFn: (params: {
+      documentId: string;
+      data: any;
+      paymentGateway?: string;
+    }) =>
+      apiClient.updateRowData(
+        params.documentId,
+        params.data,
+        params.paymentGateway
+      ),
     onSuccess: (data) => {
       toast.success("Record updated successfully!");
     },

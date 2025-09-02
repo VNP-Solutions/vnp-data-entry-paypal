@@ -32,9 +32,8 @@ import {
   ChevronRight,
   ArrowRight,
   PencilIcon,
-  CheckCircle,
 } from "lucide-react";
-import { useGetStripeAccount, useStripeRowData } from "@/lib/hooks/use-api";
+import { useStripeRowData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -45,7 +44,10 @@ import {
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
 import { EditDialog } from "@/components/shared/edit-modal";
-import { StripePaymentSuccessModal, StripePaymentDetails } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
+import {
+  StripePaymentSuccessModal,
+  StripePaymentDetails,
+} from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
 
 interface AdminExcelDataItem {
   _id?: string;
@@ -140,10 +142,13 @@ const StripeTransactionsTab = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [limit, setLimit] = useState(10);
-  const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(null);
+  const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(
+    null
+  );
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<StripePaymentDetails | null>(null);
+  const [paymentDetails, setPaymentDetails] =
+    useState<StripePaymentDetails | null>(null);
 
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
@@ -190,14 +195,16 @@ const StripeTransactionsTab = () => {
   const filters = data?.data?.filters;
   const handleMakePayment = async (account: any) => {
     // TODO: Implement Stripe payment processing
-    toast.info(`Processing payment for account: ${account["Connected Account"] || "N/A"}`);
+    toast.info(
+      `Processing payment for account: ${account["Connected Account"] || "N/A"}`
+    );
     // console.log(account);
     const amount = account["Amount to charge"];
     const amountInCents = amount * 100;
 
     try {
       const response = await apiClient.createStripePayment({
-        accountId: 'acct_1S0cmd2KaRE3wkVM',
+        accountId: account["Connected Account"],
         totalAmount: amountInCents,
         currency: "usd",
         paymentMethod: "pm_card_visa",
@@ -218,7 +225,9 @@ const StripeTransactionsTab = () => {
     } catch (error: any) {
       console.error("Stripe payment failed:", error);
       const message =
-        error?.response?.data?.message || error?.message || "Failed to initiate payment";
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to initiate payment";
       toast.error(message);
     }
   };
@@ -229,7 +238,6 @@ const StripeTransactionsTab = () => {
     refetch();
   };
 
-  
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
@@ -453,7 +461,7 @@ const StripeTransactionsTab = () => {
                 <TableHead>Amount</TableHead>
                 <TableHead>File Name</TableHead>
                 {/* <TableHead>Card Details</TableHead> */}
-             
+
                 <TableHead>Status</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
@@ -550,7 +558,7 @@ const StripeTransactionsTab = () => {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    
+
                     <TableCell>
                       <Badge className={getStatusColor(row["Status"] || "")}>
                         {row["Status"] || "Unknown"}
@@ -572,7 +580,12 @@ const StripeTransactionsTab = () => {
                           size="sm"
                           className="p-2 hover:bg-blue-100"
                           onClick={() => {
-                            const normalized = { ...row, id: (row as any).id || (row as any)._id } as AdminExcelDataItem;
+                            const normalized = {
+                              ...row,
+                              id:
+                                (row as { id: string }).id ||
+                                (row as { _id: string })._id,
+                            } as AdminExcelDataItem;
                             setSelectedRow(normalized);
                             setShowEditDialog(true);
                           }}
@@ -642,8 +655,16 @@ const StripeTransactionsTab = () => {
       <EditDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
-        rowData={selectedRow ? ({ ...(selectedRow as any), id: (selectedRow as any).id || (selectedRow as any)._id } as any) : null}
+        rowData={
+          selectedRow
+            ? ({
+                ...(selectedRow as any),
+                id: (selectedRow as any).id || (selectedRow as any)._id,
+              } as any)
+            : null
+        }
         onSuccess={() => refetch()}
+        paymentGateway="stripe"
       />
     </div>
   );

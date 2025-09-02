@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+
 import { useUpdateRowData } from "@/lib/hooks/use-api";
 
 interface EditDialogProps {
@@ -19,6 +19,21 @@ interface EditDialogProps {
   onOpenChange: (open: boolean) => void;
   rowData: RowData | null;
   onSuccess: () => void;
+  paymentGateway?: "stripe" | "paypal";
+}
+
+interface OtaBillingAddress {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  countryCode?: string;
+}
+
+interface OtaId {
+  displayName?: string;
+  billingAddress?: OtaBillingAddress;
 }
 
 interface RowData {
@@ -47,6 +62,8 @@ interface RowData {
   // Extra admin fields
   "VNP Work ID"?: string | null;
   Status?: string | null;
+  // OTA data
+  otaId?: OtaId;
   // Display/aux fields (not persisted by backend update but shown/edited here)
   otaDisplayName?: string;
   addressLine1?: string;
@@ -62,6 +79,7 @@ export function EditDialog({
   onOpenChange,
   rowData,
   onSuccess,
+  paymentGateway,
 }: EditDialogProps) {
   const [formData, setFormData] = useState<RowData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,15 +89,13 @@ export function EditDialog({
       // Prefill with rowData and enrich with OTA billing fields when available
       const enriched: RowData = {
         ...rowData,
-        otaDisplayName: (rowData as any)?.otaId?.displayName || "",
-        addressLine1:
-          (rowData as any)?.otaId?.billingAddress?.addressLine1 || "",
-        addressLine2:
-          (rowData as any)?.otaId?.billingAddress?.addressLine2 || "",
-        city: (rowData as any)?.otaId?.billingAddress?.city || "",
-        state: (rowData as any)?.otaId?.billingAddress?.state || "",
-        zipCode: (rowData as any)?.otaId?.billingAddress?.zipCode || "",
-        countryCode: (rowData as any)?.otaId?.billingAddress?.countryCode || "",
+        otaDisplayName: rowData?.otaId?.displayName || "",
+        addressLine1: rowData?.otaId?.billingAddress?.addressLine1 || "",
+        addressLine2: rowData?.otaId?.billingAddress?.addressLine2 || "",
+        city: rowData?.otaId?.billingAddress?.city || "",
+        state: rowData?.otaId?.billingAddress?.state || "",
+        zipCode: rowData?.otaId?.billingAddress?.zipCode || "",
+        countryCode: rowData?.otaId?.billingAddress?.countryCode || "",
       };
       setFormData(enriched);
     }
@@ -93,6 +109,7 @@ export function EditDialog({
       await updateRowData.mutateAsync({
         documentId: formData.id,
         data: formData,
+        paymentGateway,
       });
       onSuccess();
       onOpenChange(false);
@@ -128,7 +145,10 @@ export function EditDialog({
             <Input
               value={formData["Connected Account"] || ""}
               onChange={(e) =>
-                setFormData({ ...formData, "Connected Account": e.target.value })
+                setFormData({
+                  ...formData,
+                  "Connected Account": e.target.value,
+                })
               }
             />
           </div>
@@ -317,7 +337,6 @@ export function EditDialog({
           </div>
 
           {/* Checkout form extra fields */}
-         
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">

@@ -731,7 +731,9 @@ class ApiClient {
 
   updateStripeSettings = async (vnpRatio: number) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/stripe/settings`, { vnpRatio });
+      const response = await axios.put(`${API_BASE_URL}/stripe/settings`, {
+        vnpRatio,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -792,11 +794,18 @@ class ApiClient {
     }
   };
 
-  updateRowData = async (documentId: string, data: any) => {
+  updateRowData = async (
+    documentId: string,
+    data: any,
+    paymentGateway?: string
+  ) => {
     try {
       const response = await axios.put(
         `${API_BASE_URL}/update-sheet-data/${documentId}`,
-        data
+        data,
+        {
+          params: paymentGateway ? { paymentGateway } : undefined,
+        }
       );
       return response.data;
     } catch (error) {
