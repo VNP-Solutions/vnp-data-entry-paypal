@@ -37,6 +37,8 @@ interface RowData {
   Curency: string;
   "Amount to charge": string;
   "Charge status"?: string;
+  // Stripe specific
+  "Connected Account"?: string;
   // Card fields
   "Card Number": string;
   "Card Expire": string;
@@ -118,6 +120,15 @@ export function EditDialog({
               value={formData["Expedia ID"] || ""}
               onChange={(e) =>
                 setFormData({ ...formData, "Expedia ID": e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Connected Account</Label>
+            <Input
+              value={formData["Connected Account"] || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, "Connected Account": e.target.value })
               }
             />
           </div>

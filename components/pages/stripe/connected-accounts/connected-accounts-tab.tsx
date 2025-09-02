@@ -27,8 +27,8 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
-import { StripeConnectModal } from "@/components/stripe-connect-modal";
-import { StripeViewModal } from "@/components/stripe-view-modal";
+import { StripeConnectModal } from "@/components/pages/stripe/connected-accounts/stripe-connect-modal";
+import { StripeViewModal } from "@/components/pages/stripe/connected-accounts/stripe-view-modal";
 import { useGetStripeAccount } from "@/lib/hooks/use-api";
 
 interface ApiError {

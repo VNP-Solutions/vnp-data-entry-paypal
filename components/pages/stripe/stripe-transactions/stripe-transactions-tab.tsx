@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  PencilIcon,
 } from "lucide-react";
 import { useGetStripeAccount, useStripeRowData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
+import { EditDialog } from "@/components/shared/edit-modal";
 
 interface AdminExcelDataItem {
   _id?: string;
@@ -136,8 +138,10 @@ const StripeTransactionsTab = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [limit, setLimit] = useState(10);
+  const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
-  const { data, isLoading, error } = useStripeRowData({
+  const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
     limit,
     status: statusFilter === "all" ? "" : statusFilter,
@@ -189,7 +193,7 @@ const StripeTransactionsTab = () => {
 
     try {
       const response = await apiClient.createStripePayment({
-        accountId: account["Connected Account"],
+        accountId: 'acct_1S0cmd2KaRE3wkVM',
         totalAmount: amountInCents,
         currency: "usd",
         paymentMethod: "pm_card_visa",
@@ -208,7 +212,7 @@ const StripeTransactionsTab = () => {
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
-      <div className="mb-8">
+      <div className="my-4">
         <h1 className="text-xl font-bold text-gray-900 mb-2">
           Stripe Transactions
         </h1>
@@ -532,15 +536,29 @@ const StripeTransactionsTab = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="p-2 hover:bg-blue-100"
-                        onClick={() => handleMakePayment(row)}
-                      >
-                        Make Payment
-                        <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="p-2 hover:bg-blue-100"
+                          onClick={() => handleMakePayment(row)}
+                        >
+                          Make Payment
+                          <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="p-2 hover:bg-blue-100"
+                          onClick={() => {
+                            const normalized = { ...row, id: (row as any).id || (row as any)._id } as AdminExcelDataItem;
+                            setSelectedRow(normalized);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <PencilIcon className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -595,6 +613,12 @@ const StripeTransactionsTab = () => {
           </div>
         )}
       </Card>
+      <EditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        rowData={selectedRow ? ({ ...(selectedRow as any), id: (selectedRow as any).id || (selectedRow as any)._id } as any) : null}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 };

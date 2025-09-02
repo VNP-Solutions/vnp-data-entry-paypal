@@ -19,7 +19,6 @@ import {
   CreditCard,
   Banknote,
 } from "lucide-react";
-import { Button } from "./ui/button";
 import { useGetStripeAccount } from "@/lib/hooks/use-api";
 
 interface StripeViewModalProps {

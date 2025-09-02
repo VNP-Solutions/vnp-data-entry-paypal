@@ -5,12 +5,12 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Upload } from "lucide-react"
-import { UploadDialog } from "@/components/upload-dialog"
+import { UploadDialog } from "@/components/shared/upload-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys, useProfile } from "@/lib/hooks/use-api"
-import { ProfileButton } from "@/components/profile-button"
+import { ProfileButton } from "@/components/shared/profile-button"
 
 export default function DashboardLayout({
   children,

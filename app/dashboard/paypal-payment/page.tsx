@@ -49,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckoutForm } from "@/components/checkout-form";
+import { CheckoutForm } from "@/components/pages/paypal/checkout-form";
 import { useMakeBulkPayment } from "@/lib/hooks/use-api";
 import { useMakeBulkRefund } from "@/lib/hooks/use-api";
 import { useProcessRefund } from "@/lib/hooks/use-api";
@@ -60,7 +60,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { EditDialog } from "@/components/edit-paypal-modal";
+import { EditDialog } from "@/components/shared/edit-modal";
 interface RowData {
   id: string;
   uploadId: string;
