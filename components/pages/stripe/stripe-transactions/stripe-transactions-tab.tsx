@@ -41,6 +41,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
 import { EditDialog } from "@/components/shared/edit-modal";
@@ -48,6 +54,21 @@ import {
   StripePaymentSuccessModal,
   StripePaymentDetails,
 } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
+import { Eye } from "lucide-react";
+
+interface OtaBillingAddress {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  countryCode?: string;
+}
+
+interface OtaId {
+  displayName?: string;
+  billingAddress?: OtaBillingAddress;
+}
 
 interface AdminExcelDataItem {
   _id?: string;
@@ -125,7 +146,7 @@ interface AdminExcelDataItem {
   stripeRefundInvoiceId?: string | null;
   stripeRefundCustomId?: string | null;
   stripeRefundNote?: string | null;
-  otaId?: any;
+  otaId?: OtaId;
   createdAt: string;
 }
 
@@ -146,6 +167,7 @@ const StripeTransactionsTab = () => {
     null
   );
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paymentDetails, setPaymentDetails] =
     useState<StripePaymentDetails | null>(null);
@@ -192,15 +214,20 @@ const StripeTransactionsTab = () => {
 
   const excelData = data?.data?.rows || [];
   const pagination = data?.data?.pagination;
-  const filters = data?.data?.filters;
-  const handleMakePayment = async (account: any) => {
+
+  const handleMakePayment = async (account: AdminExcelDataItem) => {
     // TODO: Implement Stripe payment processing
     toast.info(
       `Processing payment for account: ${account["Connected Account"] || "N/A"}`
     );
     // console.log(account);
-    const amount = account["Amount to charge"];
+    const amount = parseFloat(account["Amount to charge"]);
     const amountInCents = amount * 100;
+
+    if (!account["Connected Account"]) {
+      toast.error("No connected account found");
+      return;
+    }
 
     try {
       const response = await apiClient.createStripePayment({
@@ -222,11 +249,15 @@ const StripeTransactionsTab = () => {
         setShowSuccessModal(true);
       }
       toast.success("Payment initiated successfully");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Stripe payment failed:", error);
+      const apiError = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
+        apiError?.response?.data?.message ||
+        apiError?.message ||
         "Failed to initiate payment";
       toast.error(message);
     }
@@ -236,6 +267,64 @@ const StripeTransactionsTab = () => {
     setShowSuccessModal(false);
     setPaymentDetails(null);
     refetch();
+  };
+
+  const ViewDialog = ({
+    open,
+    onOpenChange,
+    rowData,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    rowData: AdminExcelDataItem | null;
+  }) => {
+    if (!rowData) return null;
+
+    // Helper function to check if a field should be displayed
+    const shouldDisplayField = (key: string) => {
+      const hiddenFields = [
+        "_id",
+        "userId",
+        "uploadId",
+        "rowNumber",
+        "uploadStatus",
+        "createdAt",
+        "updatedAt",
+        "__v",
+        "otaId",
+      ];
+      return !hiddenFields.includes(key);
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="!max-w-4xl !w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Stripe Transaction Details</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            {Object.entries(rowData)
+              .filter(([key]) => shouldDisplayField(key))
+              .map(([key, value]) => (
+                <div key={key} className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase">
+                    {key}
+                  </p>
+                  <p className="text-sm">
+                    {key === "fileName"
+                      ? formatLongString(value as string, 25)
+                      : key === "Check In"
+                      ? formatCheckInOutDate(value as string)
+                      : key === "Check Out"
+                      ? formatCheckInOutDate(value as string)
+                      : String(value || "N/A")}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return (
@@ -560,38 +649,76 @@ const StripeTransactionsTab = () => {
                     </TableCell>
 
                     <TableCell>
-                      <Badge className={getStatusColor(row["Status"] || "")}>
-                        {row["Status"] || "Unknown"}
+                      <Badge
+                        className={getStatusColor(row["Charge status"] || "")}
+                      >
+                        {row["Charge status"] || "Unknown"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="p-2 hover:bg-blue-100"
-                          onClick={() => handleMakePayment(row)}
-                        >
-                          Make Payment
-                          <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="p-2 hover:bg-blue-100"
-                          onClick={() => {
-                            const normalized = {
-                              ...row,
-                              id:
-                                (row as { id: string }).id ||
-                                (row as { _id: string })._id,
-                            } as AdminExcelDataItem;
-                            setSelectedRow(normalized);
-                            setShowEditDialog(true);
-                          }}
-                        >
-                          <PencilIcon className="h-4 w-4 text-blue-600" />
-                        </Button>
+                        {row["Charge status"] === "Charged" ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowViewDialog(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 text-blue-600 mr-1" />
+                              View Details
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowEditDialog(true);
+                              }}
+                            >
+                              <PencilIcon className="h-4 w-4 text-blue-600" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => handleMakePayment(row)}
+                            >
+                              Make Payment
+                              <ArrowRight className="h-4 w-4 text-blue-600 ml-1" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowEditDialog(true);
+                              }}
+                            >
+                              <PencilIcon className="h-4 w-4 text-blue-600" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -652,15 +779,20 @@ const StripeTransactionsTab = () => {
         details={paymentDetails}
         onClose={handleSuccessModalClose}
       />
+      <ViewDialog
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        rowData={selectedRow}
+      />
       <EditDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
         rowData={
           selectedRow
-            ? ({
-                ...(selectedRow as any),
-                id: (selectedRow as any).id || (selectedRow as any)._id,
-              } as any)
+            ? {
+                ...selectedRow,
+                id: (selectedRow.id || selectedRow._id) as string,
+              }
             : null
         }
         onSuccess={() => refetch()}
