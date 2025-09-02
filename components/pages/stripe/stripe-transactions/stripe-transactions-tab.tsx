@@ -45,6 +45,7 @@ import {
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
 import { EditDialog } from "@/components/shared/edit-modal";
+import { StripePaymentSuccessModal, StripePaymentDetails } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
 
 interface AdminExcelDataItem {
   _id?: string;
@@ -142,17 +143,7 @@ const StripeTransactionsTab = () => {
   const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<
-    | {
-        intentId: string;
-        status: string;
-        amount: number;
-        currency: string;
-        applicationFee?: number;
-        destination?: string;
-      }
-    | null
-  >(null);
+  const [paymentDetails, setPaymentDetails] = useState<StripePaymentDetails | null>(null);
 
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
@@ -643,71 +634,11 @@ const StripeTransactionsTab = () => {
           </div>
         )}
       </Card>
-      {/* Payment Success Modal */}
-      {showSuccessModal && paymentDetails && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <div className="flex items-center justify-center mb-4">
-                <CheckCircle className="h-12 w-12 text-green-500" />
-              </div>
-              <h2 className="text-xl font-bold text-center text-gray-900 mb-2">
-                Payment Successful!
-              </h2>
-              <p className="text-gray-600 text-center mb-6">
-                Your Stripe payment has been processed successfully.
-              </p>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Payment Intent ID:</span>
-                  <span className="text-sm font-mono text-gray-900">{paymentDetails.intentId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Status:</span>
-                  <span
-                    className={`text-sm font-semibold ${
-                      paymentDetails.status === "succeeded" ? "text-green-600" : "text-blue-600"
-                    }`}
-                  >
-                    {paymentDetails.status}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Amount:</span>
-                  <span className="text-sm font-mono text-gray-900">
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: paymentDetails.currency,
-                    }).format((paymentDetails.amount || 0) / 100)}
-                  </span>
-                </div>
-                {typeof paymentDetails.applicationFee === "number" && (
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-500">Application Fee:</span>
-                    <span className="text-sm font-mono text-gray-900">
-                      {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: paymentDetails.currency,
-                      }).format((paymentDetails.applicationFee || 0) / 100)}
-                    </span>
-                  </div>
-                )}
-                {paymentDetails.destination && (
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-500">Destination Account:</span>
-                    <span className="text-sm font-mono text-gray-900">{paymentDetails.destination}</span>
-                  </div>
-                )}
-              </div>
-
-              <Button onClick={handleSuccessModalClose} className="w-full bg-green-600 hover:bg-green-700">
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StripePaymentSuccessModal
+        open={showSuccessModal}
+        details={paymentDetails}
+        onClose={handleSuccessModalClose}
+      />
       <EditDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
