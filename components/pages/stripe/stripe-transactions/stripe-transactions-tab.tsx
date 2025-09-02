@@ -32,6 +32,7 @@ import {
   ChevronRight,
   ArrowRight,
   PencilIcon,
+  CheckCircle,
 } from "lucide-react";
 import { useGetStripeAccount, useStripeRowData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
@@ -140,6 +141,18 @@ const StripeTransactionsTab = () => {
   const [limit, setLimit] = useState(10);
   const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<
+    | {
+        intentId: string;
+        status: string;
+        amount: number;
+        currency: string;
+        applicationFee?: number;
+        destination?: string;
+      }
+    | null
+  >(null);
 
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
@@ -198,7 +211,18 @@ const StripeTransactionsTab = () => {
         currency: "usd",
         paymentMethod: "pm_card_visa",
       });
-      console.log(response);
+      const payment = response?.data?.payment || response?.payment;
+      if (payment) {
+        setPaymentDetails({
+          intentId: payment.id,
+          status: payment.status,
+          amount: payment.amount,
+          currency: payment.currency?.toUpperCase?.() || "USD",
+          applicationFee: payment.application_fee_amount,
+          destination: payment.transfer_data?.destination,
+        });
+        setShowSuccessModal(true);
+      }
       toast.success("Payment initiated successfully");
     } catch (error: any) {
       console.error("Stripe payment failed:", error);
@@ -206,6 +230,12 @@ const StripeTransactionsTab = () => {
         error?.response?.data?.message || error?.message || "Failed to initiate payment";
       toast.error(message);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setPaymentDetails(null);
+    refetch();
   };
 
   
@@ -613,6 +643,71 @@ const StripeTransactionsTab = () => {
           </div>
         )}
       </Card>
+      {/* Payment Success Modal */}
+      {showSuccessModal && paymentDetails && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold text-center text-gray-900 mb-2">
+                Payment Successful!
+              </h2>
+              <p className="text-gray-600 text-center mb-6">
+                Your Stripe payment has been processed successfully.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Payment Intent ID:</span>
+                  <span className="text-sm font-mono text-gray-900">{paymentDetails.intentId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Status:</span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      paymentDetails.status === "succeeded" ? "text-green-600" : "text-blue-600"
+                    }`}
+                  >
+                    {paymentDetails.status}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-500">Amount:</span>
+                  <span className="text-sm font-mono text-gray-900">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: paymentDetails.currency,
+                    }).format((paymentDetails.amount || 0) / 100)}
+                  </span>
+                </div>
+                {typeof paymentDetails.applicationFee === "number" && (
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Application Fee:</span>
+                    <span className="text-sm font-mono text-gray-900">
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: paymentDetails.currency,
+                      }).format((paymentDetails.applicationFee || 0) / 100)}
+                    </span>
+                  </div>
+                )}
+                {paymentDetails.destination && (
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Destination Account:</span>
+                    <span className="text-sm font-mono text-gray-900">{paymentDetails.destination}</span>
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={handleSuccessModalClose} className="w-full bg-green-600 hover:bg-green-700">
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <EditDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
