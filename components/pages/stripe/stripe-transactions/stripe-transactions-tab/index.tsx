@@ -36,6 +36,7 @@ import {
   EyeOff,
   RefreshCcw,
   CreditCard,
+  Database,
 } from "lucide-react";
 import { useStripeRowData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
@@ -576,7 +577,7 @@ const StripeTransactionsTab = () => {
                                     setShowRefundModal(false);
                                   }}
                                 >
-                                  <Eye className="h-4 w-4 text-blue-600" />
+                                  <Database className="h-4 w-4 text-blue-600" />
                                 </Button>
                               )
                             }
@@ -587,7 +588,7 @@ const StripeTransactionsTab = () => {
                               onClick={() => handleMakePayment(row)}
                             >
                               {row["Charge status"] === "Failed" ||
-                              row["Charge status"] === "Declined"
+                              row["Charge status"] === "Declined" || row["Charge status"] === "Refunded"
                                 ? "Charge Again"
                                 : "Make Payment"}
                               <ArrowRight className="h-4 w-4 text-white" />
