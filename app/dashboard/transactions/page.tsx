@@ -244,6 +244,16 @@ export default function TransactionsPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 w-full md:w-auto">
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="PayPal">PayPal</SelectItem>
+                  <SelectItem value="Stripe">Stripe</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 onClick={() => setShowCardDetails(!showCardDetails)}
@@ -267,23 +277,6 @@ export default function TransactionsPage() {
                 <RefreshCcw className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-
-          {/* Advanced Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Filters</SelectItem>
-                {filters?.available?.statusOptions?.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </Card>
