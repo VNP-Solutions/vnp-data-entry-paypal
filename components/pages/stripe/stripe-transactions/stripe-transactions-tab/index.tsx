@@ -167,7 +167,7 @@ const StripeTransactionsTab = () => {
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
     limit,
-    status: statusFilter === "all" ? "" : statusFilter,
+    chargeStatus: statusFilter === "all" ? "" : statusFilter,
     search: searchTerm,
   });
 

@@ -196,13 +196,9 @@ export function useAdminExcelData(params: AdminExcelDataParams) {
 export function useStripeRowData(params: {
   page: number;
   limit: number;
-  status?: string;
+  filter?: string;
   search?: string;
-  portfolio?: string;
-  batch?: string;
-  hotel?: string;
-  sort?: string;
-  order?: string;
+  chargeStatus?: string;
 }) {
   return useQuery({
     queryKey: ["stripe-row-data", params],
