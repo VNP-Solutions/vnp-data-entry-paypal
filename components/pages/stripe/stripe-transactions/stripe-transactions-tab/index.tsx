@@ -560,6 +560,26 @@ const StripeTransactionsTab = () => {
                         row["Charge status"] === "Failed" ||
                         row["Charge status"] === "Declined" ? (
                           <>
+                           {
+                              row["Charge status"] === "Refunded" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="p-2 hover:bg-blue-100 w-fit flex-1"
+                                  onClick={() => {
+                                    const normalized = {
+                                      ...row,
+                                      id: (row.id || row._id) as string,
+                                    };
+                                    setSelectedRow(normalized);
+                                    setShowViewDialog(true);
+                                    setShowRefundModal(false);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              )
+                            }
                             <Button
                               variant={"outline"}
                               size="sm"
@@ -572,6 +592,7 @@ const StripeTransactionsTab = () => {
                                 : "Make Payment"}
                               <ArrowRight className="h-4 w-4 text-white" />
                             </Button>
+                           
                           </>
                         ) : (
                           <>
