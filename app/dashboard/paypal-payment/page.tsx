@@ -393,7 +393,6 @@ export default function PaypalPaymentPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // console.log(chargeStatus);
       const response = await apiClient.getRowData({
         limit,
         page: currentPage,
@@ -524,8 +523,6 @@ export default function PaypalPaymentPage() {
         }
       );
 
-      // console.log(finalSelectedRows, "finalSelectedRows");
-      // return;
       makeBulkPayment.mutate(finalSelectedRows, {
         onSuccess: () => {
           toast.dismiss(loadingToastId);
@@ -536,8 +533,7 @@ export default function PaypalPaymentPage() {
           setIsBulkPaymentLoading(false);
         },
       });
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast.error("Failed to make bulk payment");
       setIsBulkPaymentLoading(false);
     }
@@ -583,8 +579,7 @@ export default function PaypalPaymentPage() {
           setIsBulkRefundLoading(false);
         },
       });
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast.error("Failed to make bulk refund");
       setIsBulkRefundLoading(false);
     }
@@ -603,8 +598,10 @@ export default function PaypalPaymentPage() {
         setShowRefundDialog(false);
         setRefundRowData(null);
         fetchData(); // Refresh the data
-      } catch (error) {
-        console.log(error);
+      } catch (error: any) {
+        toast.error(
+          error.response?.data?.message || "Failed to process refund"
+        );
       } finally {
         setIsRefundLoading(false);
       }
@@ -1009,7 +1006,6 @@ export default function PaypalPaymentPage() {
                             onClick={() => {
                               setSelectedRow(row);
                               setShowEditDialog(true);
-                              console.log("Edit row:", row);
                               // setShowViewDialog(true);
                             }}
                           >

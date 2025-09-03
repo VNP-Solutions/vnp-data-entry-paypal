@@ -217,7 +217,7 @@ const StripeTransactionsTab = () => {
     toast.info(
       `Processing payment for account: ${account["Connected Account"] || "N/A"}`
     );
-    // console.log(account);
+
     const amount = parseFloat(account["Amount to charge"]);
     const amountInCents = amount * 100;
 

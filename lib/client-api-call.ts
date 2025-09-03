@@ -714,7 +714,6 @@ class ApiClient {
   }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/stripe/payment`, data);
-      console.log(response.data);
       return response.data;
     } catch (error) {
       throw error;

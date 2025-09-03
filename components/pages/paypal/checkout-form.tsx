@@ -82,7 +82,9 @@ export function CheckoutForm({
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
+    null
+  );
 
   useEffect(() => {
     setFormData(initialFormData);
@@ -110,9 +112,6 @@ export function CheckoutForm({
         return;
       }
       const formattedExpiry = `${year}-${month.padStart(2, "0")}`;
-      // console.log(formattedExpiry);
-
-      // return;
 
       const response = await apiClient.processPayPalPayment({
         amount: parseFloat(formData.amount),
@@ -141,16 +140,15 @@ export function CheckoutForm({
           onClose();
           onSuccess();
         }
-      } else if (response.status === "error" || response.status === "declined") {
-        // console.log(response, "error response");
-        // Handle error response from API
-        // console.log("Debug error values:", {
-        //   declineReason: response.data.declineReason,
-        //   error: response.error,
-        //   message: response.message
-        // });
+      } else if (
+        response.status === "error" ||
+        response.status === "declined"
+      ) {
         const errorMessage =
-        response.data.declineReason || response.error || response.message || "Payment processing failed";
+          response.data.declineReason ||
+          response.error ||
+          response.message ||
+          "Payment processing failed";
         toast.error(errorMessage);
       } else {
         toast.error("Payment processing failed");

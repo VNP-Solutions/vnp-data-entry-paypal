@@ -144,8 +144,6 @@ export function useValidateInvitation() {
   return useMutation({
     mutationFn: apiClient.validateInvitation,
     onSuccess: (response) => {
-      console.log(response);
-      // Don't show success message here, let the component handle the success case
       return response;
     },
     onError: (error: any) => {
@@ -226,7 +224,6 @@ export function useDownloadReport() {
   return useMutation({
     mutationFn: apiClient.downloadReport,
     onSuccess: (data) => {
-      console.log(data.url);
       window.open(data.url, "blank");
     },
     onError: (error: any) => {
