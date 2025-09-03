@@ -532,7 +532,7 @@ export default function TransactionsPage() {
                     </TableCell> */}
                     <TableCell className="text-center">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         className="p-2 hover:bg-blue-100"
                         onClick={() => {
@@ -540,6 +540,7 @@ export default function TransactionsPage() {
                           setShowViewDialog(true);
                         }}
                       >
+                        Details
                         <Eye className="h-4 w-4 text-blue-600" />
                       </Button>
                     </TableCell>

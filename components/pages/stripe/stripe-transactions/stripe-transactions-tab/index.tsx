@@ -568,7 +568,7 @@ const StripeTransactionsTab = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="p-2 hover:bg-blue-100"
+                            className="p-2 hover:bg-blue-100 flex-1"
                             onClick={() => {
                               const normalized = {
                                 ...row,
