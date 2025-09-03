@@ -294,6 +294,7 @@ export default function TransactionsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
+                <TableHead>Connected Account</TableHead>
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
@@ -314,7 +315,7 @@ export default function TransactionsPage() {
                   .fill(0)
                   .map((_, idx) => (
                     <TableRow key={idx}>
-                      {Array(11)
+                      {Array(12)
                         .fill(0)
                         .map((_, cellIdx) => (
                           <TableCell key={cellIdx}>
@@ -325,7 +326,7 @@ export default function TransactionsPage() {
                   ))
               ) : excelData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
+                  <TableCell colSpan={12} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <FileSpreadsheet className="h-8 w-8 mb-2" />
                       <p className="text-lg font-medium">
@@ -338,6 +339,9 @@ export default function TransactionsPage() {
               ) : (
                 excelData.map((row: AdminExcelDataItem) => (
                   <TableRow key={row._id} className="hover:bg-gray-50/50">
+                    <TableCell className="font-mono">
+                      {row["Connected Account"] || "N/A"}
+                    </TableCell>
                     <TableCell className="font-mono">
                       {row["Expedia ID"]}
                     </TableCell>
@@ -426,7 +430,7 @@ export default function TransactionsPage() {
                           {row.paypalStatus}
                         </Badge>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400">N/A</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
