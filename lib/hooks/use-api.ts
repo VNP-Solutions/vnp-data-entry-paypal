@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../client-api-call";
+import { AdminExcelDataParams, apiClient } from "../client-api-call";
 import { toast } from "sonner";
 
 // Query keys
@@ -186,17 +186,7 @@ export function useProfile() {
 }
 
 // Admin Excel Data Hook
-export function useAdminExcelData(params: {
-  page: number;
-  limit: number;
-  status?: string;
-  search?: string;
-  portfolio?: string;
-  batch?: string;
-  hotel?: string;
-  sort?: string;
-  order?: string;
-}) {
+export function useAdminExcelData(params: AdminExcelDataParams) {
   return useQuery({
     queryKey: [queryKeys.adminExcelData, params],
     queryFn: () => apiClient.getAdminExcelData(params),

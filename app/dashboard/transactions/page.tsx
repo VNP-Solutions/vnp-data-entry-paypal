@@ -50,6 +50,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
+import PaypalTransactionDetailsModal from "@/components/pages/paypal/paypal-payment/paypal-transaction-details-modal";
+import StripeTransactionDetailsModal from "@/components/pages/stripe/stripe-transactions/stripe-transactions-tab/stripe-transaction-details-modal";
 
 interface AdminExcelDataItem {
   _id: string;
@@ -98,72 +100,11 @@ interface AdminExcelDataItem {
   updatedAt: string;
 }
 
-interface ViewDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  rowData: AdminExcelDataItem | null;
-}
-
-const ViewDialog = ({ open, onOpenChange, rowData }: ViewDialogProps) => {
-  if (!rowData) return null;
-
-  // Helper function to check if a field should be displayed
-  const shouldDisplayField = (key: string) => {
-    const hiddenFields = [
-      "_id",
-      "userId",
-      "uploadId",
-      "rowNumber",
-      "uploadStatus",
-      "createdAt",
-      "updatedAt",
-      "__v",
-      "otaId",
-    ];
-    return !hiddenFields.includes(key);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-4xl !w-full max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Transaction Details</DialogTitle>
-        </DialogHeader>
-        <div className="grid grid-cols-3 gap-4 py-4">
-          {Object.entries(rowData)
-            .filter(([key]) => shouldDisplayField(key))
-            .map(([key, value]) => (
-              <div key={key} className="space-y-1">
-                <p className="text-sm font-medium text-gray-500 uppercase">
-                  {key}
-                </p>
-                <p className="text-sm">
-                  {key === "fileName"
-                    ? formatLongString(value, 25)
-                    : key === "Check In"
-                      ? formatCheckInOutDate(value)
-                      : key === "Check Out"
-                        ? formatCheckInOutDate(value)
-                        : String(value || "N/A")}
-                </p>
-              </div>
-            ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 export default function TransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [portfolioFilter, setPortfolioFilter] = useState("all");
-  const [batchFilter, setBatchFilter] = useState("all");
-  const [hotelFilter, setHotelFilter] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [filter, setFilter] = useState<"PayPal" | "Stripe" | "all">("all");
   const [selectedRow, setSelectedRow] = useState<AdminExcelDataItem | null>(
     null
   );
@@ -173,13 +114,8 @@ export default function TransactionsPage() {
   const { data, isLoading, error } = useAdminExcelData({
     page: currentPage,
     limit,
-    status: statusFilter === "all" ? "" : statusFilter,
+    filter: filter === "all" ? "" : filter,
     search: searchTerm,
-    portfolio: portfolioFilter === "all" ? "" : portfolioFilter,
-    batch: batchFilter === "all" ? "" : batchFilter,
-    hotel: hotelFilter,
-    sort: sortBy,
-    order: sortOrder,
   });
 
   useEffect(() => {
@@ -210,8 +146,8 @@ export default function TransactionsPage() {
     }
   };
 
-  const excelData = data?.data?.data || [];
-  const pagination = data?.data?.pagination;
+  const excelData = data?.data || [];
+  const pagination = data?.pagination;
   const filters = data?.data?.filters;
 
   return (
@@ -236,7 +172,7 @@ export default function TransactionsPage() {
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
               <div className="text-xl font-bold text-gray-900">
-                {pagination?.totalCount || 0}
+                {pagination?.totalRecords || 0}
               </div>
             </div>
           </div>
@@ -324,12 +260,7 @@ export default function TransactionsPage() {
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
-                  setStatusFilter("all");
-                  setPortfolioFilter("all");
-                  setBatchFilter("all");
-                  setHotelFilter("");
-                  setSortBy("createdAt");
-                  setSortOrder("desc");
+                  setFilter("all");
                 }}
                 className="w-10 h-10 p-0"
               >
@@ -340,68 +271,17 @@ export default function TransactionsPage() {
 
           {/* Advanced Filters */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Filters</SelectItem>
                 {filters?.available?.statusOptions?.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={portfolioFilter} onValueChange={setPortfolioFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Portfolio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Portfolios</SelectItem>
-                {filters?.available?.portfolioOptions?.map((portfolio) => (
-                  <SelectItem key={portfolio} value={portfolio}>
-                    {portfolio}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={batchFilter} onValueChange={setBatchFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Batch" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Batches</SelectItem>
-                {filters?.available?.batchOptions?.map((batch) => (
-                  <SelectItem key={batch} value={batch}>
-                    {batch}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Created Date</SelectItem>
-                <SelectItem value="Name">Guest Name</SelectItem>
-                <SelectItem value="Hotel Name">Hotel Name</SelectItem>
-                <SelectItem value="Amount to charge">Amount</SelectItem>
-                <SelectItem value="Charge status">Status</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger>
-                <SelectValue placeholder="Order" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Descending</SelectItem>
-                <SelectItem value="asc">Ascending</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -573,7 +453,7 @@ export default function TransactionsPage() {
         {pagination && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="text-sm text-gray-600">
-              Showing {excelData.length} of {pagination.totalCount} entries
+              Showing {excelData.length} of {pagination.totalRecords} entries
             </div>
             <div className="flex items-center gap-2">
               <Select
@@ -616,7 +496,13 @@ export default function TransactionsPage() {
         )}
       </Card>
 
-      <ViewDialog
+      <PaypalTransactionDetailsModal
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        rowData={selectedRow}
+      />
+
+      <StripeTransactionDetailsModal
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}

@@ -45,12 +45,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
 import { EditDialog } from "@/components/shared/edit-modal";
@@ -58,6 +52,7 @@ import {
   StripePaymentSuccessModal,
   StripePaymentDetails,
 } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
+import StripeTransactionDetailsModal from "./stripe-transaction-details-modal";
 
 interface OtaBillingAddress {
   addressLine1?: string;
@@ -265,64 +260,6 @@ const StripeTransactionsTab = () => {
     setShowSuccessModal(false);
     setPaymentDetails(null);
     refetch();
-  };
-
-  const ViewDialog = ({
-    open,
-    onOpenChange,
-    rowData,
-  }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    rowData: AdminExcelDataItem | null;
-  }) => {
-    if (!rowData) return null;
-
-    // Helper function to check if a field should be displayed
-    const shouldDisplayField = (key: string) => {
-      const hiddenFields = [
-        "_id",
-        "userId",
-        "uploadId",
-        "rowNumber",
-        "uploadStatus",
-        "createdAt",
-        "updatedAt",
-        "__v",
-        "otaId",
-      ];
-      return !hiddenFields.includes(key);
-    };
-
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-4xl !w-full max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Stripe Transaction Details</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-3 gap-4 py-4">
-            {Object.entries(rowData)
-              .filter(([key]) => shouldDisplayField(key))
-              .map(([key, value]) => (
-                <div key={key} className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase">
-                    {key}
-                  </p>
-                  <p className="text-sm">
-                    {key === "fileName"
-                      ? formatLongString(value as string, 25)
-                      : key === "Check In"
-                      ? formatCheckInOutDate(value as string)
-                      : key === "Check Out"
-                      ? formatCheckInOutDate(value as string)
-                      : String(value || "N/A")}
-                  </p>
-                </div>
-              ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
   };
 
   return (
@@ -719,7 +656,7 @@ const StripeTransactionsTab = () => {
         details={paymentDetails}
         onClose={handleSuccessModalClose}
       />
-      <ViewDialog
+      <StripeTransactionDetailsModal
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}

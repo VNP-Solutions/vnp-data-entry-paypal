@@ -171,16 +171,11 @@ interface StripeCreateAccountData {
   type: string;
 }
 
-interface AdminExcelDataParams {
+export interface AdminExcelDataParams {
   page: number;
   limit: number;
-  status?: string;
   search?: string;
-  portfolio?: string;
-  batch?: string;
-  hotel?: string;
-  sort?: string;
-  order?: string;
+  filter?: "All" | "PayPal" | "Stripe";
 }
 
 interface StripeRowDataParams {
@@ -195,7 +190,7 @@ interface StripeRowDataParams {
   order?: string;
 }
 
-interface AdminExcelDataItem {
+export interface AdminExcelDataItem {
   _id: string;
   userId: string;
   uploadId: string;
@@ -215,8 +210,6 @@ interface AdminExcelDataItem {
   Curency: string;
   "Amount to charge": string;
   "Charge status": string;
-  // "Card first 4": string;
-  // "Card last 12": string;
   "Card Number": string;
   "Card Expire": string;
   "Card CVV": string;
@@ -242,12 +235,12 @@ interface AdminExcelDataItem {
   updatedAt: string;
 }
 
-interface AdminExcelDataResponse {
+export interface AdminExcelDataResponse {
   data: AdminExcelDataItem[];
   pagination: {
     currentPage: number;
     totalPages: number;
-    totalCount: number;
+    totalRecords: number;
     limit: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
@@ -255,7 +248,7 @@ interface AdminExcelDataResponse {
   filters: {
     applied: {
       search: string;
-      status: string;
+      filter: string;
       portfolio: string;
       batch: string;
       hotel: string;
@@ -643,10 +636,8 @@ class ApiClient {
   getAdminExcelData = async (params: AdminExcelDataParams) => {
     try {
       const response = await axios.get<ApiResponse<AdminExcelDataResponse>>(
-        `${API_BASE_URL}/admin/excel-data`,
-        {
-          params: params,
-        }
+        `${API_BASE_URL}/transaction-history`,
+        { params }
       );
       return response.data;
     } catch (error) {
@@ -796,7 +787,7 @@ class ApiClient {
 
   updateRowData = async (
     documentId: string,
-    data: any,
+    data: AdminExcelDataItem,
     paymentGateway?: string
   ) => {
     try {
