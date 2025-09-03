@@ -53,6 +53,7 @@ import {
   StripePaymentDetails,
 } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
 import StripeTransactionDetailsModal from "./stripe-transaction-details-modal";
+import StripeRefundModal from "../stripe-refund-modal";
 
 interface OtaBillingAddress {
   addressLine1?: string;
@@ -163,6 +164,7 @@ const StripeTransactionsTab = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paymentDetails, setPaymentDetails] =
     useState<StripePaymentDetails | null>(null);
+  const [showRefundModal, setShowRefundModal] = useState(false);
 
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
@@ -213,8 +215,15 @@ const StripeTransactionsTab = () => {
       `Processing payment for account: ${account["Connected Account"] || "N/A"}`
     );
 
-    const amount = parseFloat(account["Amount to charge"]);
-    const amountInCents = amount * 100;
+    // Convert to integer cents by truncating to two decimals (no rounding)
+    const rawAmountStr = String(account["Amount to charge"] || "0").replace(/,/g, "").trim();
+    const isNegative = rawAmountStr.startsWith("-");
+    const unsigned = isNegative ? rawAmountStr.slice(1) : rawAmountStr;
+    const parts = unsigned.split(".");
+    const intPart = parts[0] || "0";
+    const fracPart = (parts[1] || "").padEnd(2, "0").slice(0, 2);
+    const centsUnsigned = Number(intPart) * 100 + Number(fracPart || "0");
+    const amountInCents = isNegative ? -centsUnsigned : centsUnsigned;
 
     if (!account["Connected Account"]) {
       toast.error("No connected account found");
@@ -565,23 +574,45 @@ const StripeTransactionsTab = () => {
                             </Button>
                           </>
                         ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="p-2 hover:bg-blue-100 flex-1"
-                            onClick={() => {
-                              const normalized = {
-                                ...row,
-                                id: (row.id || row._id) as string,
-                              };
-                              setSelectedRow(normalized);
-                              setShowViewDialog(true);
-                            }}
-                          >
-                            Details
-                            <Eye className="h-4 w-4 text-blue-600" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100 flex-1"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowViewDialog(true);
+                              }}
+                            >
+                              Details
+                              <Eye className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="p-2 w-fit"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowRefundModal(true);
+                              }}
+                              disabled={
+                                !(row as any).stripePaymentIntentId && !row.id
+                              }
+                            >
+                              Refund
+                              <RefreshCcw className="h-4 w-4 text-white" />
+                            </Button>
+                          </>
                         )}
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -674,6 +705,15 @@ const StripeTransactionsTab = () => {
         }
         onSuccess={() => refetch()}
         paymentGateway="stripe"
+      />
+      <StripeRefundModal
+        open={showRefundModal}
+        onOpenChange={setShowRefundModal}
+        documentId={selectedRow?.id as string}
+        paymentIntentId={(selectedRow as any)?.stripePaymentIntentId as string}
+        currency={(selectedRow?.stripeCurrency as string) || "USD"}
+        defaultAmountCents={selectedRow?.stripeAmount as any}
+        onSuccess={() => refetch()}
       />
     </div>
   );

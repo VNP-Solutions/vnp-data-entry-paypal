@@ -711,6 +711,20 @@ class ApiClient {
     }
   };
 
+  createStripeRefund = async (data: {
+    documentId?: string;
+    paymentIntentId?: string;
+    amount?: number; // cents
+    reason?: string;
+  }) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/stripe/refund`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   getStripeSettings = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/stripe/settings`);
