@@ -710,6 +710,7 @@ class ApiClient {
     totalAmount: number;
     currency?: string;
     paymentMethod?: string;
+    documentId?: string;
   }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/stripe/payment`, data);

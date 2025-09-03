@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { CheckCircle } from "lucide-react";
 
 export interface StripePaymentDetails {
@@ -18,7 +19,11 @@ interface StripePaymentSuccessModalProps {
   onClose: () => void;
 }
 
-export const StripePaymentSuccessModal = ({ open, details, onClose }: StripePaymentSuccessModalProps) => {
+export const StripePaymentSuccessModal = ({
+  open,
+  details,
+  onClose,
+}: StripePaymentSuccessModalProps) => {
   if (!open || !details) return null;
 
   return (
@@ -37,15 +42,22 @@ export const StripePaymentSuccessModal = ({ open, details, onClose }: StripePaym
 
           <div className="space-y-3 mb-6">
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-500">Payment Intent ID:</span>
-              <span className="text-sm font-mono text-gray-900">{details.intentId}</span>
+              <span className="text-sm font-medium text-gray-500">
+                Payment Intent ID:
+              </span>
+              <span className="text-sm font-mono text-gray-900">
+                {details.intentId}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm font-medium text-gray-500">Status:</span>
               <span
-                className={`text-sm font-semibold ${
-                  details.status === "succeeded" ? "text-green-600" : "text-blue-600"
-                }`}
+                className={cn(
+                  "text-sm font-semibold capitalize",
+                  details.status === "succeeded"
+                    ? "text-green-600"
+                    : "text-blue-600"
+                )}
               >
                 {details.status}
               </span>
@@ -61,7 +73,9 @@ export const StripePaymentSuccessModal = ({ open, details, onClose }: StripePaym
             </div>
             {typeof details.applicationFee === "number" && (
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-500">Application Fee:</span>
+                <span className="text-sm font-medium text-gray-500">
+                  Application Fee:
+                </span>
                 <span className="text-sm font-mono text-gray-900">
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
@@ -72,13 +86,20 @@ export const StripePaymentSuccessModal = ({ open, details, onClose }: StripePaym
             )}
             {details.destination && (
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-500">Destination Account:</span>
-                <span className="text-sm font-mono text-gray-900">{details.destination}</span>
+                <span className="text-sm font-medium text-gray-500">
+                  Destination Account:
+                </span>
+                <span className="text-sm font-mono text-gray-900">
+                  {details.destination}
+                </span>
               </div>
             )}
           </div>
 
-          <Button onClick={onClose} className="w-full bg-green-600 hover:bg-green-700">
+          <Button
+            onClick={onClose}
+            className="w-full bg-green-600 hover:bg-green-700"
+          >
             Close
           </Button>
         </div>
@@ -86,5 +107,3 @@ export const StripePaymentSuccessModal = ({ open, details, onClose }: StripePaym
     </div>
   );
 };
-
-

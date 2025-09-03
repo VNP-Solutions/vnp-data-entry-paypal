@@ -232,6 +232,7 @@ const StripeTransactionsTab = () => {
         totalAmount: amountInCents,
         currency: "usd",
         paymentMethod: "pm_card_visa",
+        documentId: account.id,
       });
       const payment = response?.data?.payment || response?.payment;
       if (payment) {
@@ -460,6 +461,7 @@ const StripeTransactionsTab = () => {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
+                <TableHead>Connected Account</TableHead>
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
@@ -479,7 +481,7 @@ const StripeTransactionsTab = () => {
                   .fill(0)
                   .map((_, idx) => (
                     <TableRow key={idx}>
-                      {Array(11)
+                      {Array(12)
                         .fill(0)
                         .map((_, cellIdx) => (
                           <TableCell key={cellIdx}>
@@ -518,6 +520,9 @@ const StripeTransactionsTab = () => {
                       key={row.id || row._id}
                       className="hover:bg-gray-50/50"
                     >
+                      <TableCell className="font-mono">
+                        {row["Connected Account"]}
+                      </TableCell>
                       <TableCell className="font-mono">
                         {row["Expedia ID"]}
                       </TableCell>
