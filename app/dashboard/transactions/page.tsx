@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Eye,
   EyeOff,
@@ -34,15 +35,10 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
+  DownloadCloud,
 } from "lucide-react";
 import { useAdminExcelData } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -50,10 +46,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
-import PaypalTransactionDetailsModal from "@/components/pages/paypal/paypal-payment/paypal-transaction-details-modal";
+// Removed PayPal-specific modal due to type mismatch with admin data
 import StripeTransactionDetailsModal from "@/components/pages/stripe/stripe-transactions/stripe-transactions-tab/stripe-transaction-details-modal";
 
 interface AdminExcelDataItem {
+  id?: string;
   _id: string;
   userId: string;
   uploadId: string;
@@ -98,6 +95,7 @@ interface AdminExcelDataItem {
   paypalCardLastDigits: string | null;
   createdAt: string;
   updatedAt: string;
+  "Connected Account"?: string;
 }
 
 export default function TransactionsPage() {
@@ -110,11 +108,12 @@ export default function TransactionsPage() {
   );
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [limit, setLimit] = useState(10);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const { data, isLoading, error } = useAdminExcelData({
     page: currentPage,
     limit,
-    filter: filter === "all" ? "" : filter,
+    filter: filter === "all" ? "All" : filter,
     search: searchTerm,
   });
 
@@ -146,13 +145,94 @@ export default function TransactionsPage() {
     }
   };
 
-  const excelData = data?.data || [];
-  const pagination = data?.pagination;
-  const filters = data?.data?.filters;
+  const raw: any = data as any;
+  const excelData: AdminExcelDataItem[] = Array.isArray(raw?.data)
+    ? (raw.data as AdminExcelDataItem[])
+    : Array.isArray(raw?.data?.data)
+    ? (raw.data.data as AdminExcelDataItem[])
+    : [];
+  const pagination: any = raw?.pagination || raw?.data?.pagination || undefined;
+
+  const paginationCurrentPage: number = pagination?.currentPage || currentPage;
+  const paginationTotalPages: number = pagination?.totalPages || 1;
+  const paginationTotalRecords: number = pagination?.totalRecords || 0;
+  const paginationHasPrev: boolean =
+    (pagination?.hasPrevPage ?? pagination?.hasPrev) || false;
+  const paginationHasNext: boolean =
+    (pagination?.hasNextPage ?? pagination?.hasNext) || false;
+
+  const getRowId = (row: AdminExcelDataItem): string => (row.id || row._id) as string;
+
+  const isAllSelected =
+    excelData.length > 0 && selectedRows.size === excelData.length;
+
+  const handleRowSelection = (rowId: string, checked: boolean) => {
+    const next = new Set(selectedRows);
+    if (checked) {
+      next.add(rowId);
+    } else {
+      next.delete(rowId);
+    }
+    setSelectedRows(next);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(new Set(excelData.map((r) => getRowId(r))));
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
+
+  const handleExportCsv = () => {
+    const selectedIds = Array.from(selectedRows);
+    const rows = excelData.filter((r) => selectedIds.includes(getRowId(r)));
+    if (rows.length === 0) return;
+
+    const allKeys = Array.from(
+      rows.reduce((set, item) => {
+        Object.keys((item as unknown) as Record<string, unknown>).forEach((k) =>
+          set.add(k)
+        );
+        return set;
+      }, new Set<string>())
+    );
+
+    const escapeCsv = (value: unknown) => {
+      if (
+        value === null ||
+        value === undefined ||
+        (typeof value === "string" && value.trim() === "")
+      )
+        return "N/A";
+      const str = String(value);
+      if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+      return str;
+    };
+
+    const header = allKeys.join(",");
+    const lines = rows.map((row) =>
+      allKeys.map((k) => escapeCsv((row as any)[k])).join(",")
+    );
+    const csv = [header, ...lines].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transactions_${rows.length}_rows_${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-[80vh]">
       {/* Header Section */}
+      <div className="flex items-center justify-between">
       <div className="mb-8">
         <h1 className="text-xl font-bold text-gray-900 mb-2">
           All Transactions
@@ -160,6 +240,17 @@ export default function TransactionsPage() {
         <p className="text-gray-600">
           View and manage all payment transactions across all uploads
         </p>
+      </div>
+      <Button 
+      variant="secondary"
+      className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+      disabled={selectedRows.size === 0}
+      onClick={handleExportCsv}
+      >
+        <DownloadCloud className="h-4 w-4 mr-2" />
+        Export CSV
+        ({selectedRows.size})
+      </Button>
       </div>
 
       {/* Stats Cards */}
@@ -172,7 +263,7 @@ export default function TransactionsPage() {
             <div>
               <p className="text-sm text-gray-600">Total Records</p>
               <div className="text-xl font-bold text-gray-900">
-                {pagination?.totalRecords || 0}
+                {paginationTotalRecords}
               </div>
             </div>
           </div>
@@ -244,7 +335,7 @@ export default function TransactionsPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 w-full md:w-auto">
-              <Select value={filter} onValueChange={setFilter}>
+              <Select value={filter} onValueChange={(v) => setFilter(v as "PayPal" | "Stripe" | "all")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -267,10 +358,12 @@ export default function TransactionsPage() {
                 {showCardDetails ? "Hide Cards" : "Show Cards"}
               </Button>
               <Button
+                disabled={isLoading}
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   setFilter("all");
+                  toast.success("Filters are removed");
                 }}
                 className="w-10 h-10 p-0"
               >
@@ -287,6 +380,9 @@ export default function TransactionsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
+                <TableHead className="w-12">
+                  <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                </TableHead>
                 <TableHead>Connected Account</TableHead>
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
@@ -298,7 +394,7 @@ export default function TransactionsPage() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>PayPal Status</TableHead>
+                {/* <TableHead>PayPal Status</TableHead> */}
                 <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -332,6 +428,14 @@ export default function TransactionsPage() {
               ) : (
                 excelData.map((row: AdminExcelDataItem) => (
                   <TableRow key={row._id} className="hover:bg-gray-50/50">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedRows.has(getRowId(row))}
+                        onCheckedChange={(checked) =>
+                          handleRowSelection(getRowId(row), checked as boolean)
+                        }
+                      />
+                    </TableCell>
                     <TableCell className="font-mono">
                       {row["Connected Account"] || "N/A"}
                     </TableCell>
@@ -411,7 +515,7 @@ export default function TransactionsPage() {
                         {row["Charge status"]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       {row.paypalStatus ? (
                         <Badge
                           className={
@@ -425,7 +529,7 @@ export default function TransactionsPage() {
                       ) : (
                         <span className="text-gray-400">N/A</span>
                       )}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-center">
                       <Button
                         variant="ghost"
@@ -447,10 +551,10 @@ export default function TransactionsPage() {
         </div>
 
         {/* Pagination */}
-        {pagination && (
+        {true && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="text-sm text-gray-600">
-              Showing {excelData.length} of {pagination.totalRecords} entries
+              Showing {excelData.length} of {paginationTotalRecords} entries
             </div>
             <div className="flex items-center gap-2">
               <Select
@@ -471,20 +575,20 @@ export default function TransactionsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={!pagination.hasPrevPage}
+                disabled={!paginationHasPrev}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm">
-                Page {pagination.currentPage} of {pagination.totalPages}
+                Page {paginationCurrentPage} of {paginationTotalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))
+                  setCurrentPage((p) => Math.min(paginationTotalPages, p + 1))
                 }
-                disabled={!pagination.hasNextPage}
+                disabled={!paginationHasNext}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -492,12 +596,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </Card>
-
-      <PaypalTransactionDetailsModal
-        open={showViewDialog}
-        onOpenChange={setShowViewDialog}
-        rowData={selectedRow}
-      />
 
       <StripeTransactionDetailsModal
         open={showViewDialog}
