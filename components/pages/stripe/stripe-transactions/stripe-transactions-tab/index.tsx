@@ -413,8 +413,8 @@ const StripeTransactionsTab = () => {
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
                 <TableHead>Reservation ID</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
+                {/* <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead> */}
                 <TableHead>Amount</TableHead>
                 <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
@@ -495,7 +495,7 @@ const StripeTransactionsTab = () => {
                           <span>{row["Reservation ID"]}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <span>{formatCheckInOutDate(row["Check In"])}</span>
@@ -506,7 +506,7 @@ const StripeTransactionsTab = () => {
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <span>{formatCheckInOutDate(row["Check Out"])}</span>
                         </div>
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-gray-400" />
