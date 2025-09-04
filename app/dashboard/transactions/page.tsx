@@ -383,16 +383,21 @@ export default function TransactionsPage() {
                 <TableHead className="w-12">
                   <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
                 </TableHead>
-                <TableHead>Connected Account</TableHead>
+                {
+                  (filter === "all" || filter === "Stripe")&& (
+                    <TableHead>Connected Account</TableHead>
+                  )
+                }
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
                 <TableHead>Reservation ID</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
+                {/* <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead> */}
                 <TableHead>Amount</TableHead>
                 <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
+                <TableHead>Gateway</TableHead>
                 <TableHead>Status</TableHead>
                 {/* <TableHead>PayPal Status</TableHead> */}
                 <TableHead className="text-center">Action</TableHead>
@@ -436,9 +441,13 @@ export default function TransactionsPage() {
                         }
                       />
                     </TableCell>
-                    <TableCell className="font-mono">
-                      {row["Connected Account"] || "N/A"}
-                    </TableCell>
+                    {
+                      (filter === "all" || filter === "Stripe")&& (
+                        <TableCell className="font-mono">
+                          {row["Connected Account"] || "N/A"}
+                        </TableCell>
+                      )
+                    }
                     <TableCell className="font-mono">
                       {row["Expedia ID"]}
                     </TableCell>
@@ -460,7 +469,7 @@ export default function TransactionsPage() {
                         <span>{row["Reservation ID"]}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <span>{formatCheckInOutDate(row["Check In"])}</span>
@@ -471,7 +480,8 @@ export default function TransactionsPage() {
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <span>{formatCheckInOutDate(row["Check Out"])}</span>
                       </div>
-                    </TableCell>
+                    </TableCell> */}
+                    
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-gray-400" />
@@ -509,6 +519,11 @@ export default function TransactionsPage() {
                           `************${row["Card Number"]?.slice(-4)}`
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      <Badge variant='outline' className={row["Connected Account"] ? "bg-indigo-100 text-indigo-600" : "bg-blue-100 text-blue-800"}> 
+                      {row["Connected Account"] ? "Stripe" : "PayPal"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(row["Charge status"])}>
