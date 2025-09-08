@@ -1,0 +1,875 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Search,
+  AlertTriangle,
+  Building2,
+  DollarSign,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCcw,
+  Upload,
+  Eye,
+  Edit,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  Shield,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { formatLongString } from "@/lib/utils";
+
+interface DisputeRecord {
+  _id: string;
+  stripeDisputeId: string;
+  stripeDisputeStatus: string;
+  stripeDisputeReason: string;
+  stripeDisputeAmount: number;
+  stripeDisputeCurrency: string;
+  stripeDisputeCreatedAt: string;
+  stripeDisputeEvidenceDueBy?: string;
+  stripeDisputeEvidenceSubmitted: boolean;
+  internalStatus: string;
+  assignedTo?: string;
+  disputeResolutionNotes?: string;
+  hotelName?: string;
+  reservationId?: string;
+  guestName?: string;
+  connectedAccount?: string;
+  stripeExcelDataId: {
+    _id: string;
+    "Hotel Name": string;
+    "Reservation ID": string;
+    Name: string;
+    "Connected Account": string;
+    "Amount to charge": string;
+    Curency: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DisputeStats {
+  summary: {
+    totalDisputes: number;
+    totalAmount: number;
+    averageAmount: number;
+  };
+  breakdowns: {
+    byStatus: Record<string, { count: number; amount: number }>;
+    byReason: Record<string, { count: number; amount: number }>;
+    byInternalStatus: Record<string, { count: number; amount: number }>;
+  };
+}
+
+const StripeDisputesTab = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [reasonFilter, setReasonFilter] = useState("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
+  const [limit, setLimit] = useState(10);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [disputes, setDisputes] = useState<DisputeRecord[]>([]);
+  const [stats, setStats] = useState<DisputeStats | null>(null);
+  const [pagination, setPagination] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDispute, setSelectedDispute] = useState<DisputeRecord | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceText, setEvidenceText] = useState("");
+  const [statusUpdate, setStatusUpdate] = useState({
+    internalStatus: "",
+    disputeResolutionNotes: "",
+    assignedTo: "",
+  });
+
+  const fetchDisputes = async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: limit.toString(),
+      });
+
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (reasonFilter !== "all") params.append("reason", reasonFilter);
+      if (internalStatusFilter !== "all") params.append("internalStatus", internalStatusFilter);
+      if (searchTerm) params.append("hotelName", searchTerm);
+
+      const response = await fetch(`/api/stripe/disputes?${params}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch disputes");
+
+      const data = await response.json();
+      setDisputes(data.data.disputeRecords);
+      setPagination(data.data.pagination);
+    } catch (error) {
+      console.error("Error fetching disputes:", error);
+      toast.error("Failed to fetch disputes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("/api/stripe/disputes/stats", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch stats");
+
+      const data = await response.json();
+      setStats(data.data);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDisputes();
+    fetchStats();
+  }, [currentPage, limit, statusFilter, reasonFilter, internalStatusFilter, searchTerm, refreshKey]);
+
+  const handleRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(amount / 100); // Convert from cents
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "needs_response":
+        return "bg-red-100 text-red-800";
+      case "under_review":
+        return "bg-yellow-100 text-yellow-800";
+      case "won":
+        return "bg-green-100 text-green-800";
+      case "lost":
+        return "bg-red-100 text-red-800";
+      case "charge_refunded":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getInternalStatusColor = (status: string) => {
+    switch (status) {
+      case "new":
+        return "bg-purple-100 text-purple-800";
+      case "investigating":
+        return "bg-yellow-100 text-yellow-800";
+      case "evidence_submitted":
+        return "bg-blue-100 text-blue-800";
+      case "awaiting_response":
+        return "bg-orange-100 text-orange-800";
+      case "resolved":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getReasonColor = (reason: string) => {
+    switch (reason) {
+      case "fraudulent":
+        return "bg-red-100 text-red-800";
+      case "duplicate":
+        return "bg-orange-100 text-orange-800";
+      case "unrecognized":
+        return "bg-yellow-100 text-yellow-800";
+      case "credit_not_processed":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const isEvidenceDueSoon = (dueDate?: string) => {
+    if (!dueDate) return false;
+    const due = new Date(dueDate);
+    const now = new Date();
+    const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return diffHours <= 24 && diffHours > 0;
+  };
+
+  const isEvidenceOverdue = (dueDate?: string) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  const handleUploadEvidence = async () => {
+    if (!selectedDispute || !evidenceFile) {
+      toast.error("Please select a file to upload");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("evidence", evidenceFile);
+
+      const uploadResponse = await fetch("/api/stripe/upload-evidence", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) throw new Error("Failed to upload evidence");
+
+      const uploadData = await uploadResponse.json();
+
+      // Submit evidence with uploaded file
+      const submitResponse = await fetch("/api/stripe/submit-evidence", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          disputeId: selectedDispute.stripeDisputeId,
+          evidence: {
+            receipt: uploadData.data.fileId,
+            customer_communication: evidenceText,
+          },
+        }),
+      });
+
+      if (!submitResponse.ok) throw new Error("Failed to submit evidence");
+
+      toast.success("Evidence uploaded and submitted successfully");
+      setShowEvidenceDialog(false);
+      setEvidenceFile(null);
+      setEvidenceText("");
+      handleRefresh();
+    } catch (error) {
+      console.error("Error uploading evidence:", error);
+      toast.error("Failed to upload evidence");
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedDispute) return;
+
+    try {
+      const response = await fetch(`/api/stripe/dispute/${selectedDispute.stripeDisputeId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(statusUpdate),
+      });
+
+      if (!response.ok) throw new Error("Failed to update status");
+
+      toast.success("Dispute status updated successfully");
+      setShowStatusDialog(false);
+      setStatusUpdate({
+        internalStatus: "",
+        disputeResolutionNotes: "",
+        assignedTo: "",
+      });
+      handleRefresh();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  return (
+    <div className="min-h-[80vh]">
+      {/* Header Section */}
+      <div className="my-4">
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          Stripe Disputes Management
+        </h1>
+        <p className="text-gray-600">
+          Monitor and manage all payment disputes and chargebacks
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Disputes</p>
+              <div className="text-xl font-bold text-gray-900">
+                {stats?.summary.totalDisputes || 0}
+              </div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <DollarSign className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Amount</p>
+              <div className="text-xl font-bold text-gray-900">
+                {stats ? formatCurrency(stats.summary.totalAmount, "USD") : "$0.00"}
+              </div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Average Amount</p>
+              <div className="text-xl font-bold text-gray-900">
+                {stats ? formatCurrency(stats.summary.averageAmount, "USD") : "$0.00"}
+              </div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Shield className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Won Disputes</p>
+              <div className="text-xl font-bold text-gray-900">
+                {stats?.breakdowns.byStatus.won?.count || 0}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters Section */}
+      <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex-1 w-full md:w-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Search by hotel name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="needs_response">Needs Response</SelectItem>
+                <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="won">Won</SelectItem>
+                <SelectItem value="lost">Lost</SelectItem>
+                <SelectItem value="charge_refunded">Refunded</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={reasonFilter} onValueChange={setReasonFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Reasons</SelectItem>
+                <SelectItem value="fraudulent">Fraudulent</SelectItem>
+                <SelectItem value="duplicate">Duplicate</SelectItem>
+                <SelectItem value="unrecognized">Unrecognized</SelectItem>
+                <SelectItem value="credit_not_processed">Credit Not Processed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Internal Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Internal</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="investigating">Investigating</SelectItem>
+                <SelectItem value="evidence_submitted">Evidence Submitted</SelectItem>
+                <SelectItem value="awaiting_response">Awaiting Response</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              className="w-10 h-10 p-0"
+            >
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Table Section */}
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50/50">
+                <TableHead>Dispute ID</TableHead>
+                <TableHead>Hotel & Guest</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Internal Status</TableHead>
+                <TableHead>Evidence Due</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array(5)
+                  .fill(0)
+                  .map((_, idx) => (
+                    <TableRow key={idx}>
+                      {Array(9)
+                        .fill(0)
+                        .map((_, cellIdx) => (
+                          <TableCell key={cellIdx}>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
+              ) : disputes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-500">
+                      <AlertTriangle className="h-8 w-8 mb-2" />
+                      <p className="text-lg font-medium">No disputes found</p>
+                      <p className="text-sm">Try adjusting your filters</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                disputes.map((dispute) => (
+                  <TableRow
+                    key={dispute._id}
+                    className="hover:bg-gray-50/50"
+                  >
+                    <TableCell className="font-mono text-sm">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            {formatLongString(dispute.stripeDisputeId, 12)}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{dispute.stripeDisputeId}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-start gap-2">
+                        <Building2 className="h-4 w-4 text-gray-400 mt-1" />
+                        <div>
+                          <div className="font-medium text-sm">
+                            {dispute.stripeExcelDataId?.["Hotel Name"] || dispute.hotelName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Guest: {dispute.stripeExcelDataId?.Name || dispute.guestName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Res: {dispute.stripeExcelDataId?.["Reservation ID"] || dispute.reservationId}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">
+                          {formatCurrency(dispute.stripeDisputeAmount, dispute.stripeDisputeCurrency)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(dispute.stripeDisputeStatus)}>
+                        {dispute.stripeDisputeStatus.replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getReasonColor(dispute.stripeDisputeReason)}>
+                        {dispute.stripeDisputeReason.replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getInternalStatusColor(dispute.internalStatus)}>
+                        {dispute.internalStatus.replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {dispute.stripeDisputeEvidenceDueBy ? (
+                        <div className="flex items-center gap-1">
+                          {isEvidenceOverdue(dispute.stripeDisputeEvidenceDueBy) ? (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          ) : isEvidenceDueSoon(dispute.stripeDisputeEvidenceDueBy) ? (
+                            <AlertCircle className="h-4 w-4 text-orange-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span className={`text-sm ${
+                            isEvidenceOverdue(dispute.stripeDisputeEvidenceDueBy)
+                              ? "text-red-600 font-medium"
+                              : isEvidenceDueSoon(dispute.stripeDisputeEvidenceDueBy)
+                              ? "text-orange-600 font-medium"
+                              : "text-gray-600"
+                          }`}>
+                            {formatDate(dispute.stripeDisputeEvidenceDueBy)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {formatDate(dispute.stripeDisputeCreatedAt)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDispute(dispute);
+                            setShowDetailsDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={dispute.stripeDisputeEvidenceSubmitted}
+                          onClick={() => {
+                            setSelectedDispute(dispute);
+                            setShowEvidenceDialog(true);
+                          }}
+                        >
+                          <Upload className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDispute(dispute);
+                            setStatusUpdate({
+                              internalStatus: dispute.internalStatus,
+                              disputeResolutionNotes: dispute.disputeResolutionNotes || "",
+                              assignedTo: dispute.assignedTo || "",
+                            });
+                            setShowStatusDialog(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination */}
+        {pagination && (
+          <div className="flex items-center justify-between p-4 border-t">
+            <div className="text-sm text-gray-600">
+              Showing {disputes.length} of {pagination.total_count} entries
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={limit.toString()}
+                onValueChange={(value) => setLimit(parseInt(value))}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Limit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.current_page <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm">
+                Page {pagination.current_page} of {pagination.total_pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(pagination.total_pages, p + 1))
+                }
+                disabled={pagination.current_page >= pagination.total_pages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Dispute Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dispute Details</DialogTitle>
+          </DialogHeader>
+          {selectedDispute && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Dispute ID</Label>
+                  <p className="font-mono text-sm">{selectedDispute.stripeDisputeId}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Amount</Label>
+                  <p className="font-medium">
+                    {formatCurrency(selectedDispute.stripeDisputeAmount, selectedDispute.stripeDisputeCurrency)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Badge className={getStatusColor(selectedDispute.stripeDisputeStatus)}>
+                    {selectedDispute.stripeDisputeStatus.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Reason</Label>
+                  <Badge className={getReasonColor(selectedDispute.stripeDisputeReason)}>
+                    {selectedDispute.stripeDisputeReason.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <h3 className="font-medium mb-3">Hotel & Reservation Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Hotel Name</Label>
+                    <p>{selectedDispute.stripeExcelDataId?.["Hotel Name"] || selectedDispute.hotelName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Guest Name</Label>
+                    <p>{selectedDispute.stripeExcelDataId?.Name || selectedDispute.guestName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Reservation ID</Label>
+                    <p>{selectedDispute.stripeExcelDataId?.["Reservation ID"] || selectedDispute.reservationId}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Connected Account</Label>
+                    <p className="font-mono text-sm">{selectedDispute.stripeExcelDataId?.["Connected Account"] || selectedDispute.connectedAccount}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedDispute.disputeResolutionNotes && (
+                <div className="border-t pt-4">
+                  <Label className="text-sm font-medium text-gray-500">Resolution Notes</Label>
+                  <p className="mt-1 text-sm bg-gray-50 p-3 rounded">
+                    {selectedDispute.disputeResolutionNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Evidence Upload Dialog */}
+      <Dialog open={showEvidenceDialog} onOpenChange={setShowEvidenceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Dispute Evidence</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="evidence-file">Evidence File</Label>
+              <Input
+                id="evidence-file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Accepted formats: PDF, JPG, PNG, DOC, DOCX
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="evidence-text">Additional Information</Label>
+              <textarea
+                id="evidence-text"
+                placeholder="Provide additional context or explanation..."
+                value={evidenceText}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEvidenceText(e.target.value)}
+                rows={4}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEvidenceDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUploadEvidence} disabled={!evidenceFile}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Evidence
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Dialog */}
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Dispute Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="internal-status">Internal Status</Label>
+              <Select
+                value={statusUpdate.internalStatus}
+                onValueChange={(value) =>
+                  setStatusUpdate((prev) => ({ ...prev, internalStatus: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select internal status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="investigating">Investigating</SelectItem>
+                  <SelectItem value="evidence_submitted">Evidence Submitted</SelectItem>
+                  <SelectItem value="awaiting_response">Awaiting Response</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="assigned-to">Assigned To</Label>
+              <Input
+                id="assigned-to"
+                placeholder="Enter email or name"
+                value={statusUpdate.assignedTo}
+                onChange={(e) =>
+                  setStatusUpdate((prev) => ({ ...prev, assignedTo: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="resolution-notes">Resolution Notes</Label>
+              <textarea
+                id="resolution-notes"
+                placeholder="Add notes about the dispute resolution..."
+                value={statusUpdate.disputeResolutionNotes}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setStatusUpdate((prev) => ({ ...prev, disputeResolutionNotes: e.target.value }))
+                }
+                rows={4}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateStatus}>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Update Status
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default StripeDisputesTab

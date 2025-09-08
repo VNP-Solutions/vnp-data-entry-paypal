@@ -4,12 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ConnectedAccountsTab from "@/components/pages/stripe/connected-accounts/connected-accounts-tab";
 import StripeTransactionsTab from "@/components/pages/stripe/stripe-transactions/stripe-transactions-tab";
 import StripeSettingsTab from "@/components/pages/stripe/stripe-settings/stripe-settings-tab";
+import StripeDisputesTab from "@/components/pages/stripe/stripe-disputes/stripe-disputes-tab";
+
 
 export default function StripePaymentPage() {
   return (
     <div className="min-h-[80vh]">
       <Tabs defaultValue="stripe-transactions" className="w-full">
-        <TabsList className="grid w-[600px] grid-cols-3 bg-white text-muted-foreground rounded-lg p-1 h-10">
+        <TabsList className="grid w-[800px] grid-cols-4 bg-white text-muted-foreground rounded-lg p-1 h-10">
           <TabsTrigger
             value="stripe-transactions"
             className="cursor-pointer transition-all duration-[200] data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:shadow-sm"
@@ -28,6 +30,12 @@ export default function StripePaymentPage() {
           >
             Stripe Settings
           </TabsTrigger>
+          <TabsTrigger
+            value="stripe-disputes"
+            className="cursor-pointer transition-all duration-[200] data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-gray-200 data-[state=active]:shadow-sm"
+          >
+            Stripe Disputes
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="connect-account">
           <ConnectedAccountsTab />
@@ -37,6 +45,9 @@ export default function StripePaymentPage() {
         </TabsContent>
         <TabsContent value="stripe-settings">
           <StripeSettingsTab />
+        </TabsContent>
+        <TabsContent value="stripe-disputes">
+          <StripeDisputesTab />
         </TabsContent>
       </Tabs>
     </div>
