@@ -39,9 +39,7 @@ import {
   RefreshCcw,
   Upload,
   Eye,
-  Edit,
   Clock,
-  CheckCircle,
   XCircle,
   AlertCircle,
   TrendingUp,
@@ -55,48 +53,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatLongString } from "@/lib/utils";
+import { apiClient } from "@/lib/client-api-call";
+import type { DisputeStats, StripeDispute } from "@/lib/client-api-call";
 
-interface DisputeRecord {
-  _id: string;
-  stripeDisputeId: string;
-  stripeDisputeStatus: string;
-  stripeDisputeReason: string;
-  stripeDisputeAmount: number;
-  stripeDisputeCurrency: string;
-  stripeDisputeCreatedAt: string;
-  stripeDisputeEvidenceDueBy?: string;
-  stripeDisputeEvidenceSubmitted: boolean;
-  internalStatus: string;
-  assignedTo?: string;
-  disputeResolutionNotes?: string;
+interface FetchDisputesParams {
+  page: number;
+  limit: number;
+  status?: string;
+  reason?: string;
+  internalStatus?: string;
   hotelName?: string;
-  reservationId?: string;
-  guestName?: string;
-  connectedAccount?: string;
-  stripeExcelDataId: {
-    _id: string;
-    "Hotel Name": string;
-    "Reservation ID": string;
-    Name: string;
-    "Connected Account": string;
-    "Amount to charge": string;
-    Curency: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface DisputeStats {
-  summary: {
-    totalDisputes: number;
-    totalAmount: number;
-    averageAmount: number;
-  };
-  breakdowns: {
-    byStatus: Record<string, { count: number; amount: number }>;
-    byReason: Record<string, { count: number; amount: number }>;
-    byInternalStatus: Record<string, { count: number; amount: number }>;
-  };
 }
 
 const StripeDisputesTab = () => {
@@ -107,46 +73,37 @@ const StripeDisputesTab = () => {
   const [internalStatusFilter, setInternalStatusFilter] = useState("all");
   const [limit, setLimit] = useState(10);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [disputes, setDisputes] = useState<DisputeRecord[]>([]);
+  const [stripeTotalCount, setStripeTotalCount] = useState(0);
   const [stats, setStats] = useState<DisputeStats | null>(null);
   const [pagination, setPagination] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDispute, setSelectedDispute] = useState<DisputeRecord | null>(null);
+  const [selectedDispute, setSelectedDispute] = useState<StripeDispute | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
-  const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [evidenceText, setEvidenceText] = useState("");
-  const [statusUpdate, setStatusUpdate] = useState({
-    internalStatus: "",
-    disputeResolutionNotes: "",
-    assignedTo: "",
-  });
+
+  const [stripeDisputes, setStripeDisputes] = useState<StripeDispute[]>([]);
+  const [stripeHasMore, setStripeHasMore] = useState(false);
 
   const fetchDisputes = async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: limit.toString(),
-      });
+      const params: FetchDisputesParams = {
+        page: currentPage,
+        limit: limit,
+      };
 
-      if (statusFilter !== "all") params.append("status", statusFilter);
-      if (reasonFilter !== "all") params.append("reason", reasonFilter);
-      if (internalStatusFilter !== "all") params.append("internalStatus", internalStatusFilter);
-      if (searchTerm) params.append("hotelName", searchTerm);
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (reasonFilter !== "all") params.reason = reasonFilter;
+      if (internalStatusFilter !== "all") params.internalStatus = internalStatusFilter;
+      if (searchTerm) params.hotelName = searchTerm;
 
-      const response = await fetch(`/api/stripe/disputes?${params}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch disputes");
-
-      const data = await response.json();
-      setDisputes(data.data.disputeRecords);
-      setPagination(data.data.pagination);
+      const response = await apiClient.getDisputes(params);
+      setStripeDisputes(response.data.stripeDisputes.data);
+      setStripeTotalCount(response.data.stripeDisputes.count ?? response.data.stripeDisputes.data.length);
+      setStripeHasMore(response.data.stripeDisputes.has_more);
+      setPagination(response.data.pagination);
     } catch (error) {
       console.error("Error fetching disputes:", error);
       toast.error("Failed to fetch disputes");
@@ -157,18 +114,11 @@ const StripeDisputesTab = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/stripe/disputes/stats", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch stats");
-
-      const data = await response.json();
-      setStats(data.data);
+      const response = await apiClient.getDisputeStats();
+      setStats(response.data);
     } catch (error) {
       console.error("Error fetching stats:", error);
+      toast.error("Failed to fetch dispute stats");
     }
   };
 
@@ -188,8 +138,60 @@ const StripeDisputesTab = () => {
     }).format(amount / 100); // Convert from cents
   };
 
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case "warning_needs_response":
+        return "Warning Needs Response";
+      case "warning_under_review":
+        return "Warning Under Review";
+      case "warning_closed":
+        return "Warning Closed";
+      case "needs_response":
+        return "Needs Response";
+      case "under_review":
+        return "Under Review";
+      case "won":
+        return "Won";
+      case "lost":
+        return "Lost";
+      case "charge_refunded":
+        return "Charge Refunded";
+      default:
+        return status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const getStatusDescription = (status: string) => {
+    switch (status) {
+      case "warning_needs_response":
+        return "An inquiry that requires your response (pre-dispute phase)";
+      case "warning_under_review":
+        return "An inquiry where you've submitted evidence and are awaiting the bank's decision";
+      case "warning_closed":
+        return "An inquiry that was closed without escalating to a formal dispute";
+      case "needs_response":
+        return "A formal dispute that requires your response";
+      case "under_review":
+        return "A formal dispute where you've submitted evidence and are awaiting the bank's decision";
+      case "won":
+        return "A dispute that was decided in your favor";
+      case "lost":
+        return "A dispute that was decided in the cardholder's favor";
+      case "charge_refunded":
+        return "The charge has been refunded";
+      default:
+        return "";
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "warning_needs_response":
+        return "bg-orange-100 text-orange-800";
+      case "warning_under_review":
+        return "bg-amber-100 text-amber-800";
+      case "warning_closed":
+        return "bg-lime-100 text-lime-800";
       case "needs_response":
         return "bg-red-100 text-red-800";
       case "under_review":
@@ -222,18 +224,78 @@ const StripeDisputesTab = () => {
     }
   };
 
+  const getReasonDisplayName = (reason: string) => {
+    switch (reason) {
+      case "fraudulent":
+        return "Fraudulent";
+      case "product_not_received":
+        return "Product Not Received";
+      case "product_unacceptable":
+        return "Product Unacceptable";
+      case "credit_not_processed":
+        return "Credit Not Processed";
+      case "subscription_canceled":
+        return "Subscription Canceled";
+      case "general":
+        return "General";
+      case "duplicate":
+        return "Duplicate";
+      case "unrecognized":
+        return "Unrecognized";
+      case "noncompliant":
+        return "Noncompliant";
+      default:
+        return reason.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const getReasonDescription = (reason: string) => {
+    switch (reason) {
+      case "fraudulent":
+        return "Claims that the transaction was unauthorized, such as counterfeit fraud, non-counterfeit fraud, or other fraud in card-present or card-absent environments.";
+      case "product_not_received":
+        return "The customer claims they did not receive the merchandise or services.";
+      case "product_unacceptable":
+        return "The customer claims the product was defective, not as described, counterfeit, or misrepresented.";
+      case "credit_not_processed":
+        return "The customer claims they are entitled to a refund due to a canceled transaction, but the merchant has not issued a credit.";
+      case "subscription_canceled":
+        return "The customer claims they canceled a recurring subscription but were still charged.";
+      case "general":
+        return "Includes reasons like a request for a copy of a signed receipt, a cardholder request due to a dispute, or a legal process request.";
+      case "duplicate":
+        return "The transaction is a duplicate charge.";
+      case "unrecognized":
+        return "The cardholder does not recognize the transaction.";
+      case "noncompliant":
+        return "The transaction violates a network rule, such as a delayed charge, a split transaction, or an improperly assessed surcharge.";
+      default:
+        return "";
+    }
+  };
+
   const getReasonColor = (reason: string) => {
     switch (reason) {
       case "fraudulent":
         return "bg-red-100 text-red-800";
+      case "product_not_received":
+        return "bg-purple-100 text-purple-800";
+      case "product_unacceptable":
+        return "bg-pink-100 text-pink-800";
+      case "credit_not_processed":
+        return "bg-blue-100 text-blue-800";
+      case "subscription_canceled":
+        return "bg-indigo-100 text-indigo-800";
+      case "general":
+        return "bg-gray-100 text-gray-800";
       case "duplicate":
         return "bg-orange-100 text-orange-800";
       case "unrecognized":
         return "bg-yellow-100 text-yellow-800";
-      case "credit_not_processed":
-        return "bg-blue-100 text-blue-800";
+      case "noncompliant":
+        return "bg-green-100 text-green-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-slate-100 text-slate-800";
     }
   };
 
@@ -269,37 +331,10 @@ const StripeDisputesTab = () => {
     try {
       const formData = new FormData();
       formData.append("evidence", evidenceFile);
+      formData.append("additionalInfo", evidenceText);
 
-      const uploadResponse = await fetch("/api/stripe/upload-evidence", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) throw new Error("Failed to upload evidence");
-
-      const uploadData = await uploadResponse.json();
-
-      // Submit evidence with uploaded file
-      const submitResponse = await fetch("/api/stripe/submit-evidence", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          disputeId: selectedDispute.stripeDisputeId,
-          evidence: {
-            receipt: uploadData.data.fileId,
-            customer_communication: evidenceText,
-          },
-        }),
-      });
-
-      if (!submitResponse.ok) throw new Error("Failed to submit evidence");
-
+      await apiClient.uploadDisputeEvidence(selectedDispute.id, formData);
+      
       toast.success("Evidence uploaded and submitted successfully");
       setShowEvidenceDialog(false);
       setEvidenceFile(null);
@@ -311,34 +346,6 @@ const StripeDisputesTab = () => {
     }
   };
 
-  const handleUpdateStatus = async () => {
-    if (!selectedDispute) return;
-
-    try {
-      const response = await fetch(`/api/stripe/dispute/${selectedDispute.stripeDisputeId}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(statusUpdate),
-      });
-
-      if (!response.ok) throw new Error("Failed to update status");
-
-      toast.success("Dispute status updated successfully");
-      setShowStatusDialog(false);
-      setStatusUpdate({
-        internalStatus: "",
-        disputeResolutionNotes: "",
-        assignedTo: "",
-      });
-      handleRefresh();
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update status");
-    }
-  };
 
   return (
     <div className="min-h-[80vh]">
@@ -350,6 +357,15 @@ const StripeDisputesTab = () => {
         <p className="text-gray-600">
           Monitor and manage all payment disputes and chargebacks
         </p>
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <div className="text-blue-600 text-sm font-medium">ℹ️ Status Types:</div>
+            <div className="text-sm text-blue-700">
+              <strong>Inquiry</strong> (warning_*) - Pre-dispute phase where you can respond to prevent escalation •
+              <strong> Formal Dispute</strong> - Chargeback requiring mandatory response within 7-8 days
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -424,28 +440,36 @@ const StripeDisputesTab = () => {
           </div>
           <div className="flex items-center gap-4 w-full md:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="needs_response">Needs Response</SelectItem>
-                <SelectItem value="under_review">Under Review</SelectItem>
-                <SelectItem value="won">Won</SelectItem>
-                <SelectItem value="lost">Lost</SelectItem>
-                <SelectItem value="charge_refunded">Refunded</SelectItem>
+                <SelectItem value="warning_needs_response">Inquiry: Needs Response</SelectItem>
+                <SelectItem value="warning_under_review">Inquiry: Under Review</SelectItem>
+                <SelectItem value="warning_closed">Inquiry: Closed</SelectItem>
+                <SelectItem value="needs_response">Dispute: Needs Response</SelectItem>
+                <SelectItem value="under_review">Dispute: Under Review</SelectItem>
+                <SelectItem value="won">Dispute: Won</SelectItem>
+                <SelectItem value="lost">Dispute: Lost</SelectItem>
+                <SelectItem value="charge_refunded">Charge Refunded</SelectItem>
               </SelectContent>
             </Select>
             <Select value={reasonFilter} onValueChange={setReasonFilter}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Reason" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Reasons</SelectItem>
                 <SelectItem value="fraudulent">Fraudulent</SelectItem>
+                <SelectItem value="product_not_received">Product Not Received</SelectItem>
+                <SelectItem value="product_unacceptable">Product Unacceptable</SelectItem>
+                <SelectItem value="credit_not_processed">Credit Not Processed</SelectItem>
+                <SelectItem value="subscription_canceled">Subscription Canceled</SelectItem>
+                <SelectItem value="general">General</SelectItem>
                 <SelectItem value="duplicate">Duplicate</SelectItem>
                 <SelectItem value="unrecognized">Unrecognized</SelectItem>
-                <SelectItem value="credit_not_processed">Credit Not Processed</SelectItem>
+                <SelectItem value="noncompliant">Noncompliant</SelectItem>
               </SelectContent>
             </Select>
             <Select value={internalStatusFilter} onValueChange={setInternalStatusFilter}>
@@ -504,7 +528,7 @@ const StripeDisputesTab = () => {
                         ))}
                     </TableRow>
                   ))
-              ) : disputes.length === 0 ? (
+              ) : stripeDisputes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
@@ -515,19 +539,19 @@ const StripeDisputesTab = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                disputes.map((dispute) => (
+                stripeDisputes.map((dispute) => (
                   <TableRow
-                    key={dispute._id}
+                    key={dispute.id}
                     className="hover:bg-gray-50/50"
                   >
                     <TableCell className="font-mono text-sm">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
-                            {formatLongString(dispute.stripeDisputeId, 12)}
+                            {formatLongString(dispute.id, 12)}
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{dispute.stripeDisputeId}</p>
+                            <p>{dispute.id}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -537,13 +561,13 @@ const StripeDisputesTab = () => {
                         <Building2 className="h-4 w-4 text-gray-400 mt-1" />
                         <div>
                           <div className="font-medium text-sm">
-                            {dispute.stripeExcelDataId?.["Hotel Name"] || dispute.hotelName}
+                            {dispute.evidence?.customer_name || 'N/A'}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Guest: {dispute.stripeExcelDataId?.Name || dispute.guestName}
+                            Email: {dispute.evidence?.customer_email_address || 'N/A'}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Res: {dispute.stripeExcelDataId?.["Reservation ID"] || dispute.reservationId}
+                            IP: {dispute.evidence?.customer_purchase_ip || 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -552,43 +576,67 @@ const StripeDisputesTab = () => {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-gray-400" />
                         <span className="font-medium">
-                          {formatCurrency(dispute.stripeDisputeAmount, dispute.stripeDisputeCurrency)}
+                          {formatCurrency(dispute.amount, dispute.currency)}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(dispute.stripeDisputeStatus)}>
-                        {dispute.stripeDisputeStatus.replace(/_/g, " ")}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge className={getStatusColor(dispute.status)}>
+                              {getStatusDisplayName(dispute.status)}
+                            </Badge>
+                          </TooltipTrigger>
+                          {getStatusDescription(dispute.status) && (
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{getStatusDescription(dispute.status)}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge className={getReasonColor(dispute.reason)}>
+                              {getReasonDisplayName(dispute.reason)}
+                            </Badge>
+                          </TooltipTrigger>
+                          {getReasonDescription(dispute.reason) && (
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{getReasonDescription(dispute.reason)}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getInternalStatusColor(
+                        dispute.evidence_details?.has_evidence ? 'evidence_submitted' : 'new'
+                      )}>
+                        {dispute.evidence_details?.has_evidence ? 'Evidence Submitted' : 'New'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getReasonColor(dispute.stripeDisputeReason)}>
-                        {dispute.stripeDisputeReason.replace(/_/g, " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getInternalStatusColor(dispute.internalStatus)}>
-                        {dispute.internalStatus.replace(/_/g, " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {dispute.stripeDisputeEvidenceDueBy ? (
+                      {dispute.evidence_details?.due_by ? (
                         <div className="flex items-center gap-1">
-                          {isEvidenceOverdue(dispute.stripeDisputeEvidenceDueBy) ? (
+                          {isEvidenceOverdue(new Date(dispute.evidence_details.due_by * 1000).toISOString()) ? (
                             <XCircle className="h-4 w-4 text-red-500" />
-                          ) : isEvidenceDueSoon(dispute.stripeDisputeEvidenceDueBy) ? (
+                          ) : isEvidenceDueSoon(new Date(dispute.evidence_details.due_by * 1000).toISOString()) ? (
                             <AlertCircle className="h-4 w-4 text-orange-500" />
                           ) : (
                             <Clock className="h-4 w-4 text-gray-400" />
                           )}
                           <span className={`text-sm ${
-                            isEvidenceOverdue(dispute.stripeDisputeEvidenceDueBy)
+                            isEvidenceOverdue(new Date(dispute.evidence_details.due_by * 1000).toISOString())
                               ? "text-red-600 font-medium"
-                              : isEvidenceDueSoon(dispute.stripeDisputeEvidenceDueBy)
+                              : isEvidenceDueSoon(new Date(dispute.evidence_details.due_by * 1000).toISOString())
                               ? "text-orange-600 font-medium"
                               : "text-gray-600"
                           }`}>
-                            {formatDate(dispute.stripeDisputeEvidenceDueBy)}
+                            {formatDate(new Date(dispute.evidence_details.due_by * 1000).toISOString())}
                           </span>
                         </div>
                       ) : (
@@ -597,7 +645,7 @@ const StripeDisputesTab = () => {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-600">
-                        {formatDate(dispute.stripeDisputeCreatedAt)}
+                        {formatDate(new Date(dispute.created * 1000).toISOString())}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
@@ -615,28 +663,13 @@ const StripeDisputesTab = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={dispute.stripeDisputeEvidenceSubmitted}
+                          disabled={Boolean(dispute.evidence_details?.has_evidence)}
                           onClick={() => {
                             setSelectedDispute(dispute);
                             setShowEvidenceDialog(true);
                           }}
                         >
                           <Upload className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedDispute(dispute);
-                            setStatusUpdate({
-                              internalStatus: dispute.internalStatus,
-                              disputeResolutionNotes: dispute.disputeResolutionNotes || "",
-                              assignedTo: dispute.assignedTo || "",
-                            });
-                            setShowStatusDialog(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -651,7 +684,7 @@ const StripeDisputesTab = () => {
         {pagination && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="text-sm text-gray-600">
-              Showing {disputes.length} of {pagination.total_count} entries
+              Showing {stripeDisputes.length} of {stripeTotalCount} entries
             </div>
             <div className="flex items-center gap-2">
               <Select
@@ -672,20 +705,18 @@ const StripeDisputesTab = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={pagination.current_page <= 1}
+                disabled={currentPage <= 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm">
-                Page {pagination.current_page} of {pagination.total_pages}
+                Page {currentPage}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(pagination.total_pages, p + 1))
-                }
-                disabled={pagination.current_page >= pagination.total_pages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={!stripeHasMore}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -705,58 +736,79 @@ const StripeDisputesTab = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Dispute ID</Label>
-                  <p className="font-mono text-sm">{selectedDispute.stripeDisputeId}</p>
+                  <p className="font-mono text-sm">{selectedDispute.id}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Amount</Label>
                   <p className="font-medium">
-                    {formatCurrency(selectedDispute.stripeDisputeAmount, selectedDispute.stripeDisputeCurrency)}
+                    {formatCurrency(selectedDispute.amount, selectedDispute.currency)}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Status</Label>
-                  <Badge className={getStatusColor(selectedDispute.stripeDisputeStatus)}>
-                    {selectedDispute.stripeDisputeStatus.replace(/_/g, " ")}
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge className={getStatusColor(selectedDispute.status)}>
+                          {getStatusDisplayName(selectedDispute.status)}
+                        </Badge>
+                      </TooltipTrigger>
+                      {getStatusDescription(selectedDispute.status) && (
+                        <TooltipContent className="max-w-sm">
+                          <p className="text-sm">{getStatusDescription(selectedDispute.status)}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Reason</Label>
-                  <Badge className={getReasonColor(selectedDispute.stripeDisputeReason)}>
-                    {selectedDispute.stripeDisputeReason.replace(/_/g, " ")}
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge className={getReasonColor(selectedDispute.reason)}>
+                          {getReasonDisplayName(selectedDispute.reason)}
+                        </Badge>
+                      </TooltipTrigger>
+                      {getReasonDescription(selectedDispute.reason) && (
+                        <TooltipContent className="max-w-sm">
+                          <p className="text-sm">{getReasonDescription(selectedDispute.reason)}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               
               <div className="border-t pt-4">
-                <h3 className="font-medium mb-3">Hotel & Reservation Details</h3>
+                <h3 className="font-medium mb-3">Customer & Payment Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Hotel Name</Label>
-                    <p>{selectedDispute.stripeExcelDataId?.["Hotel Name"] || selectedDispute.hotelName}</p>
+                    <Label className="text-sm font-medium text-gray-500">Customer Name</Label>
+                    <p>{selectedDispute.evidence?.customer_name || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Guest Name</Label>
-                    <p>{selectedDispute.stripeExcelDataId?.Name || selectedDispute.guestName}</p>
+                    <Label className="text-sm font-medium text-gray-500">Customer Email</Label>
+                    <p>{selectedDispute.evidence?.customer_email_address || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Reservation ID</Label>
-                    <p>{selectedDispute.stripeExcelDataId?.["Reservation ID"] || selectedDispute.reservationId}</p>
+                    <Label className="text-sm font-medium text-gray-500">Payment Intent</Label>
+                    <p className="font-mono text-sm">{selectedDispute.payment_intent}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Connected Account</Label>
-                    <p className="font-mono text-sm">{selectedDispute.stripeExcelDataId?.["Connected Account"] || selectedDispute.connectedAccount}</p>
+                    <Label className="text-sm font-medium text-gray-500">Charge</Label>
+                    <p className="font-mono text-sm">{selectedDispute.charge}</p>
                   </div>
                 </div>
               </div>
-
-              {selectedDispute.disputeResolutionNotes && (
-                <div className="border-t pt-4">
-                  <Label className="text-sm font-medium text-gray-500">Resolution Notes</Label>
-                  <p className="mt-1 text-sm bg-gray-50 p-3 rounded">
-                    {selectedDispute.disputeResolutionNotes}
-                  </p>
-                </div>
-              )}
+              <div className="border-t pt-4">
+                <Label className="text-sm font-medium text-gray-500">Evidence Due By</Label>
+                <p className="mt-1 text-sm">
+                  {selectedDispute.evidence_details?.due_by
+                    ? formatDate(new Date(selectedDispute.evidence_details.due_by * 1000).toISOString())
+                    : 'N/A'}
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -805,69 +857,6 @@ const StripeDisputesTab = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Status Update Dialog */}
-      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Dispute Status</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="internal-status">Internal Status</Label>
-              <Select
-                value={statusUpdate.internalStatus}
-                onValueChange={(value) =>
-                  setStatusUpdate((prev) => ({ ...prev, internalStatus: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select internal status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="investigating">Investigating</SelectItem>
-                  <SelectItem value="evidence_submitted">Evidence Submitted</SelectItem>
-                  <SelectItem value="awaiting_response">Awaiting Response</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="assigned-to">Assigned To</Label>
-              <Input
-                id="assigned-to"
-                placeholder="Enter email or name"
-                value={statusUpdate.assignedTo}
-                onChange={(e) =>
-                  setStatusUpdate((prev) => ({ ...prev, assignedTo: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="resolution-notes">Resolution Notes</Label>
-              <textarea
-                id="resolution-notes"
-                placeholder="Add notes about the dispute resolution..."
-                value={statusUpdate.disputeResolutionNotes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setStatusUpdate((prev) => ({ ...prev, disputeResolutionNotes: e.target.value }))
-                }
-                rows={4}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateStatus}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Update Status
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

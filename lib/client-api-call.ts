@@ -280,6 +280,114 @@ interface StripeRowDataResponse {
   };
 }
 
+export interface DisputeRecord {
+  _id: string;
+  stripeDisputeId: string;
+  stripeDisputeStatus: string;
+  stripeDisputeReason: string;
+  stripeDisputeAmount: number;
+  stripeDisputeCurrency: string;
+  stripeDisputeCreatedAt: string;
+  stripeDisputeEvidenceDueBy?: string;
+  stripeDisputeEvidenceSubmitted: boolean;
+  internalStatus: string;
+  assignedTo?: string;
+  disputeResolutionNotes?: string;
+  hotelName?: string;
+  reservationId?: string;
+  guestName?: string;
+  connectedAccount?: string;
+  stripeExcelDataId: {
+    _id: string;
+    "Hotel Name": string;
+    "Reservation ID": string;
+    Name: string;
+    "Connected Account": string;
+    "Amount to charge": string;
+    Curency: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisputeStats {
+  summary: {
+    totalDisputes: number;
+    totalAmount: number;
+    averageAmount: number;
+  };
+  breakdowns: {
+    byStatus: Record<string, { count: number; amount: number }>;
+    byReason: Record<string, { count: number; amount: number }>;
+    byInternalStatus: Record<string, { count: number; amount: number }>;
+  };
+}
+
+export interface StripeDispute {
+  id: string;
+  object: string;
+  amount: number;
+  balance_transaction: string | null;
+  charge: string;
+  created: number;
+  currency: string;
+  evidence: {
+    access_activity_log: string | null;
+    billing_address: string | null;
+    customer_email_address: string | null;
+    customer_name: string | null;
+    customer_purchase_ip: string | null;
+    customer_communication: string | null;
+    receipt: string | null;
+    service_date: string | null;
+    shipping_documentation: string | null;
+    [key: string]: string | null | Record<string, unknown>;
+  };
+  evidence_details: {
+    due_by: number;
+    has_evidence: boolean;
+    past_due: boolean;
+    submission_count: number;
+  };
+  is_charge_refundable: boolean;
+  payment_intent: string;
+  payment_method_details: {
+    card: {
+      brand: string;
+      case_type: string;
+      network_reason_code: string;
+    };
+    type: string;
+  };
+  reason: string;
+  status: string;
+}
+
+export interface DisputesResponse {
+  status: string;
+  message: string;
+  data: {
+    disputeRecords: DisputeRecord[];
+    stripeDisputes: {
+      object: string;
+      count: number;
+      data: StripeDispute[];
+      has_more: boolean;
+      url: string;
+    };
+    pagination: {
+      current_page: number;
+      limit: number;
+      total_count: number;
+      total_pages: number;
+      has_more: boolean;
+    };
+    filters: {
+      applied: Record<string, unknown>;
+    };
+  };
+}
+
 class ApiClient {
   private sessionToken: string = "";
   private authToken: string = "";
@@ -828,6 +936,56 @@ class ApiClient {
       throw error;
     }
   };
+
+  getDisputes = async (params: {
+    page: number;
+    limit: number;
+    status?: string;
+    reason?: string;
+    internalStatus?: string;
+    hotelName?: string;
+  }) => {
+    try {
+      const response = await axios.get<DisputesResponse>(
+        `${API_BASE_URL}/stripe/disputes`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getDisputeStats = async () => {
+    try {
+      const response = await axios.get<ApiResponse<DisputeStats>>(
+        `${API_BASE_URL}/stripe/disputes/stats`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  uploadDisputeEvidence = async (
+    disputeId: string,
+    evidence: FormData
+  ) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/stripe/submit-evidence`,
+        {
+          disputeId,
+          evidence: evidence.get('evidence'),
+          metadata: { additionalInfo: evidence.get('additionalInfo') }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
 
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
