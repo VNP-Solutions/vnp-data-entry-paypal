@@ -967,17 +967,15 @@ class ApiClient {
     }
   };
 
-  uploadDisputeEvidence = async (
-    disputeId: string,
-    evidence: FormData
-  ) => {
+  uploadDisputeEvidence = async (formData: FormData) => {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/stripe/submit-evidence`,
+        formData,
         {
-          disputeId,
-          evidence: evidence.get('evidence'),
-          metadata: { additionalInfo: evidence.get('additionalInfo') }
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
       return response.data;
@@ -985,7 +983,6 @@ class ApiClient {
       throw error;
     }
   };
-
 
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {

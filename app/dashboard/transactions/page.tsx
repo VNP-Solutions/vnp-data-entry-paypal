@@ -28,7 +28,6 @@ import {
   Search,
   FileSpreadsheet,
   RefreshCcw,
-  Calendar,
   Building2,
   CreditCard,
   User2,
@@ -45,7 +44,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
+import { formatLongString } from "@/lib/utils";
 // Removed PayPal-specific modal due to type mismatch with admin data
 import StripeTransactionDetailsModal from "@/components/pages/stripe/stripe-transactions/stripe-transactions-tab/stripe-transaction-details-modal";
 
@@ -161,7 +160,8 @@ export default function TransactionsPage() {
   const paginationHasNext: boolean =
     (pagination?.hasNextPage ?? pagination?.hasNext) || false;
 
-  const getRowId = (row: AdminExcelDataItem): string => (row.id || row._id) as string;
+  const getRowId = (row: AdminExcelDataItem): string =>
+    (row.id || row._id) as string;
 
   const isAllSelected =
     excelData.length > 0 && selectedRows.size === excelData.length;
@@ -191,7 +191,7 @@ export default function TransactionsPage() {
 
     const allKeys = Array.from(
       rows.reduce((set, item) => {
-        Object.keys((item as unknown) as Record<string, unknown>).forEach((k) =>
+        Object.keys(item as unknown as Record<string, unknown>).forEach((k) =>
           set.add(k)
         );
         return set;
@@ -233,24 +233,23 @@ export default function TransactionsPage() {
     <div className="min-h-[80vh]">
       {/* Header Section */}
       <div className="flex items-center justify-between">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-2">
-          All Transactions
-        </h1>
-        <p className="text-gray-600">
-          View and manage all payment transactions across all uploads
-        </p>
-      </div>
-      <Button 
-      variant="secondary"
-      className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-      disabled={selectedRows.size === 0}
-      onClick={handleExportCsv}
-      >
-        <DownloadCloud className="h-4 w-4 mr-2" />
-        Export CSV
-        ({selectedRows.size})
-      </Button>
+        <div className="mb-8">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">
+            All Transactions
+          </h1>
+          <p className="text-gray-600">
+            View and manage all payment transactions across all uploads
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+          disabled={selectedRows.size === 0}
+          onClick={handleExportCsv}
+        >
+          <DownloadCloud className="h-4 w-4 mr-2" />
+          Export CSV ({selectedRows.size})
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -335,7 +334,12 @@ export default function TransactionsPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 w-full md:w-auto">
-              <Select value={filter} onValueChange={(v) => setFilter(v as "PayPal" | "Stripe" | "all")}>
+              <Select
+                value={filter}
+                onValueChange={(v) =>
+                  setFilter(v as "PayPal" | "Stripe" | "all")
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -381,13 +385,14 @@ export default function TransactionsPage() {
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead className="w-12">
-                  <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                  />
                 </TableHead>
-                {
-                  (filter === "all" || filter === "Stripe")&& (
-                    <TableHead>Connected Account</TableHead>
-                  )
-                }
+                {(filter === "all" || filter === "Stripe") && (
+                  <TableHead>Connected Account</TableHead>
+                )}
                 <TableHead>Expedia ID</TableHead>
                 <TableHead>Batch</TableHead>
                 <TableHead>Hotel</TableHead>
@@ -441,13 +446,11 @@ export default function TransactionsPage() {
                         }
                       />
                     </TableCell>
-                    {
-                      (filter === "all" || filter === "Stripe")&& (
-                        <TableCell className="font-mono">
-                          {row["Connected Account"] || "N/A"}
-                        </TableCell>
-                      )
-                    }
+                    {(filter === "all" || filter === "Stripe") && (
+                      <TableCell className="font-mono">
+                        {row["Connected Account"] || "N/A"}
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono">
                       {row["Expedia ID"]}
                     </TableCell>
@@ -481,7 +484,7 @@ export default function TransactionsPage() {
                         <span>{formatCheckInOutDate(row["Check Out"])}</span>
                       </div>
                     </TableCell> */}
-                    
+
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-gray-400" />
@@ -521,8 +524,15 @@ export default function TransactionsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono">
-                      <Badge variant='outline' className={row["Connected Account"] ? "bg-indigo-100 text-indigo-600" : "bg-blue-100 text-blue-800"}> 
-                      {row["Connected Account"] ? "Stripe" : "PayPal"}
+                      <Badge
+                        variant="outline"
+                        className={
+                          row["Connected Account"]
+                            ? "bg-indigo-100 text-indigo-600"
+                            : "bg-blue-100 text-blue-800"
+                        }
+                      >
+                        {row["Connected Account"] ? "Stripe" : "PayPal"}
                       </Badge>
                     </TableCell>
                     <TableCell>
