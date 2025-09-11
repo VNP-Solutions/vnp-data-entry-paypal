@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
-import type { DisputeStats, StripeDispute } from "@/lib/client-api-call";
+import type { StripeDispute } from "@/lib/client-api-call";
 
 interface FetchDisputesParams {
   page: number;
@@ -73,7 +73,6 @@ const StripeDisputesTab = () => {
   const [limit, setLimit] = useState(10);
   const [refreshKey, setRefreshKey] = useState(0);
   const [stripeTotalCount, setStripeTotalCount] = useState(0);
-  const [stats, setStats] = useState<DisputeStats | null>(null);
   const [pagination, setPagination] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState<StripeDispute | null>(
@@ -117,19 +116,8 @@ const StripeDisputesTab = () => {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const response = await apiClient.getDisputeStats();
-      setStats(response.data);
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      toast.error("Failed to fetch dispute stats");
-    }
-  };
-
   useEffect(() => {
     fetchDisputes();
-    fetchStats();
   }, [
     currentPage,
     limit,
@@ -399,7 +387,7 @@ const StripeDisputesTab = () => {
             <div>
               <p className="text-sm text-gray-600">Total Disputes</p>
               <div className="text-xl font-bold text-gray-900">
-                {stats?.summary.totalDisputes || 0}
+                {stripeTotalCount || 0}
               </div>
             </div>
           </div>
@@ -412,9 +400,13 @@ const StripeDisputesTab = () => {
             <div>
               <p className="text-sm text-gray-600">Total Amount</p>
               <div className="text-xl font-bold text-gray-900">
-                {stats
-                  ? formatCurrency(stats.summary.totalAmount, "USD")
-                  : "$0.00"}
+                {formatCurrency(
+                  stripeDisputes.reduce(
+                    (sum, dispute) => sum + dispute.amount,
+                    0
+                  ),
+                  "USD"
+                )}
               </div>
             </div>
           </div>
@@ -427,8 +419,14 @@ const StripeDisputesTab = () => {
             <div>
               <p className="text-sm text-gray-600">Average Amount</p>
               <div className="text-xl font-bold text-gray-900">
-                {stats
-                  ? formatCurrency(stats.summary.averageAmount, "USD")
+                {stripeDisputes.length > 0
+                  ? formatCurrency(
+                      stripeDisputes.reduce(
+                        (sum, dispute) => sum + dispute.amount,
+                        0
+                      ) / stripeDisputes.length,
+                      "USD"
+                    )
                   : "$0.00"}
               </div>
             </div>
@@ -442,7 +440,10 @@ const StripeDisputesTab = () => {
             <div>
               <p className="text-sm text-gray-600">Won Disputes</p>
               <div className="text-xl font-bold text-gray-900">
-                {stats?.breakdowns.byStatus.won?.count || 0}
+                {
+                  stripeDisputes.filter((dispute) => dispute.status === "won")
+                    .length
+                }
               </div>
             </div>
           </div>
