@@ -41,6 +41,7 @@ const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
   rowData,
   onSuccess,
 }) => {
+  console.log(rowData);
   const [error, setError] = useState<string>("");
 
   if (!rowData) return null;
@@ -118,6 +119,111 @@ const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Test Card Details Section */}
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-sm font-medium text-blue-800 mb-3">
+              Test Card Details (Copy & Paste)
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-blue-700 font-medium">Card Number:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white px-2 py-1 rounded border text-xs">
+                    {rowData["Card Number"]}
+                  </code>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(rowData["Card Number"])
+                    }
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-700 font-medium">Expiry Month:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white px-2 py-1 rounded border text-xs">
+                    {rowData["Card Expire"].split("-")[1]}
+                  </code>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        rowData["Card Expire"].split("-")[1]
+                      )
+                    }
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-700 font-medium">Expiry Year:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white px-2 py-1 rounded border text-xs">
+                    {rowData["Card Expire"].split("-")[0]}
+                  </code>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        rowData["Card Expire"].split("-")[0]
+                      )
+                    }
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-700 font-medium">CVC:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white px-2 py-1 rounded border text-xs">
+                    {rowData["Card CVV"]}
+                  </code>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(rowData["Card CVV"])
+                    }
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-700 font-medium">ZIP Code:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white px-2 py-1 rounded border text-xs">
+                    12345
+                  </code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText("12345")}
+                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-blue-600">
+              These are Stripe test card details for development use only.
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-sm text-red-800">{error}</div>
+            </div>
+          )}
 
           <Elements stripe={stripePromise}>
             <StripeCheckoutForm

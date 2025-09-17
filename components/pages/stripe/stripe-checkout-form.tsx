@@ -143,6 +143,8 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
     }
   };
 
+  // const cardElement = elements?.getElement(CardElement);
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
