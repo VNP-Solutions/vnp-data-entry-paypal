@@ -55,6 +55,7 @@ import {
 } from "@/components/pages/stripe/stripe-transactions/stripe-payment-success-modal";
 import StripeTransactionDetailsModal from "./stripe-transaction-details-modal";
 import StripeRefundModal from "../stripe-refund-modal";
+import StripePaymentModal from "../../stripe-payment-modal";
 
 interface OtaBillingAddress {
   addressLine1?: string;
@@ -166,6 +167,7 @@ const StripeTransactionsTab = () => {
   const [paymentDetails, setPaymentDetails] =
     useState<StripePaymentDetails | null>(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const { data, isLoading, error, refetch } = useStripeRowData({
     page: currentPage,
@@ -210,60 +212,21 @@ const StripeTransactionsTab = () => {
   const excelData = data?.data?.rows || [];
   const pagination = data?.data?.pagination;
 
-  const handleMakePayment = async (account: AdminExcelDataItem) => {
-    // TODO: Implement Stripe payment processing
-    toast.info(
-      `Processing payment for account: ${account["Connected Account"] || "N/A"}`
-    );
+  const handleMakePayment = (account: AdminExcelDataItem) => {
+    // Set the selected row and show the secure payment modal
+    const normalized = {
+      ...account,
+      id: (account.id || account._id) as string,
+    };
+    setSelectedRow(normalized);
+    setShowPaymentModal(true);
+  };
 
-    // Convert to integer cents by truncating to two decimals (no rounding)
-    const rawAmountStr = String(account["Amount to charge"] || "0").replace(/,/g, "").trim();
-    const isNegative = rawAmountStr.startsWith("-");
-    const unsigned = isNegative ? rawAmountStr.slice(1) : rawAmountStr;
-    const parts = unsigned.split(".");
-    const intPart = parts[0] || "0";
-    const fracPart = (parts[1] || "").padEnd(2, "0").slice(0, 2);
-    const centsUnsigned = Number(intPart) * 100 + Number(fracPart || "0");
-    const amountInCents = isNegative ? -centsUnsigned : centsUnsigned;
-
-    if (!account["Connected Account"]) {
-      toast.error("No connected account found");
-      return;
-    }
-
-    try {
-      const response = await apiClient.createStripePayment({
-        accountId: account["Connected Account"],
-        totalAmount: amountInCents,
-        currency: "usd",
-        paymentMethod: "pm_card_visa",
-        documentId: account.id,
-      });
-      const payment = response?.data?.payment || response?.payment;
-      if (payment) {
-        setPaymentDetails({
-          intentId: payment.id,
-          status: payment.status,
-          amount: payment.amount,
-          currency: payment.currency?.toUpperCase?.() || "USD",
-          applicationFee: payment.application_fee_amount,
-          destination: payment.transfer_data?.destination,
-        });
-        setShowSuccessModal(true);
-      }
-      toast.success("Payment initiated successfully");
-    } catch (error: unknown) {
-      console.error("Stripe payment failed:", error);
-      const apiError = error as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const message =
-        apiError?.response?.data?.message ||
-        apiError?.message ||
-        "Failed to initiate payment";
-      toast.error(message);
-    }
+  const handlePaymentSuccess = (paymentDetails: any) => {
+    setPaymentDetails(paymentDetails);
+    setShowSuccessModal(true);
+    setShowPaymentModal(false);
+    refetch(); // Refresh the data to show updated status
   };
 
   const handleSuccessModalClose = () => {
@@ -561,26 +524,24 @@ const StripeTransactionsTab = () => {
                         row["Charge status"] === "Failed" ||
                         row["Charge status"] === "Declined" ? (
                           <>
-                           {
-                              row["Charge status"] === "Refunded" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="p-2 hover:bg-blue-100 w-fit flex-1"
-                                  onClick={() => {
-                                    const normalized = {
-                                      ...row,
-                                      id: (row.id || row._id) as string,
-                                    };
-                                    setSelectedRow(normalized);
-                                    setShowViewDialog(true);
-                                    setShowRefundModal(false);
-                                  }}
-                                >
-                                  <Database className="h-4 w-4 text-blue-600" />
-                                </Button>
-                              )
-                            }
+                            {row["Charge status"] === "Refunded" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="p-2 hover:bg-blue-100 w-fit flex-1"
+                                onClick={() => {
+                                  const normalized = {
+                                    ...row,
+                                    id: (row.id || row._id) as string,
+                                  };
+                                  setSelectedRow(normalized);
+                                  setShowViewDialog(true);
+                                  setShowRefundModal(false);
+                                }}
+                              >
+                                <Database className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            )}
                             <Button
                               variant={"outline"}
                               size="sm"
@@ -588,12 +549,12 @@ const StripeTransactionsTab = () => {
                               onClick={() => handleMakePayment(row)}
                             >
                               {row["Charge status"] === "Failed" ||
-                              row["Charge status"] === "Declined" || row["Charge status"] === "Refunded"
+                              row["Charge status"] === "Declined" ||
+                              row["Charge status"] === "Refunded"
                                 ? "Charge Again"
                                 : "Make Payment"}
                               <ArrowRight className="h-4 w-4 text-white" />
                             </Button>
-                           
                           </>
                         ) : (
                           <>
@@ -736,6 +697,12 @@ const StripeTransactionsTab = () => {
         currency={(selectedRow?.stripeCurrency as string) || "USD"}
         defaultAmountCents={selectedRow?.stripeAmount as any}
         onSuccess={() => refetch()}
+      />
+      <StripePaymentModal
+        open={showPaymentModal}
+        onOpenChange={setShowPaymentModal}
+        rowData={selectedRow}
+        onSuccess={handlePaymentSuccess}
       />
     </div>
   );

@@ -808,7 +808,7 @@ class ApiClient {
     accountId: string;
     totalAmount: number;
     currency?: string;
-    paymentMethod?: string;
+    paymentMethodId?: string;
     documentId?: string;
   }) => {
     try {
