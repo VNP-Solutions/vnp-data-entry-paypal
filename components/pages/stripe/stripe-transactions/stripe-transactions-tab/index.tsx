@@ -217,7 +217,9 @@ const StripeTransactionsTab = () => {
     );
 
     // Convert to integer cents by truncating to two decimals (no rounding)
-    const rawAmountStr = String(account["Amount to charge"] || "0").replace(/,/g, "").trim();
+    const rawAmountStr = String(account["Amount to charge"] || "0")
+      .replace(/,/g, "")
+      .trim();
     const isNegative = rawAmountStr.startsWith("-");
     const unsigned = isNegative ? rawAmountStr.slice(1) : rawAmountStr;
     const parts = unsigned.split(".");
@@ -555,45 +557,48 @@ const StripeTransactionsTab = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center flex items-center justify-center gap-2">
-                        {row["Charge status"] === "Ready to charge" ||
-                        row["Charge status"] === "Partially charged" ||
-                        row["Charge status"] === "Refunded" ||
-                        row["Charge status"] === "Failed" ||
-                        row["Charge status"] === "Declined" ? (
+                        {[
+                          "ready to charge",
+                          "partially charged",
+                          "refunded",
+                          "failed",
+                          "declined",
+                        ].includes(
+                          row["Charge status"]?.toLowerCase().trim()
+                        ) ? (
                           <>
-                           {
-                              row["Charge status"] === "Refunded" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="p-2 hover:bg-blue-100 w-fit flex-1"
-                                  onClick={() => {
-                                    const normalized = {
-                                      ...row,
-                                      id: (row.id || row._id) as string,
-                                    };
-                                    setSelectedRow(normalized);
-                                    setShowViewDialog(true);
-                                    setShowRefundModal(false);
-                                  }}
-                                >
-                                  <Database className="h-4 w-4 text-blue-600" />
-                                </Button>
-                              )
-                            }
+                            {row["Charge status"]?.toLowerCase().trim() ===
+                              "refunded" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="p-2 hover:bg-blue-100 w-fit flex-1"
+                                onClick={() => {
+                                  const normalized = {
+                                    ...row,
+                                    id: (row.id || row._id) as string,
+                                  };
+                                  setSelectedRow(normalized);
+                                  setShowViewDialog(true);
+                                  setShowRefundModal(false);
+                                }}
+                              >
+                                <Database className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            )}
                             <Button
                               variant={"outline"}
                               size="sm"
                               className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white flex-1"
                               onClick={() => handleMakePayment(row)}
                             >
-                              {row["Charge status"] === "Failed" ||
-                              row["Charge status"] === "Declined" || row["Charge status"] === "Refunded"
+                              {["failed", "declined", "refunded"].includes(
+                                row["Charge status"]?.toLowerCase().trim()
+                              )
                                 ? "Charge Again"
                                 : "Make Payment"}
                               <ArrowRight className="h-4 w-4 text-white" />
                             </Button>
-                           
                           </>
                         ) : (
                           <>

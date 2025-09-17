@@ -874,11 +874,15 @@ export default function PaypalPaymentPageComponent() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center flex items-center justify-center gap-2">
-                          {row["Charge status"] === "Ready to charge" ||
-                          row["Charge status"] === "Partially charged" ||
-                          row["Charge status"] === "Refunded" ||
-                          row["Charge status"] === "Failed" ||
-                          row["Charge status"] === "Declined" ? (
+                          {[
+                            "ready to charge",
+                            "partially charged",
+                            "refunded",
+                            "failed",
+                            "declined",
+                          ].includes(
+                            row["Charge status"]?.toLowerCase().trim()
+                          ) ? (
                             <>
                               <Button
                                 variant={"outline"}
@@ -886,11 +890,11 @@ export default function PaypalPaymentPageComponent() {
                                 className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white flex-1"
                                 onClick={() => handlePaymentClick(row)}
                               >
-                                {row["Charge status"] === "Failed" ||
-                                row["Charge status"] === "Declined"
+                                {["failed", "declined"].includes(
+                                  row["Charge status"]?.toLowerCase().trim()
+                                )
                                   ? "Charge Again"
                                   : "Make Payment"}
-
                                 <ArrowRight className="h-4 w-4 text-white" />
                               </Button>
                             </>
