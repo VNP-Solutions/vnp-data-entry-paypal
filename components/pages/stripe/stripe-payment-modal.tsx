@@ -102,7 +102,7 @@ const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
         </DialogHeader>
 
         <div className="py-4">
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          {/* <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="font-medium">Hotel:</div>
               <div>{rowData["Hotel Name"]}</div>
@@ -118,7 +118,7 @@ const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
                 }).format(amountInCents / 100)}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Test Card Details Section */}
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
