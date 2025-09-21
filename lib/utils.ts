@@ -1,38 +1,27 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
+export function formatCheckInOutDate(dateString: string | number) {
+  // Handle date string in ISO format (e.g., "2024-09-29")
+  const date = new Date(dateString);
 
-
-export function formatCheckInOutDate(excelSerialDate: string | number) {
-  // Convert to number if it's a string (e.g., "45725" → 45725)
-  const serialNumber =
-    typeof excelSerialDate === "string"
-      ? parseFloat(excelSerialDate)
-      : excelSerialDate;
-
-  // Validate input
-  if (isNaN(serialNumber)) {
+  // Validate the date
+  if (isNaN(date.getTime())) {
     return "Invalid Date";
   }
 
-  // Excel's epoch is January 1, 1900 (adjusting for the leap year bug)
-  const excelEpoch = new Date(1900, 0, 1); // Month is 0-indexed (0 = January)
-
-  // Create a new date and add the days
-  const date = new Date(excelEpoch);
-  date.setDate(date.getDate() + serialNumber - 1); // Subtract 1 for 1-based counting
-
-  // Format the date (e.g., "December 31, 2025")
+  // Format the date (e.g., "29 Sep, 2024")
   const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   };
-  return date.toLocaleDateString("en-US", options);
+
+  return date.toLocaleDateString("en-GB", options);
 }
 
 export function formatLongString(str: string | undefined, length: number) {
