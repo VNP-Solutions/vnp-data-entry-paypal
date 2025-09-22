@@ -20,9 +20,9 @@ export default function TemplateDownload() {
     // TODO: Use templateType to determine different URLs when updated
     console.info(`Downloading ${templateType} template`);
     const paypalTemplateUrl =
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1753255148635-Template.xlsx";
+      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532423405-paypal-template.xlsx";
     const stripeTemplateUrl =
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1756641401178-Stripe Template.xlsx";
+      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532632398-stripe-template.xlsx";
     window.open(
       templateType === "paypal" ? paypalTemplateUrl : stripeTemplateUrl
     );
