@@ -176,6 +176,24 @@ const RefundConfirmationDialog = ({
 }: RefundConfirmationDialogProps) => {
   if (!rowData) return null;
 
+  const formatCurrency = (amount: string, currency: string | null | undefined) => {
+    const safeCurrency = currency || "USD";
+    if (!safeCurrency || safeCurrency.length !== 3) {
+      return `${safeCurrency || "USD"} ${parseFloat(amount).toFixed(2)}`;
+    }
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: safeCurrency,
+      }).format(parseFloat(amount));
+    } catch (error) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(parseFloat(amount));
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-md !w-full">
@@ -202,10 +220,7 @@ const RefundConfirmationDialog = ({
               <div className="bg-gray-100 p-2 rounded-sm ">
                 <p className="text-sm font-medium text-gray-700">Amount</p>
                 <p className="text-sm text-gray-900">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: rowData.Curency,
-                  }).format(parseFloat(rowData["Amount to charge"]))}
+                  {formatCurrency(rowData["Amount to charge"], rowData.Curency)}
                 </p>
               </div>
               <div className="bg-gray-100 p-2 rounded-sm">
@@ -343,11 +358,27 @@ export default function PaypalPaymentPageComponent() {
     fetchData();
   }, [currentPage, chargeStatus, refreshKey, limit]);
 
-  const formatCurrency = (amount: string, currency: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
-    }).format(parseFloat(amount));
+  const formatCurrency = (amount: string, currency: string | null | undefined) => {
+    // Provide fallback currency if null/undefined
+    const safeCurrency = currency || "USD";
+    
+    // Validate currency code
+    if (!safeCurrency || safeCurrency.length !== 3) {
+      return `${safeCurrency || "USD"} ${parseFloat(amount).toFixed(2)}`;
+    }
+    
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: safeCurrency,
+      }).format(parseFloat(amount));
+    } catch (error) {
+      // Fallback to USD if currency code is invalid
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(parseFloat(amount));
+    }
   };
 
   const getStatusColor = (status: string) => {
