@@ -133,6 +133,8 @@ export default function TransactionsPage() {
     switch (status) {
       case "Ready to charge":
         return "bg-yellow-100 text-yellow-800";
+      case "Ready to Charge":
+        return "bg-yellow-100 text-yellow-800";
       case "Charged":
         return "bg-green-100 text-green-800";
       case "Failed":

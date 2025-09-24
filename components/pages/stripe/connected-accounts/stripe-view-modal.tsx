@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -195,9 +194,9 @@ export function StripeViewModal({
                         </li>
                       </ol>
                       <p className="mt-2 text-xs">
-                        Note: This process is handled directly through Stripe's
-                        secure platform. You'll receive email notifications from
-                        Stripe about your account status.
+                        Note: This process is handled directly through
+                        Stripe&apos;s secure platform. You&apos;ll receive email
+                        notifications from Stripe about your account status.
                       </p>
                     </div>
                   </div>

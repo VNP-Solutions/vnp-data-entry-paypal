@@ -24,7 +24,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
   FileSpreadsheet,
-  Calendar,
   Building2,
   User2,
   DollarSign,
@@ -46,7 +45,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
+import { formatLongString } from "@/lib/utils";
 import { apiClient } from "@/lib/client-api-call";
 import { EditDialog } from "@/components/shared/edit-modal";
 import {

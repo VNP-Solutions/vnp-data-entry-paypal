@@ -303,7 +303,7 @@ export function useProcessRefund() {
 export function useDeleteFile() {
   return useMutation({
     mutationFn: apiClient.deleteFile,
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("File deleted successfully!");
       setTimeout(() => {
         window.location.reload();
@@ -325,7 +325,7 @@ export function useUpdateRowData() {
         params.data,
         params.paymentGateway
       ),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Record updated successfully!");
     },
     onError: (error: any) => {
@@ -351,7 +351,7 @@ export function useCreateStripePayment(data: {
 }) {
   return useMutation({
     mutationFn: () => apiClient.createStripePayment(data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Stripe payment created successfully!");
     },
     onError: (error: any) => {

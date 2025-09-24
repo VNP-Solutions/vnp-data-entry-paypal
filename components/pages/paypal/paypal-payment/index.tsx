@@ -176,7 +176,10 @@ const RefundConfirmationDialog = ({
 }: RefundConfirmationDialogProps) => {
   if (!rowData) return null;
 
-  const formatCurrency = (amount: string, currency: string | null | undefined) => {
+  const formatCurrency = (
+    amount: string,
+    currency: string | null | undefined
+  ) => {
     const safeCurrency = currency || "USD";
     if (!safeCurrency || safeCurrency.length !== 3) {
       return `${safeCurrency || "USD"} ${parseFloat(amount).toFixed(2)}`;
@@ -186,7 +189,7 @@ const RefundConfirmationDialog = ({
         style: "currency",
         currency: safeCurrency,
       }).format(parseFloat(amount));
-    } catch (error) {
+    } catch {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
@@ -358,21 +361,24 @@ export default function PaypalPaymentPageComponent() {
     fetchData();
   }, [currentPage, chargeStatus, refreshKey, limit]);
 
-  const formatCurrency = (amount: string, currency: string | null | undefined) => {
+  const formatCurrency = (
+    amount: string,
+    currency: string | null | undefined
+  ) => {
     // Provide fallback currency if null/undefined
     const safeCurrency = currency || "USD";
-    
+
     // Validate currency code
     if (!safeCurrency || safeCurrency.length !== 3) {
       return `${safeCurrency || "USD"} ${parseFloat(amount).toFixed(2)}`;
     }
-    
+
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: safeCurrency,
       }).format(parseFloat(amount));
-    } catch (error) {
+    } catch {
       // Fallback to USD if currency code is invalid
       return new Intl.NumberFormat("en-US", {
         style: "currency",

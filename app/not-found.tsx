@@ -28,7 +28,8 @@ export default function NotFound() {
           </h2>
 
           <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-            The page you're looking for doesn't exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been
+            moved.
           </p>
 
           {/* Action Buttons */}
@@ -40,7 +41,7 @@ export default function NotFound() {
               <Home className="h-5 w-5 mr-2" />
               Go Home
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => window.history.back()}

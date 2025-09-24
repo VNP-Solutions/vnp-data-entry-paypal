@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCheck, Link } from "lucide-react";
+import { CheckCheck } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 
 const StripeSettingsTab = () => {
@@ -30,7 +30,9 @@ const StripeSettingsTab = () => {
         const clamped = Math.max(0, Math.min(100, Math.round(next)));
         setVnpRatio(clamped);
       } catch (error: any) {
-        toast.error(error?.response?.data?.message || "Failed to load Stripe settings");
+        toast.error(
+          error?.response?.data?.message || "Failed to load Stripe settings"
+        );
       }
     })();
   }, []);
@@ -122,10 +124,15 @@ const StripeSettingsTab = () => {
               const saved = Number(res?.data?.vnpRatio ?? vnpRatio);
               setVnpRatio(saved);
               toast.success(
-                `Updated payout ratio: VNP ${saved}% / Connected ${100 - saved}%`
+                `Updated payout ratio: VNP ${saved}% / Connected ${
+                  100 - saved
+                }%`
               );
             } catch (error: any) {
-              toast.error(error?.response?.data?.message || "Failed to save Stripe settings");
+              toast.error(
+                error?.response?.data?.message ||
+                  "Failed to save Stripe settings"
+              );
             } finally {
               setIsSaving(false);
             }

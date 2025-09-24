@@ -3,14 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  AlertTriangle,
-  RefreshCcw,
-  Home,
-  ArrowLeft,
-  Bug,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, RefreshCcw, ArrowLeft, Bug } from "lucide-react";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -71,7 +64,7 @@ export default function Error({ error, reset }: ErrorProps) {
               <RefreshCcw className="h-5 w-5 mr-2" />
               Try Again
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => window.history.back()}

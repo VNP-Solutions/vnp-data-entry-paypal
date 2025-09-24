@@ -19,7 +19,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ArrowRight,
   Mail,
   Calendar,
   Eye,
@@ -29,7 +28,6 @@ import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 import { StripeConnectModal } from "@/components/pages/stripe/connected-accounts/stripe-connect-modal";
 import { StripeViewModal } from "@/components/pages/stripe/connected-accounts/stripe-view-modal";
-import { useGetStripeAccount } from "@/lib/hooks/use-api";
 
 interface ApiError {
   response?: {
@@ -49,7 +47,6 @@ const ConnectedAccountsTab = () => {
   );
   const [showViewModal, setShowViewModal] = useState(false);
 
-
   const fetchStripeAccounts = async () => {
     try {
       setIsLoadingStripeAccounts(true);
@@ -59,7 +56,7 @@ const ConnectedAccountsTab = () => {
       );
       setStripeAccounts(response.data);
     } catch (error) {
-      const apiError = error as ApiError;
+      const apiError = error as unknown as ApiError;
       toast.error(
         apiError.response?.data?.message || "Failed to fetch Stripe accounts"
       );
@@ -71,7 +68,6 @@ const ConnectedAccountsTab = () => {
   const handleStripeConnectSuccess = () => {
     fetchStripeAccounts();
   };
-
 
   const handleViewAccount = (account: any) => {
     setSelectedAccountId(account.id);
@@ -148,7 +144,8 @@ const ConnectedAccountsTab = () => {
         return;
       }
       const headers = ["Account ID", "Email", "Country", "Created", "Status"];
-      const escapeCell = (value: any) => `"${String(value ?? "").replace(/\"/g, '""')}"`;
+      const escapeCell = (value: any) =>
+        `"${String(value ?? "").replace(/\"/g, '""')}"`;
       const rows = accounts.map((account: any) => {
         const created = formatDate(account.created);
         const status = getAccountStatusText(account);
@@ -176,7 +173,7 @@ const ConnectedAccountsTab = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.success("Exported connected accounts CSV");
-    } catch (e) {
+    } catch {
       toast.error("Failed to export CSV");
     }
   };
@@ -195,20 +192,20 @@ const ConnectedAccountsTab = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setShowStripeConnectModal(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Link className="h-4 w-4 mr-2" />
-            Connect Stripe Account
-          </Button>
-          <Button
-            onClick={handleExportConnectedAccounts}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <DownloadCloud className="h-4 w-4 mr-2" />
-            Export Connected Accounts
-          </Button>
+            <Button
+              onClick={() => setShowStripeConnectModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Link className="h-4 w-4 mr-2" />
+              Connect Stripe Account
+            </Button>
+            <Button
+              onClick={handleExportConnectedAccounts}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <DownloadCloud className="h-4 w-4 mr-2" />
+              Export Connected Accounts
+            </Button>
           </div>
         </div>
       </div>
@@ -336,7 +333,6 @@ const ConnectedAccountsTab = () => {
                       >
                         <Eye className="h-4 w-4 text-blue-600 ml-1" />
                       </Button>
-                      
                     </TableCell>
                   </TableRow>
                 ))
@@ -355,9 +351,7 @@ const ConnectedAccountsTab = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setStripeAccountsPage((p) => Math.max(1, p - 1))
-                }
+                onClick={() => setStripeAccountsPage((p) => Math.max(1, p - 1))}
                 disabled={stripeAccountsPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -375,8 +369,7 @@ const ConnectedAccountsTab = () => {
                   )
                 }
                 disabled={
-                  stripeAccountsPage ===
-                  stripeAccounts?.pagination?.total_pages
+                  stripeAccountsPage === stripeAccounts?.pagination?.total_pages
                 }
               >
                 <ChevronRight className="h-4 w-4" />
