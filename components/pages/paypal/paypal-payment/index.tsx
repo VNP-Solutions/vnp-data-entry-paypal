@@ -484,6 +484,8 @@ export default function PaypalPaymentPageComponent() {
         onSuccess: () => {
           toast.dismiss(loadingToastId);
           setIsBulkPaymentLoading(false);
+          setSelectedRows(new Set()); // Clear selected rows
+          fetchData(); // Refresh data while maintaining pagination state
         },
         onError: () => {
           toast.dismiss(loadingToastId);
@@ -530,6 +532,8 @@ export default function PaypalPaymentPageComponent() {
         onSuccess: () => {
           toast.dismiss(loadingToastId);
           setIsBulkRefundLoading(false);
+          setSelectedRows(new Set()); // Clear selected rows
+          fetchData(); // Refresh data while maintaining pagination state
         },
         onError: () => {
           toast.dismiss(loadingToastId);

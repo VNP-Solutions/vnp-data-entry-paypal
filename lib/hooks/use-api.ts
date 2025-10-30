@@ -226,16 +226,10 @@ export function useMakeBulkPayment() {
         toast.success("Bulk payment partial success!", {
           description: data.message,
         });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
       } else if (data.status === "all_success") {
         toast.success("Bulk payment successful!", {
           description: data.message,
         });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
       } else if (data.status === "all_failed") {
         toast.error("Bulk payment failed!", {
           description: data.message,
@@ -258,16 +252,10 @@ export function useMakeBulkRefund() {
         toast.success("Bulk refund partial success!", {
           description: data.message,
         });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
       } else if (data.status === "all_success") {
         toast.success("Bulk refund successful!", {
           description: data.message,
         });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
       } else if (data.status === "all_failed") {
         toast.error("Bulk refund failed!", {
           description: data.message,
