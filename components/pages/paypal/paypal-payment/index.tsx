@@ -284,6 +284,7 @@ export default function PaypalPaymentPageComponent() {
   const [isBulkPaymentLoading, setIsBulkPaymentLoading] = useState(false);
   const [isBulkRefundLoading, setIsBulkRefundLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInputValue, setPageInputValue] = useState("1");
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [chargeStatus, setChargeStatus] = useState("All");
   const [limit, setLimit] = useState(20);
@@ -360,6 +361,11 @@ export default function PaypalPaymentPageComponent() {
   useEffect(() => {
     fetchData();
   }, [currentPage, chargeStatus, refreshKey, limit]);
+
+  // Sync pageInputValue with currentPage when currentPage changes from other sources
+  useEffect(() => {
+    setPageInputValue(currentPage.toString());
+  }, [currentPage]);
 
   const formatCurrency = (
     amount: string,
@@ -1012,9 +1018,40 @@ export default function PaypalPaymentPageComponent() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm">
-              Page {data.pagination.currentPage} of {data.pagination.totalPages}
-            </span>
+            <div className="flex items-center gap-2 text-sm">
+              <span>Page</span>
+              <Input
+                type="number"
+                min="1"
+                max={data.pagination.totalPages}
+                value={pageInputValue}
+                onChange={(e) => {
+                  setPageInputValue(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const page = parseInt(e.currentTarget.value);
+                    if (page >= 1 && page <= data.pagination.totalPages) {
+                      setCurrentPage(page);
+                    } else {
+                      // Reset to current page if invalid
+                      setPageInputValue(currentPage.toString());
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  const page = parseInt(e.target.value);
+                  if (page >= 1 && page <= data.pagination.totalPages) {
+                    setCurrentPage(page);
+                  } else {
+                    // Reset to current page if invalid
+                    setPageInputValue(currentPage.toString());
+                  }
+                }}
+                className="w-16 h-8 text-center text-sm"
+              />
+              <span>of {data.pagination.totalPages}</span>
+            </div>
             <Button
               variant="outline"
               size="sm"
