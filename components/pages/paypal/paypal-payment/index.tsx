@@ -735,6 +735,7 @@ export default function PaypalPaymentPageComponent() {
                 <SelectItem value="Charged">Charged</SelectItem>
                 <SelectItem value="Refunded">Refunded</SelectItem>
                 <SelectItem value="Failed">Failed</SelectItem>
+                <SelectItem value="Declined">Declined</SelectItem>
               </SelectContent>
             </Select>
             <Button
