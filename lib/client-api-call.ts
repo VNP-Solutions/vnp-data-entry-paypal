@@ -614,7 +614,7 @@ class ApiClient {
     }
   };
 
-  getUploadSessions = async (page: number = 1, limit: number = 20) => {
+  getUploadSessions = async (page: number = 1, limit: number = 20, search: string = "") => {
     try {
       const response = await axios.get<ApiResponse<UploadSessionsResponse>>(
         `${API_BASE_URL}/upload/sessions`,
@@ -622,6 +622,7 @@ class ApiClient {
           params: {
             page,
             limit,
+            search
           },
         }
       );

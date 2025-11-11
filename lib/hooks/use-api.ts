@@ -33,10 +33,10 @@ export function useSingleRowData(documentId: string) {
 }
 
 // Upload Session Hooks
-export function useUploadSessions(page: number = 1, limit: number = 20) {
+export function useUploadSessions(page: number = 1, limit: number = 20, search: string = "") {
   return useQuery({
-    queryKey: [queryKeys.uploadSessions, { page, limit }],
-    queryFn: () => apiClient.getUploadSessions(page, limit),
+    queryKey: [queryKeys.uploadSessions, { page, limit, search }],
+    queryFn: () => apiClient.getUploadSessions(page, limit, search),
   });
 }
 

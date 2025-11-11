@@ -36,6 +36,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import {
   useUploadSessions,
@@ -72,10 +79,11 @@ interface UploadSessionsResponse {
 
 export default function UploadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
 
   // React Query hooks
-  const { data, isLoading, refetch } = useUploadSessions(currentPage);
+  const { data, isLoading, refetch } = useUploadSessions(currentPage, limit, searchTerm);
   const retryUploadMutation = useRetryUpload();
   // const discardUploadMutation = useDiscardUpload()
   const downloadReportMutation = useDownloadReport();
@@ -397,8 +405,31 @@ export default function UploadsPage() {
         {/* Pagination */}
         {data && pagination && (
           <div className="flex items-center justify-between p-4 border-t">
-            <div className="text-sm text-gray-600">
-              Showing {sessions.length} of {pagination.total} sessions
+            <div className="flex items-center gap-4">
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Show:</span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={(value) => {
+                    setLimit(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-gray-600">
+                Showing {sessions.length} of {pagination.total} sessions
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
