@@ -336,6 +336,7 @@ export default function PaypalPaymentPageComponent() {
         limit,
         page: currentPage,
         chargeStatus,
+        search:searchTerm
       });
 
       // Filter out partially charged records when "charged" filter is selected
@@ -360,7 +361,7 @@ export default function PaypalPaymentPageComponent() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, chargeStatus, refreshKey, limit]);
+  }, [currentPage, chargeStatus, refreshKey, limit, searchTerm]);
 
   // Sync pageInputValue with currentPage when currentPage changes from other sources
   useEffect(() => {

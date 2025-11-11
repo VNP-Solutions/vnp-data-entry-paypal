@@ -75,6 +75,7 @@ interface RowDataParams {
   limit: number;
   page: number;
   chargeStatus: string;
+  search: string;
 }
 
 interface RowDataResponse {
@@ -551,6 +552,7 @@ class ApiClient {
             limit: params.limit,
             page: params.page,
             chargeStatus: params.chargeStatus,
+            search: params.search,
           },
         }
       );
