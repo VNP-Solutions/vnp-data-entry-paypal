@@ -76,6 +76,26 @@ interface RowDataParams {
   page: number;
   chargeStatus: string;
   search: string;
+  uploadId: string;
+}
+
+interface UploadFilesParams {
+  search?: string;
+}
+
+interface UploadFileItem {
+  _id: string;
+  uploadId: string;
+  fileName: string;
+  user?: {
+    name: string;
+    email: string;
+  } | null;
+}
+
+interface UploadFilesResponse {
+  status: string;
+  data: UploadFileItem[];
 }
 
 interface RowDataResponse {
@@ -552,6 +572,23 @@ class ApiClient {
             limit: params.limit,
             page: params.page,
             chargeStatus: params.chargeStatus,
+            search: params.search,
+            uploadId: params.uploadId,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getUploadFiles = async (params: UploadFilesParams = {}) => {
+    try {
+      const response = await axios.get<UploadFilesResponse>(
+        `${API_BASE_URL}/upload/files`,
+        {
+          params: {
             search: params.search,
           },
         }

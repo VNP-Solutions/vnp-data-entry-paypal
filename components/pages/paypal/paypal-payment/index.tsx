@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -23,6 +23,19 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Eye,
   EyeOff,
   Search,
@@ -39,9 +52,12 @@ import {
   Rocket,
   Loader2,
   PencilIcon,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -290,6 +306,11 @@ export default function PaypalPaymentPageComponent() {
   const [limit, setLimit] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedUploadId, setSelectedUploadId] = useState<string>("all");
+  const [uploadFiles, setUploadFiles] = useState<Array<{_id: string; uploadId: string; fileName: string; user?: {name: string; email: string} | null}>>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [fileComboboxOpen, setFileComboboxOpen] = useState(false);
+  const [fileSearchTerm, setFileSearchTerm] = useState("");
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -336,7 +357,8 @@ export default function PaypalPaymentPageComponent() {
         limit,
         page: currentPage,
         chargeStatus,
-        search:searchTerm
+        search:searchTerm,
+        uploadId: selectedUploadId === "all" ? "" : selectedUploadId
       });
 
       // Filter out partially charged records when "charged" filter is selected
@@ -359,14 +381,58 @@ export default function PaypalPaymentPageComponent() {
     setRefreshKey((prev) => prev + 1);
   };
 
+  const fetchUploadFiles = async (search?: string) => {
+    try {
+      setIsLoadingFiles(true);
+      const response = await apiClient.getUploadFiles({ search });
+      setUploadFiles(response.data);
+    } catch (error) {
+      console.error("Failed to fetch upload files:", error);
+      toast.error("Failed to load upload files");
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
+  // Debounced search function
+  const debouncedSearchFiles = useCallback(
+    useMemo(
+      () => {
+        let timeoutId: NodeJS.Timeout;
+        return (searchValue: string) => {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            fetchUploadFiles(searchValue);
+          }, 300); // 300ms delay
+        };
+      },
+      []
+    ),
+    []
+  );
+
   useEffect(() => {
     fetchData();
-  }, [currentPage, chargeStatus, refreshKey, limit, searchTerm]);
+  }, [currentPage, chargeStatus, refreshKey, limit, searchTerm, selectedUploadId]);
+
+  useEffect(() => {
+    fetchUploadFiles();
+  }, []);
+
+  // Handle file search
+  useEffect(() => {
+    if (fileSearchTerm.trim() === "") {
+      fetchUploadFiles();
+    } else {
+      debouncedSearchFiles(fileSearchTerm);
+    }
+  }, [fileSearchTerm, debouncedSearchFiles]);
 
   // Sync pageInputValue with currentPage when currentPage changes from other sources
   useEffect(() => {
     setPageInputValue(currentPage.toString());
   }, [currentPage]);
+
 
   const formatCurrency = (
     amount: string,
@@ -711,6 +777,7 @@ export default function PaypalPaymentPageComponent() {
       {/* Filters Section */}
       <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          {/* search by name, hotel, or confirmation */}
           <div className="flex-1 w-full md:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -722,6 +789,92 @@ export default function PaypalPaymentPageComponent() {
               />
             </div>
           </div>
+            {/* filter by file name */}
+            <div className="flex items-center gap-4 w-full md:w-auto">
+            <Popover open={fileComboboxOpen} onOpenChange={setFileComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={fileComboboxOpen}
+                  className="w-[280px] justify-between"
+                >
+                  <span className="truncate">
+                    {selectedUploadId === "all" 
+                      ? "All Files"
+                      : uploadFiles.find((file) => file.uploadId === selectedUploadId)?.fileName || "Select file..."
+                    }
+                  </span>
+                  <ChevronsUpDown className="opacity-50 ml-2 flex-shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0">
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search files..." 
+                    className="h-9"
+                    value={fileSearchTerm}
+                    onValueChange={setFileSearchTerm}
+                  />
+                  <CommandList className="max-h-[200px] overflow-y-auto">
+                    <CommandEmpty>
+                      {isLoadingFiles ? (
+                        <div className="flex items-center justify-center py-2">
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading files...
+                        </div>
+                      ) : (
+                        "No files found."
+                      )}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setSelectedUploadId("all");
+                          setFileComboboxOpen(false);
+                        }}
+                      >
+                        All Files
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            selectedUploadId === "all" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                      {uploadFiles.map((file) => (
+                        <CommandItem
+                          key={file._id}
+                          value={file.uploadId}
+                          onSelect={() => {
+                            setSelectedUploadId(file.uploadId);
+                            setFileComboboxOpen(false);
+                          }}
+                        >
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="font-medium truncate">{file.fileName}</span>
+                            {file.user?.name && (
+                              <span className="text-xs text-gray-500 truncate">
+                                by {file.user.name}
+                              </span>
+                            )}
+                          </div>
+                          <Check
+                            className={cn(
+                              "ml-2 h-4 w-4 flex-shrink-0",
+                              selectedUploadId === file.uploadId ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+          {/* Filters */}
           <div className="flex items-center gap-4 w-full md:w-auto">
             <Select value={chargeStatus} onValueChange={setChargeStatus}>
               <SelectTrigger className="w-[180px]">
@@ -739,6 +892,7 @@ export default function PaypalPaymentPageComponent() {
                 <SelectItem value="Declined">Declined</SelectItem>
               </SelectContent>
             </Select>
+          
             <Button
               variant="outline"
               onClick={() => setShowCardDetails(!showCardDetails)}
@@ -759,6 +913,7 @@ export default function PaypalPaymentPageComponent() {
               <RefreshCcw className="h-4 w-4" />
             </Button>
           </div>
+          
         </div>
       </Card>
 
