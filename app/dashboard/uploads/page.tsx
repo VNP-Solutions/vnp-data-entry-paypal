@@ -127,13 +127,25 @@ export default function UploadsPage() {
     }
   };
 
-  const handleArchiveUnarchiveFile = async (uploadId: string, archive: boolean) => {
+  const handleArchiveUnarchiveFile = async (
+    uploadId: string,
+    archive: boolean
+  ) => {
     try {
-      toast.loading(archive ? "Unarchiving file, please wait.." : "Archiving file, please wait..");
-      const response = await archiveUnarchiveFileMutation.mutateAsync({ uploadId, archive });
+      toast.loading(
+        archive
+          ? "Unarchiving file, please wait.."
+          : "Archiving file, please wait.."
+      );
+      const response = await archiveUnarchiveFileMutation.mutateAsync({
+        uploadId,
+        archive,
+      });
       toast.success(response.message);
-    } catch(error: any) {
-      toast.error(error.response?.data?.message || "Failed to archive/unarchive file");
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to archive/unarchive file"
+      );
     } finally {
       toast.dismiss();
     }
@@ -280,7 +292,8 @@ export default function UploadsPage() {
                 <TableHead>Gateway</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Charge Progress</TableHead>
-                <TableHead className="text-center">Uploaded At</TableHead>
+                <TableHead>Archive Status</TableHead>
+                <TableHead className="text-start">Uploaded At</TableHead>
                 <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -346,8 +359,30 @@ export default function UploadsPage() {
                           {session.processedRows} entries
                         </span>
                       </TableCell>
-
-                      <TableCell className="text-center">
+                      <TableCell className="text-start">
+                        <Badge
+                          className={getStatusColor(
+                            session.archive ? "archived" : "unarchived"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <p>
+                              {session.archive ? (
+                                <span className="flex items-center gap-2">
+                                  <Archive className="h-4 w-4 text-red-600" />
+                                  Archived
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-2">
+                                  <BadgeCheck className="h-4 w-4 text-green-600" />
+                                  Unarchived
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-start">
                         {session.startedAt ? (
                           <div className="text-sm">
                             {format(new Date(session.startedAt), "MMM d, yyyy")}
@@ -407,7 +442,10 @@ export default function UploadsPage() {
                             {/* archive / unarchive file */}
                             <DropdownMenuItem
                               onClick={() => {
-                                handleArchiveUnarchiveFile(session.uploadId, session.archive);
+                                handleArchiveUnarchiveFile(
+                                  session.uploadId,
+                                  session.archive
+                                );
                               }}
                               className="flex items-center gap-2 hover:text-white text-gray-600 cursor-pointer p-2 hover:bg-black"
                             >
@@ -417,7 +455,9 @@ export default function UploadsPage() {
                                 <Archive className="h-4 w-4 " />
                               )}
                               <span className="capitalize">
-                                {session.archive ? "Unarchive File" : "Archive File"}
+                                {session.archive
+                                  ? "Unarchive File"
+                                  : "Archive File"}
                               </span>
                             </DropdownMenuItem>
 
