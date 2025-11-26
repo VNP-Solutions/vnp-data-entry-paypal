@@ -29,6 +29,9 @@ import {
   RefreshCw,
   Trash2,
   DownloadCloud,
+  Archive,
+  X,
+  BadgeCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -49,11 +52,13 @@ import {
   useRetryUpload,
   useDownloadReport,
   useDeleteFile,
+  useArchiveUnarchiveFile,
 } from "@/lib/hooks/use-api";
 import { toast } from "sonner";
 import TemplateDownload from "@/components/pages/uploads/template-download";
 
 interface UploadSession {
+  archive: boolean;
   uploadId: string;
   fileName: string;
   status: string;
@@ -83,11 +88,16 @@ export default function UploadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // React Query hooks
-  const { data, isLoading, refetch } = useUploadSessions(currentPage, limit, searchTerm);
+  const { data, isLoading, refetch } = useUploadSessions(
+    currentPage,
+    limit,
+    searchTerm
+  );
   const retryUploadMutation = useRetryUpload();
   // const discardUploadMutation = useDiscardUpload()
   const downloadReportMutation = useDownloadReport();
   const deleteFileMutation = useDeleteFile();
+  const archiveUnarchiveFileMutation = useArchiveUnarchiveFile();
 
   const handleRetryUpload = async (uploadId: string) => {
     await retryUploadMutation.mutateAsync(uploadId);
@@ -112,6 +122,18 @@ export default function UploadsPage() {
         "Downloading report, Make sure popup is not blocked by browser"
       );
       await downloadReportMutation.mutateAsync(uploadId);
+    } finally {
+      toast.dismiss();
+    }
+  };
+
+  const handleArchiveUnarchiveFile = async (uploadId: string, archive: boolean) => {
+    try {
+      toast.loading(archive ? "Unarchiving file, please wait.." : "Archiving file, please wait..");
+      const response = await archiveUnarchiveFileMutation.mutateAsync({ uploadId, archive });
+      toast.success(response.message);
+    } catch(error: any) {
+      toast.error(error.response?.data?.message || "Failed to archive/unarchive file");
     } finally {
       toast.dismiss();
     }
@@ -382,6 +404,24 @@ export default function UploadsPage() {
                               <span>Retry Upload</span>
                             </DropdownMenuItem>
 
+                            {/* archive / unarchive file */}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                handleArchiveUnarchiveFile(session.uploadId, session.archive);
+                              }}
+                              className="flex items-center gap-2 hover:text-white text-gray-600 cursor-pointer p-2 hover:bg-black"
+                            >
+                              {session.archive ? (
+                                <BadgeCheck className="h-4 w-4 " />
+                              ) : (
+                                <Archive className="h-4 w-4 " />
+                              )}
+                              <span className="capitalize">
+                                {session.archive ? "Unarchive File" : "Archive File"}
+                              </span>
+                            </DropdownMenuItem>
+
+                            {/* delete file */}
                             <DropdownMenuItem
                               onClick={() => {
                                 handleDeleteFile(session.uploadId);
@@ -406,7 +446,6 @@ export default function UploadsPage() {
         {data && pagination && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="flex items-center gap-4">
-              
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Show:</span>
                 <Select

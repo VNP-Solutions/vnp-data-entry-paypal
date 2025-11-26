@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminExcelDataParams, apiClient } from "../client-api-call";
 import { toast } from "sonner";
 
@@ -20,7 +20,7 @@ export function useRowData(params: {
 }) {
   return useQuery({
     queryKey: [queryKeys.rowData, params],
-    queryFn: () => apiClient.getRowData(params),
+    queryFn: () => apiClient.getRowData({ ...params, search: "", uploadId: "" }),
   });
 }
 
@@ -296,6 +296,23 @@ export function useDeleteFile() {
       setTimeout(() => {
         window.location.reload();
       }, 2000);
+    },
+  });
+}
+
+export function useArchiveUnarchiveFile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ uploadId, archive }: { uploadId: string; archive: boolean }) => apiClient.archiveUnarchiveFile(uploadId, archive),
+    onSuccess: (data) => {
+      console.log(data);
+      toast.success(data.message);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to archive/unarchive file");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
     },
   });
 }
