@@ -366,3 +366,44 @@ export function useCreateStripePayment(data: {
     },
   });
 }
+
+export function useCreateExcelData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      "Expedia ID"?: string;
+      "Batch"?: string;
+      "OTA"?: string;
+      "Posting Type"?: string;
+      "Portfolio"?: string;
+      "Hotel Name"?: string;
+      "Reservation ID": string;
+      "Hotel Confirmation Code"?: string;
+      "Name"?: string;
+      "Check In"?: string;
+      "Check Out"?: string;
+      "Curency"?: string;
+      "Amount to charge": string;
+      "Charge status": string;
+      "Card Number": string;
+      "Card Expire": string;
+      "Card CVV": string;
+      "Soft Descriptor": string;
+      "VNP Work ID"?: string;
+      "Status"?: string;
+    }) => apiClient.createExcelData(data),
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        toast.success(data.message || "Excel data created successfully!");
+        // Invalidate relevant queries to refresh data
+        queryClient.invalidateQueries({ queryKey: [queryKeys.rowData] });
+        queryClient.invalidateQueries({ queryKey: [queryKeys.adminExcelData] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to create excel data"
+      );
+    },
+  });
+}

@@ -1033,6 +1033,38 @@ class ApiClient {
     }
   };
 
+  createExcelData = async (data: {
+    "Expedia ID"?: string;
+    "Batch"?: string;
+    "OTA"?: string;
+    "Posting Type"?: string;
+    "Portfolio"?: string;
+    "Hotel Name"?: string;
+    "Reservation ID": string;
+    "Hotel Confirmation Code"?: string;
+    "Name"?: string;
+    "Check In"?: string;
+    "Check Out"?: string;
+    "Curency"?: string;
+    "Amount to charge": string;
+    "Charge status": string;
+    "Card Number": string;
+    "Card Expire": string;
+    "Card CVV": string;
+    "Soft Descriptor": string;
+    "VNP Work ID"?: string;
+    "Status"?: string;
+  }) => {
+    try {
+      const response = await axios.post<ApiResponse<{ message: string }>>(
+        `${API_BASE_URL}/create-excel-data`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
 
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {

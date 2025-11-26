@@ -54,6 +54,8 @@ import {
   PencilIcon,
   Check,
   ChevronsUpDown,
+  Plus,
+  Currency,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -78,6 +80,7 @@ import {
 } from "@/components/ui/tooltip";
 import { EditDialog } from "@/components/shared/edit-modal";
 import PaypalTransactionDetailsModal from "./paypal-transaction-details-modal";
+import CreateSinglePaymentModal from "./create-single-payment-modal";
 export interface RowData {
   id: string;
   uploadId: string;
@@ -296,6 +299,7 @@ export default function PaypalPaymentPageComponent() {
       search: null,
     },
   });
+  const [showSinglePaymentDialog, setShowSinglePaymentDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isBulkPaymentLoading, setIsBulkPaymentLoading] = useState(false);
   const [isBulkRefundLoading, setIsBulkRefundLoading] = useState(false);
@@ -681,6 +685,14 @@ export default function PaypalPaymentPageComponent() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            {/* create single payment with a modal opening clicking this button */}
+            <Button
+              onClick={() => setShowSinglePaymentDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Create Single Payment
+              <DollarSign className="h-4 w-4 mr-2" />
+            </Button>
             <Button
               onClick={handleBulkPayment}
               className="bg-blue-600 hover:bg-blue-700"
@@ -1252,6 +1264,13 @@ export default function PaypalPaymentPageComponent() {
         onClose={() => setShowCheckoutForm(false)}
         formData={formData}
         showCardDetails={showCardDetails}
+        onSuccess={fetchData}
+      />
+      
+      {/* create single payment modal */}
+      <CreateSinglePaymentModal
+        open={showSinglePaymentDialog}
+        onOpenChange={setShowSinglePaymentDialog}
         onSuccess={fetchData}
       />
     </div>
