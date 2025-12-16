@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/client-api-call";
+import logo from "@/public/logo-colored.png";
 
 interface ApiError {
   response?: {
@@ -84,7 +85,7 @@ function ForgotPasswordContent() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="p-3">
-                <Image src="https://www.vnpsolutions.com/img/VNP-logo.svg" alt="VNP Logo" width={100} height={100} />
+                <Image src={logo} alt="VNP Logo" width={100} height={100} />
               </div>
               <div className="text-left">
                 <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>

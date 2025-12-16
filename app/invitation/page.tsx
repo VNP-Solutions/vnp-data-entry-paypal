@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Image from "next/image";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/client-api-call";
+import logo from "@/public/logo-colored.png";
 
 type Step = "verify" | "set-password";
 
@@ -128,7 +129,7 @@ function InvitationContent() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="p-3">
-                <Image src="https://www.vnpsolutions.com/img/VNP-logo.svg" alt="VNP Logo" width={100} height={100} />
+                <Image src={logo} alt="VNP Logo" width={100} height={100} />
               </div>
               <div className="text-left">
                 <div className="text-sm font-medium text-blue-600 uppercase tracking-wide">VNP Solutions</div>

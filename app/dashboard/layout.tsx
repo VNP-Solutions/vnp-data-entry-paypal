@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys, useProfile } from "@/lib/hooks/use-api";
 import { ProfileButton } from "@/components/shared/profile-button";
+import logo from "@/public/logo-colored.png";
 
 export default function DashboardLayout({
   children,
@@ -67,7 +68,7 @@ export default function DashboardLayout({
               <div className="flex items-center gap-3">
                 <div className="p-2">
                   <Image
-                    src="https://www.vnpsolutions.com/img/VNP-logo.svg"
+                    src={logo}
                     alt="VNP Logo"
                     width={100}
                     height={100}
