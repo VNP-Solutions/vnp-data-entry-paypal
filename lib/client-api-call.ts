@@ -1066,6 +1066,17 @@ class ApiClient {
     }
   };
 
+  exportManualExcelData = async () => {
+    try {
+      const response = await axios.get<ApiResponse<AdminExcelDataItem[]>>(
+        `${API_BASE_URL}/manual-excel-data`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

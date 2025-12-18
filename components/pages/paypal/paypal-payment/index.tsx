@@ -56,6 +56,7 @@ import {
   ChevronsUpDown,
   Plus,
   Currency,
+  Download,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -71,6 +72,7 @@ import { CheckoutForm } from "@/components/pages/paypal/checkout-form";
 import { useMakeBulkPayment } from "@/lib/hooks/use-api";
 import { useMakeBulkRefund } from "@/lib/hooks/use-api";
 import { useProcessRefund } from "@/lib/hooks/use-api";
+import { useExportManualExcelData } from "@/lib/hooks/use-api";
 import { formatCheckInOutDate, formatLongString } from "@/lib/utils";
 import {
   Tooltip,
@@ -323,6 +325,7 @@ export default function PaypalPaymentPageComponent() {
   const makeBulkPayment = useMakeBulkPayment();
   const makeBulkRefund = useMakeBulkRefund();
   const processRefund = useProcessRefund();
+  const exportManualExcelData = useExportManualExcelData();
   // const [isProcessing, setIsProcessing] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [refundRowData, setRefundRowData] = useState<RowData | null>(null);
@@ -692,6 +695,23 @@ export default function PaypalPaymentPageComponent() {
             >
               Create Single Payment
               <DollarSign className="h-4 w-4 mr-2" />
+            </Button>
+            <Button
+              onClick={() => exportManualExcelData.mutate()}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={exportManualExcelData.isPending}
+            >
+              {exportManualExcelData.isPending ? (
+                <>
+                  Exporting...
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                </>
+              ) : (
+                <>
+                  Export Single Payments
+                  <Download className="h-4 w-4 ml-2" />
+                </>
+              )}
             </Button>
             <Button
               onClick={handleBulkPayment}

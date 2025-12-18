@@ -407,3 +407,193 @@ export function useCreateExcelData() {
     },
   });
 }
+
+export function useExportManualExcelData() {
+  return useMutation({
+    mutationFn: apiClient.exportManualExcelData,
+    onSuccess: (response) => {
+      // Show the API message
+      if (response.message) {
+        toast.success(response.message);
+      }
+      
+      // Check if there's data to export
+      if (!response.data || response.data.length === 0) {
+        toast.info("No data to export");
+        return;
+      }
+
+      // Dynamically import xlsx to avoid SSR issues
+      import('xlsx').then((XLSX) => {
+        // Prepare data for Excel
+        const excelData = response.data.map((item: any) => ({
+          'ID': item.id || '',
+          'Upload ID': item.uploadId || '',
+          'File Name': item.fileName || '',
+          'Upload Status': item.uploadStatus || '',
+          'Row Number': item.rowNumber || '',
+          'Expedia ID': item['Expedia ID'] || '',
+          'Batch': item.Batch || '',
+          'OTA': item.OTA || '',
+          'Posting Type': item['Posting Type'] || '',
+          'Portfolio': item.Portfolio || '',
+          'Hotel Name': item['Hotel Name'] || '',
+          'Reservation ID': item['Reservation ID'] || '',
+          'Hotel Confirmation Code': item['Hotel Confirmation Code'] || '',
+          'Guest Name': item.Name || '',
+          'Check In': item['Check In'] || '',
+          'Check Out': item['Check Out'] || '',
+          'Currency': item.Curency || '',
+          'Amount to Charge': item['Amount to charge'] || '',
+          'Charge Status': item['Charge status'] || '',
+          'Card Number': item['Card Number'] || '',
+          'Card Expire': item['Card Expire'] || '',
+          'Card CVV': item['Card CVV'] || '',
+          'Soft Descriptor': item['Soft Descriptor'] || '',
+          'VNP Work ID': item['VNP Work ID'] || '',
+          'Status': item.Status || '',
+          
+          // PayPal Payment Fields
+          'PayPal Order ID': item.paypalOrderId || '',
+          'PayPal Capture ID': item.paypalCaptureId || '',
+          'PayPal Network Transaction ID': item.paypalNetworkTransactionId || '',
+          'PayPal Fee': item.paypalFee || '',
+          'PayPal Net Amount': item.paypalNetAmount || '',
+          'PayPal Card Brand': item.paypalCardBrand || '',
+          'PayPal Card Type': item.paypalCardType || '',
+          'PayPal Card Last Digits': item.paypalCardLastDigits || '',
+          'PayPal AVS Code': item.paypalAvsCode || '',
+          'PayPal CVV Code': item.paypalCvvCode || '',
+          'PayPal Create Time': item.paypalCreateTime || '',
+          'PayPal Update Time': item.paypalUpdateTime || '',
+          'PayPal Status': item.paypalStatus || '',
+          'PayPal Amount': item.paypalAmount || '',
+          'PayPal Currency': item.paypalCurrency || '',
+          'PayPal Capture Status': item.paypalCaptureStatus || '',
+          'PayPal Custom ID': item.paypalCustomId || '',
+          
+          // PayPal Refund Fields
+          'PayPal Refund ID': item.paypalRefundId || '',
+          'PayPal Refund Status': item.paypalRefundStatus || '',
+          'PayPal Refund Amount': item.paypalRefundAmount || '',
+          'PayPal Refund Currency': item.paypalRefundCurrency || '',
+          'PayPal Refund Gross Amount': item.paypalRefundGrossAmount || '',
+          'PayPal Refund Fee': item.paypalRefundFee || '',
+          'PayPal Refund Net Amount': item.paypalRefundNetAmount || '',
+          'PayPal Total Refunded': item.paypalTotalRefunded || '',
+          'PayPal Refund Create Time': item.paypalRefundCreateTime || '',
+          'PayPal Refund Update Time': item.paypalRefundUpdateTime || '',
+          'PayPal Refund Invoice ID': item.paypalRefundInvoiceId || '',
+          'PayPal Refund Custom ID': item.paypalRefundCustomId || '',
+          'PayPal Refund Note': item.paypalRefundNote || '',
+          
+          // OTA/Billing Address Fields
+          'OTA Name': item.otaId?.name || '',
+          'OTA Display Name': item.otaId?.displayName || '',
+          'OTA Customer': item.otaId?.customer || '',
+          'OTA Is Active': item.otaId?.isActive ? 'Yes' : 'No',
+          'Billing Zip Code': item.otaId?.billingAddress?.zipCode || '',
+          'Billing Country Code': item.otaId?.billingAddress?.countryCode || '',
+          'Billing Address Line 1': item.otaId?.billingAddress?.addressLine1 || '',
+          'Billing Address Line 2': item.otaId?.billingAddress?.addressLine2 || '',
+          'Billing City': item.otaId?.billingAddress?.city || '',
+          'Billing State': item.otaId?.billingAddress?.state || '',
+          
+          // Other Fields
+          'Archive': item.archive ? 'Yes' : 'No',
+          'Created At': item.createdAt ? new Date(item.createdAt).toLocaleString() : '',
+        }));
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+
+        // Set column widths for better readability
+        const colWidths = [
+          { wch: 25 }, // ID
+          { wch: 30 }, // Upload ID
+          { wch: 30 }, // File Name
+          { wch: 15 }, // Upload Status
+          { wch: 12 }, // Row Number
+          { wch: 12 }, // Expedia ID
+          { wch: 10 }, // Batch
+          { wch: 12 }, // OTA
+          { wch: 15 }, // Posting Type
+          { wch: 20 }, // Portfolio
+          { wch: 30 }, // Hotel Name
+          { wch: 15 }, // Reservation ID
+          { wch: 25 }, // Hotel Confirmation Code
+          { wch: 25 }, // Guest Name
+          { wch: 12 }, // Check In
+          { wch: 12 }, // Check Out
+          { wch: 10 }, // Currency
+          { wch: 15 }, // Amount to Charge
+          { wch: 15 }, // Charge Status
+          { wch: 18 }, // Card Number
+          { wch: 12 }, // Card Expire
+          { wch: 10 }, // Card CVV
+          { wch: 25 }, // Soft Descriptor
+          { wch: 15 }, // VNP Work ID
+          { wch: 12 }, // Status
+          { wch: 25 }, // PayPal Order ID
+          { wch: 25 }, // PayPal Capture ID
+          { wch: 30 }, // PayPal Network Transaction ID
+          { wch: 12 }, // PayPal Fee
+          { wch: 15 }, // PayPal Net Amount
+          { wch: 15 }, // PayPal Card Brand
+          { wch: 15 }, // PayPal Card Type
+          { wch: 15 }, // PayPal Card Last Digits
+          { wch: 12 }, // PayPal AVS Code
+          { wch: 12 }, // PayPal CVV Code
+          { wch: 20 }, // PayPal Create Time
+          { wch: 20 }, // PayPal Update Time
+          { wch: 15 }, // PayPal Status
+          { wch: 15 }, // PayPal Amount
+          { wch: 12 }, // PayPal Currency
+          { wch: 18 }, // PayPal Capture Status
+          { wch: 20 }, // PayPal Custom ID
+          { wch: 25 }, // PayPal Refund ID
+          { wch: 15 }, // PayPal Refund Status
+          { wch: 15 }, // PayPal Refund Amount
+          { wch: 12 }, // PayPal Refund Currency
+          { wch: 18 }, // PayPal Refund Gross Amount
+          { wch: 15 }, // PayPal Refund Fee
+          { wch: 18 }, // PayPal Refund Net Amount
+          { wch: 18 }, // PayPal Total Refunded
+          { wch: 20 }, // PayPal Refund Create Time
+          { wch: 20 }, // PayPal Refund Update Time
+          { wch: 25 }, // PayPal Refund Invoice ID
+          { wch: 25 }, // PayPal Refund Custom ID
+          { wch: 30 }, // PayPal Refund Note
+          { wch: 20 }, // OTA Name
+          { wch: 20 }, // OTA Display Name
+          { wch: 20 }, // OTA Customer
+          { wch: 12 }, // OTA Is Active
+          { wch: 15 }, // Billing Zip Code
+          { wch: 12 }, // Billing Country Code
+          { wch: 30 }, // Billing Address Line 1
+          { wch: 30 }, // Billing Address Line 2
+          { wch: 20 }, // Billing City
+          { wch: 15 }, // Billing State
+          { wch: 10 }, // Archive
+          { wch: 20 }, // Created At
+        ];
+        ws['!cols'] = colWidths;
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Single Payments');
+
+        // Generate file name with timestamp
+        const fileName = `single-payments-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+        // Write and download the file
+        XLSX.writeFile(wb, fileName);
+      });
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to export data"
+      );
+    },
+  });
+}
