@@ -1,3 +1,6 @@
+// MARK: Import Dependencies
+// Explanation: Imports all required UI components, icons, API client, and utility functions.
+// Provides complete checkout experience with form inputs, payment processing, and success feedback.
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +19,11 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { formatCheckInOutDate } from "@/lib/utils";
 
+// MARK: TypeScript Interfaces
+// Explanation: Defines data structures for form data, payment details, and component props.
+// FormData: Complete payment and reservation information for processing
+// PaymentDetails: PayPal response data after successful transaction
+// CheckoutFormProps: Component props including callbacks and initial data
 interface FormData {
   cardNumber: string;
   expiryDate: string;
@@ -72,6 +80,10 @@ interface CheckoutFormProps {
   onSuccess: () => void;
 }
 
+// MARK: Checkout Form Component
+// Explanation: Side-panel checkout form for processing PayPal payments with comprehensive payment details.
+// Displays as sliding panel from right with all necessary payment, guest, billing, and booking information.
+// Handles PayPal payment processing and displays success modal with transaction details on completion.
 export function CheckoutForm({
   open,
   onClose,
@@ -79,6 +91,12 @@ export function CheckoutForm({
   showCardDetails,
   onSuccess,
 }: CheckoutFormProps) {
+  // MARK: State Management
+  // Explanation: Manages form state, processing status, and payment success modal.
+  // isProcessing: Prevents duplicate submissions during API call
+  // formData: Mutable form data (editable fields like card number, billing address)
+  // showSuccessModal: Controls visibility of payment success confirmation
+  // paymentDetails: Stores PayPal transaction response for success display
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -86,10 +104,17 @@ export function CheckoutForm({
     null
   );
 
+  // MARK: Form Data Sync Effect
+  // Explanation: Updates local form state when initial form data changes from parent component
   useEffect(() => {
     setFormData(initialFormData);
   }, [initialFormData]);
 
+  // MARK: PayPal Checkout Handler
+  // Explanation: Processes PayPal payment by formatting and submitting card and billing data to API.
+  // Handles card expiry date parsing (supports MM/YYYY and YYYY-MM formats), validates input,
+  // and displays success modal with transaction details or error toast on failure.
+  // Manual Flow: User reviews details → Edits if needed → Click Pay → Processing → Success modal or error toast
   const handlePayPalCheckout = async () => {
     try {
       setIsProcessing(true);
@@ -167,6 +192,8 @@ export function CheckoutForm({
     }
   };
 
+  // MARK: Success Modal Close Handler
+  // Explanation: Closes success modal, clears payment details, closes checkout form, and triggers success callback
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     setPaymentDetails(null);
@@ -174,15 +201,22 @@ export function CheckoutForm({
     onSuccess();
   };
 
+  // MARK: Component Render
+  // Explanation: Renders sliding side panel with checkout form, overlay, and success modal.
+  // Side panel slides in from right when open, includes all payment fields and processing.
   return (
     <>
+      {/* MARK: Checkout Side Panel */}
+      {/* Explanation: Fixed right-side panel with slide-in animation containing the complete checkout form.
+      Width: 384px (w-96), Slides from right using transform translate, z-index 20 for proper layering */}
       <div
         className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 z-20 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="h-full flex flex-col">
-          {/* Header */}
+          {/* MARK: Panel Header */}
+          {/* Explanation: Gradient blue header with title, description, and close button */}
           <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">PayPal Checkout</h2>
@@ -200,9 +234,12 @@ export function CheckoutForm({
             </p>
           </div>
 
-          {/* Form Content */}
+          {/* MARK: Form Content Area */}
+          {/* Explanation: Scrollable content area containing all form sections: Guest Info, Payment, Card, Billing, Booking */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Guest Information */}
+            {/* MARK: Guest Information Section */}
+            {/* Explanation: Displays guest name, hotel, and editable soft descriptor for the payment.
+            Card holder name and hotel are read-only; soft descriptor can be customized before payment. */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <User className="h-5 w-5 text-blue-600" />
@@ -253,7 +290,9 @@ export function CheckoutForm({
 
             <Separator />
 
-            {/* Payment Information */}
+            {/* MARK: Payment Information Section */}
+            {/* Explanation: Displays amount to charge and currency (both read-only).
+            Amount highlighted in green to emphasize the charge amount being processed. */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="h-5 w-5 text-blue-600" />
@@ -289,7 +328,9 @@ export function CheckoutForm({
 
             <Separator />
 
-            {/* Card Information */}
+            {/* MARK: Card Information Section */}
+            {/* Explanation: Card payment details including number, expiry, and CVV.
+            Card number is editable; expiry is read-only; CVV is masked unless showCardDetails is true. */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard className="h-5 w-5 text-blue-600" />
@@ -344,7 +385,9 @@ export function CheckoutForm({
 
             <Separator />
 
-            {/* Billing Address */}
+            {/* MARK: Billing Address Section */}
+            {/* Explanation: Complete billing address form with all editable fields.
+            Includes: Address lines, City, State, Zip Code, Country Code - all required for PayPal payment processing. */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="h-5 w-5 text-blue-600" />
@@ -462,7 +505,9 @@ export function CheckoutForm({
 
             <Separator />
 
-            {/* Booking Details */}
+            {/* MARK: Booking Details Section */}
+            {/* Explanation: Displays hotel reservation check-in and check-out dates (both read-only).
+            Dates are formatted using formatCheckInOutDate utility for consistent display. */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="h-5 w-5 text-blue-600" />
@@ -495,9 +540,13 @@ export function CheckoutForm({
             </div>
           </div>
 
-          {/* Footer Actions */}
+          {/* MARK: Footer Actions */}
+          {/* Explanation: Contains payment and cancel buttons with processing states.
+          Pay button shows spinner during processing and displays amount. Both disabled while processing.
+          Includes security message for user confidence. */}
           <div className="p-6 border-t bg-gray-50">
             <div className="space-y-3">
+              {/* Payment Button */}
               <Button
                 onClick={handlePayPalCheckout}
                 className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-semibold"
@@ -512,6 +561,7 @@ export function CheckoutForm({
                   <>Pay with PayPal - ${formData.amount}</>
                 )}
               </Button>
+              {/* Cancel Button */}
               <Button
                 variant="outline"
                 onClick={onClose}
@@ -528,12 +578,17 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {/* Overlay */}
+      {/* MARK: Background Overlay */}
+      {/* Explanation: Semi-transparent black overlay behind the checkout panel.
+      Clicking overlay closes the checkout form. Z-index 10 places it below panel (z-20). */}
       {open && (
         <div className="fixed inset-0 bg-black/20 z-10" onClick={onClose} />
       )}
 
-      {/* Payment Success Modal */}
+      {/* MARK: Payment Success Modal */}
+      {/* Explanation: Centered modal displaying payment confirmation with transaction details.
+      Shows: Check icon, success message, Order ID, Capture ID, Status, Custom ID
+      Z-index 50 ensures it appears above everything else. */}
       {showSuccessModal && paymentDetails && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">

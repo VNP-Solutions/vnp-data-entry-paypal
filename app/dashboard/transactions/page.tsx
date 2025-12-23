@@ -1,5 +1,9 @@
 "use client";
 
+// MARK: Import Dependencies
+// Explanation: Imports all required React hooks, UI components, icons, API hooks, and utilities.
+// This comprehensive import section includes table components, form elements, tooltip components,
+// and the admin data hook for fetching combined PayPal and Stripe transactions.
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -48,6 +52,10 @@ import { formatLongString } from "@/lib/utils";
 // Removed PayPal-specific modal due to type mismatch with admin data
 import StripeTransactionDetailsModal from "@/components/pages/stripe/stripe-transactions/stripe-transactions-tab/stripe-transaction-details-modal";
 
+// MARK: TypeScript Interface
+// Explanation: Defines the complete data structure for admin transaction records.
+// Includes fields from both PayPal and Stripe transactions with hotel reservation details,
+// payment information, card data, and PayPal-specific metadata (order ID, capture ID, fees, etc.)
 interface AdminExcelDataItem {
   id?: string;
   _id: string;
@@ -97,7 +105,16 @@ interface AdminExcelDataItem {
   "Connected Account"?: string;
 }
 
+// MARK: Transactions Page Component
+// Explanation: Main component for viewing and managing all transactions across both PayPal and Stripe gateways.
+// Provides unified view of all payment transactions with filtering, searching, pagination, and CSV export capabilities.
+// Displays comprehensive transaction details including hotel info, payment status, and gateway type.
 export default function TransactionsPage() {
+  // MARK: State Management - Pagination & Display
+  // Explanation: Controls pagination, card visibility, and dialog states.
+  // currentPage: Active page number for pagination
+  // showCardDetails: Toggle for masking/showing sensitive card information
+  // showViewDialog: Controls visibility of transaction details modal
   const [currentPage, setCurrentPage] = useState(1);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,6 +126,9 @@ export default function TransactionsPage() {
   const [limit, setLimit] = useState(10);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
+  // MARK: API Data Fetching
+  // Explanation: Fetches paginated admin transaction data with filters applied.
+  // Supports filtering by gateway (PayPal/Stripe/All) and searching across multiple fields.
   const { data, isLoading, error } = useAdminExcelData({
     page: currentPage,
     limit,
@@ -116,12 +136,17 @@ export default function TransactionsPage() {
     search: searchTerm,
   });
 
+  // MARK: Error Handling Effect
+  // Explanation: Displays error toast notification when API data fetch fails
   useEffect(() => {
     if (error) {
       toast.error("Failed to fetch transactions");
     }
   }, [error, limit]);
 
+  // MARK: Currency Formatter
+  // Explanation: Formats monetary amounts with proper currency symbols using Intl.NumberFormat.
+  // Ensures consistent currency display across all transaction amounts in the table.
   const formatCurrency = (amount: string, currency: string) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -129,6 +154,9 @@ export default function TransactionsPage() {
     }).format(parseFloat(amount));
   };
 
+  // MARK: Status Color Helper
+  // Explanation: Returns Tailwind CSS classes for badge styling based on charge status.
+  // Maps payment statuses to color schemes: yellow for ready, green for charged, red for failed, blue for partial.
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ready to charge":
@@ -146,6 +174,12 @@ export default function TransactionsPage() {
     }
   };
 
+  // MARK: Data Processing & Pagination
+  // Explanation: Extracts and normalizes transaction data from API response with flexible parsing.
+  // Handles different response structures and extracts pagination metadata.
+  // paginationCurrentPage: Current page number from API or fallback to state
+  // paginationTotalPages: Total number of pages available
+  // paginationTotalRecords: Total count of all transaction records
   const raw: any = data as any;
   const excelData: AdminExcelDataItem[] = Array.isArray(raw?.data)
     ? (raw.data as AdminExcelDataItem[])
@@ -162,12 +196,19 @@ export default function TransactionsPage() {
   const paginationHasNext: boolean =
     (pagination?.hasNextPage ?? pagination?.hasNext) || false;
 
+  // MARK: Row ID Helper
+  // Explanation: Extracts unique identifier from transaction row, handling both 'id' and '_id' fields
   const getRowId = (row: AdminExcelDataItem): string =>
     (row.id || row._id) as string;
 
+  // MARK: Selection State Helper
+  // Explanation: Checks if all visible transactions on current page are selected
   const isAllSelected =
     excelData.length > 0 && selectedRows.size === excelData.length;
 
+  // MARK: Row Selection Handler
+  // Explanation: Manages individual row selection for CSV export using checkbox toggles.
+  // Maintains Set of selected row IDs for efficient lookup and export operations.
   const handleRowSelection = (rowId: string, checked: boolean) => {
     const next = new Set(selectedRows);
     if (checked) {
@@ -178,6 +219,9 @@ export default function TransactionsPage() {
     setSelectedRows(next);
   };
 
+  // MARK: Select All Handler
+  // Explanation: Toggles selection of all visible transactions on current page.
+  // Selects all rows when checked, clears all selections when unchecked.
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedRows(new Set(excelData.map((r) => getRowId(r))));
@@ -186,6 +230,10 @@ export default function TransactionsPage() {
     }
   };
 
+  // MARK: CSV Export Handler
+  // Explanation: Exports selected transactions to CSV file with all fields included.
+  // Handles null/undefined values with "N/A" placeholder and properly escapes special characters.
+  // Manual Flow: Select rows → Click Export CSV → Browser downloads CSV file with selected transactions
   const handleExportCsv = () => {
     const selectedIds = Array.from(selectedRows);
     const rows = excelData.filter((r) => selectedIds.includes(getRowId(r)));
@@ -231,9 +279,14 @@ export default function TransactionsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // MARK: Component Render
+  // Explanation: Main render function for the transactions page layout.
+  // Displays header with export button, statistics cards, filters, and comprehensive transaction table with pagination.
   return (
     <div className="min-h-[80vh]">
-      {/* Header Section */}
+      {/* MARK: Header Section */}
+      {/* Explanation: Page header with title, description, and CSV export button.
+      Export button shows count of selected rows and is disabled when no rows are selected. */}
       <div className="flex items-center justify-between">
         <div className="mb-8">
           <h1 className="text-xl font-bold text-gray-900 mb-2">
@@ -243,6 +296,9 @@ export default function TransactionsPage() {
             View and manage all payment transactions across all uploads
           </p>
         </div>
+        {/* MARK: CSV Export Button */}
+        {/* Explanation: Exports selected transactions to CSV file for external analysis.
+        Shows selection count and is only enabled when rows are selected. */}
         <Button
           variant="secondary"
           className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
@@ -254,8 +310,11 @@ export default function TransactionsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* MARK: Statistics Cards Section */}
+      {/* Explanation: Displays key metrics for all transactions - Total Records, Unique Hotels, Total Amount, and Unique Guests.
+      Dynamically calculates based on visible data after filters are applied. */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* Total Records Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -269,6 +328,7 @@ export default function TransactionsPage() {
             </div>
           </div>
         </Card>
+        {/* Unique Hotels Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -282,6 +342,7 @@ export default function TransactionsPage() {
             </div>
           </div>
         </Card>
+        {/* Total Amount Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -304,6 +365,7 @@ export default function TransactionsPage() {
             </div>
           </div>
         </Card>
+        {/* Unique Guests Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 rounded-lg">
@@ -319,11 +381,17 @@ export default function TransactionsPage() {
         </Card>
       </div>
 
-      {/* Filters Section */}
+      {/* MARK: Filters Section */}
+      {/* Explanation: Provides search, gateway filtering, and card visibility controls.
+      Search: Filters transactions by guest name, hotel, or confirmation code
+      Gateway Filter: Filters by PayPal, Stripe, or shows all transactions
+      Card Toggle: Shows/hides sensitive card information
+      Reset Button: Clears all applied filters */}
       <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
         <div className="space-y-4">
-          {/* Search and Basic Filters */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* MARK: Search Input */}
+            {/* Explanation: Text search across guest name, hotel name, and confirmation code */}
             <div className="flex-1 w-full md:w-auto">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -336,6 +404,8 @@ export default function TransactionsPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 w-full md:w-auto">
+              {/* MARK: Gateway Filter Dropdown */}
+              {/* Explanation: Filters transactions by payment gateway - All, PayPal, or Stripe */}
               <Select
                 value={filter}
                 onValueChange={(v) =>
@@ -351,6 +421,9 @@ export default function TransactionsPage() {
                   <SelectItem value="Stripe">Stripe</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* MARK: Toggle Card Details Button */}
+              {/* Explanation: Shows/hides sensitive card information in the table for security purposes */}
               <Button
                 variant="outline"
                 onClick={() => setShowCardDetails(!showCardDetails)}
@@ -363,6 +436,9 @@ export default function TransactionsPage() {
                 )}
                 {showCardDetails ? "Hide Cards" : "Show Cards"}
               </Button>
+
+              {/* MARK: Reset Filters Button */}
+              {/* Explanation: Clears all active filters and resets to default "all" view */}
               <Button
                 disabled={isLoading}
                 variant="outline"
@@ -380,7 +456,10 @@ export default function TransactionsPage() {
         </div>
       </Card>
 
-      {/* Table Section */}
+      {/* MARK: Transactions Table */}
+      {/* Explanation: Main data table displaying all transactions from both PayPal and Stripe gateways.
+      Columns: Checkbox, Connected Account (Stripe only), Expedia ID, Batch, Hotel, Reservation ID, Amount, File Name, Card Details, Gateway, Status, Actions
+      Supports row selection for CSV export, conditional column display based on gateway filter, and transaction detail viewing. */}
       <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
         <div className="overflow-x-auto">
           <Table>
@@ -411,6 +490,8 @@ export default function TransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* MARK: Loading State */}
+              {/* Explanation: Displays skeleton placeholders while transaction data is being fetched from API */}
               {isLoading ? (
                 Array(5)
                   .fill(0)
@@ -426,6 +507,8 @@ export default function TransactionsPage() {
                     </TableRow>
                   ))
               ) : excelData.length === 0 ? (
+                // MARK: Empty State
+                // Explanation: Displays friendly message when no transactions match the current filters
                 <TableRow>
                   <TableCell colSpan={12} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
@@ -438,8 +521,12 @@ export default function TransactionsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
+                // MARK: Transaction Data Rows
+                // Explanation: Renders each transaction row with all details from both PayPal and Stripe gateways.
+                // Conditionally displays Connected Account column only for Stripe transactions or when "all" filter is active.
                 excelData.map((row: AdminExcelDataItem) => (
                   <TableRow key={row._id} className="hover:bg-gray-50/50">
+                    {/* Selection Checkbox */}
                     <TableCell>
                       <Checkbox
                         checked={selectedRows.has(getRowId(row))}
@@ -448,15 +535,19 @@ export default function TransactionsPage() {
                         }
                       />
                     </TableCell>
+                    {/* Connected Account (Stripe only) */}
                     {(filter === "all" || filter === "Stripe") && (
                       <TableCell className="font-mono">
                         {row["Connected Account"] || "N/A"}
                       </TableCell>
                     )}
+                    {/* Expedia ID */}
                     <TableCell className="font-mono">
                       {row["Expedia ID"]}
                     </TableCell>
+                    {/* Batch Number */}
                     <TableCell className="font-mono">{row["Batch"]}</TableCell>
+                    {/* Hotel Information */}
                     <TableCell>
                       <div className="flex items-start gap-2">
                         <Building2 className="h-4 w-4 text-gray-400 mt-1" />
@@ -468,6 +559,7 @@ export default function TransactionsPage() {
                         </div>
                       </div>
                     </TableCell>
+                    {/* Reservation ID */}
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User2 className="h-4 w-4 text-gray-400" />
@@ -487,6 +579,7 @@ export default function TransactionsPage() {
                       </div>
                     </TableCell> */}
 
+                    {/* Amount */}
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-gray-400" />
@@ -498,6 +591,7 @@ export default function TransactionsPage() {
                         </span>
                       </div>
                     </TableCell>
+                    {/* File Name with Tooltip */}
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
@@ -510,6 +604,7 @@ export default function TransactionsPage() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
+                    {/* Card Details (Masked/Visible) */}
                     <TableCell className="font-mono">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-gray-400" />
@@ -525,6 +620,7 @@ export default function TransactionsPage() {
                         )}
                       </div>
                     </TableCell>
+                    {/* Payment Gateway Badge */}
                     <TableCell className="font-mono">
                       <Badge
                         variant="outline"
@@ -537,6 +633,7 @@ export default function TransactionsPage() {
                         {row["Connected Account"] ? "Stripe" : "PayPal"}
                       </Badge>
                     </TableCell>
+                    {/* Charge Status Badge */}
                     <TableCell>
                       <Badge className={getStatusColor(row["Charge status"])}>
                         {row["Charge status"]}
@@ -557,6 +654,7 @@ export default function TransactionsPage() {
                         <span className="text-gray-400">N/A</span>
                       )}
                     </TableCell> */}
+                    {/* Action Button - View Details */}
                     <TableCell className="text-center">
                       <Button
                         variant="outline"
@@ -578,13 +676,21 @@ export default function TransactionsPage() {
           </Table>
         </div>
 
-        {/* Pagination */}
+        {/* MARK: Pagination Controls */}
+        {/* Explanation: Provides pagination controls for navigating through transaction pages.
+        Left side: Shows count summary of visible entries vs total
+        Right side: Items per page selector (10, 20, 50, 100) and page navigation buttons
+        Previous/Next buttons disabled at boundaries based on API response */}
         {true && (
           <div className="flex items-center justify-between p-4 border-t">
+            {/* MARK: Pagination Summary */}
+            {/* Explanation: Displays count of currently visible transactions vs total transaction count */}
             <div className="text-sm text-gray-600">
               Showing {excelData.length} of {paginationTotalRecords} entries
             </div>
             <div className="flex items-center gap-2">
+              {/* MARK: Items Per Page Selector */}
+              {/* Explanation: Dropdown to change number of transactions displayed per page */}
               <Select
                 value={limit.toString()}
                 onValueChange={(value) => setLimit(parseInt(value))}
@@ -599,6 +705,9 @@ export default function TransactionsPage() {
                   <SelectItem value="100">100</SelectItem>
                 </SelectContent>
               </Select>
+              {/* MARK: Page Navigation Buttons */}
+              {/* Explanation: Previous/Next buttons for page navigation with disabled states at boundaries.
+              Shows current page number and total pages. */}
               <Button
                 variant="outline"
                 size="sm"
@@ -625,6 +734,8 @@ export default function TransactionsPage() {
         )}
       </Card>
 
+      {/* MARK: Transaction Details Modal */}
+      {/* Explanation: Modal dialog displaying comprehensive details for selected transaction */}
       <StripeTransactionDetailsModal
         open={showViewDialog}
         onOpenChange={setShowViewDialog}

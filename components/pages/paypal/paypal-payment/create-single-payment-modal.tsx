@@ -1,5 +1,8 @@
 "use client";
 
+// MARK: Import Dependencies
+// Explanation: Imports all required form handling, validation, UI components, and API hooks.
+// Uses React Hook Form for form management, Zod for schema validation, and custom hooks for API calls.
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,6 +33,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// MARK: Form Validation Schema
+// Explanation: Zod schema defining validation rules for the single payment creation form.
+// Required fields: reservationId, amountToCharge, chargeStatus, cardNumber, cardExpire, cardCvv, softDescriptor
+// Optional fields: All other hotel, guest, and reservation details for comprehensive record keeping
 const formSchema = z.object({
   expediaId: z.string().optional(),
   batch: z.string().optional(),
@@ -53,19 +60,33 @@ const formSchema = z.object({
   status: z.string().optional(),
 });
 
+// MARK: Component Props Interface
+// Explanation: Defines props for the Create Single Payment Modal component.
+// open: Controls modal visibility
+// onOpenChange: Callback for modal open/close state changes
+// onSuccess: Optional callback executed after successful payment creation
 interface CreateSinglePaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
+// MARK: Create Single Payment Modal Component
+// Explanation: Modal dialog for manually creating individual PayPal payment transactions.
+// Provides comprehensive form with all necessary fields for hotel reservations, guest info, and payment details.
+// Used when creating payments outside of bulk upload process for one-off transactions.
 export default function CreateSinglePaymentModal({
   open,
   onOpenChange,
   onSuccess,
 }: CreateSinglePaymentModalProps) {
+  // MARK: API Mutation Hook
+  // Explanation: React Query mutation hook for creating single payment records via API
   const createExcelDataMutation = useCreateExcelData();
 
+  // MARK: Form Initialization
+  // Explanation: React Hook Form setup with Zod validation and default empty values.
+  // Handles form state management, validation, and submission for all payment fields.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -92,6 +113,10 @@ export default function CreateSinglePaymentModal({
     },
   });
 
+  // MARK: Form Submit Handler
+  // Explanation: Processes form submission by mapping form values to API format and creating payment record.
+  // Transforms camelCase field names to API-expected "Display Name" format.
+  // Manual Flow: User fills form → Click Submit → Data mapped to API format → API call → Success callback → Modal closes
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       // Map form values to API format
@@ -128,6 +153,9 @@ export default function CreateSinglePaymentModal({
     }
   }
 
+  // MARK: Component Render
+  // Explanation: Renders modal dialog with comprehensive payment creation form.
+  // Form layout uses 2-column grid for efficient space utilization and organized field grouping.
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="min-w-4xl max-h-[90vh] overflow-y-auto">
@@ -138,11 +166,17 @@ export default function CreateSinglePaymentModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* MARK: Payment Creation Form */}
+        {/* Explanation: Comprehensive form with all fields for creating a manual payment transaction.
+        Fields organized in 2-column grid covering: Booking info, Guest details, Payment info, Card details */}
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-6 py-4"
           >
+            {/* MARK: Form Fields Grid */}
+            {/* Explanation: Two-column grid layout containing all payment form fields.
+            Required fields marked with red asterisk (*): Reservation ID, Amount, Charge Status, Card details, Soft Descriptor */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -507,6 +541,9 @@ export default function CreateSinglePaymentModal({
               />
             </div>
 
+            {/* MARK: Form Action Buttons */}
+            {/* Explanation: Cancel and Submit buttons for form control.
+            Cancel closes modal, Submit triggers validation and API call. Both disabled during submission. */}
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button
                 type="button"

@@ -1,5 +1,9 @@
 "use client";
 
+// MARK: Import Dependencies
+// Explanation: Imports all required React hooks, UI components, icons, API utilities, and custom hooks.
+// This comprehensive import section includes table components, form elements, dialog modals, payment processing hooks,
+// and utility functions for the PayPal payment management system.
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Table,
@@ -83,6 +87,11 @@ import {
 import { EditDialog } from "@/components/shared/edit-modal";
 import PaypalTransactionDetailsModal from "./paypal-transaction-details-modal";
 import CreateSinglePaymentModal from "./create-single-payment-modal";
+
+// MARK: TypeScript Interfaces
+// Explanation: Defines data structures for PayPal transactions, API responses, and component props.
+// RowData: Complete transaction record with hotel reservation details, payment info, and card data
+// ApiResponse: Paginated response structure with rows, pagination metadata, and active filters
 export interface RowData {
   id: string;
   uploadId: string;
@@ -161,6 +170,9 @@ interface RefundConfirmationDialogProps {
   isLoading: boolean;
 }
 
+// MARK: Form Data Interface
+// Explanation: Defines the structure for payment form data including card details, billing info, and reservation details.
+// Used for editing transactions and creating manual payments with complete payment and reservation information.
 interface FormData {
   cardNumber: string;
   expiryDate: string;
@@ -188,6 +200,10 @@ interface FormData {
   state: string;
 }
 
+// MARK: Refund Confirmation Dialog Component
+// Explanation: Modal dialog for confirming PayPal refund transactions before processing.
+// Displays transaction details (guest name, hotel, amount, order ID) and requires user confirmation.
+// Manual Flow: User clicks Refund → Dialog shows transaction details → User confirms → Refund processed
 const RefundConfirmationDialog = ({
   open,
   onOpenChange,
@@ -197,6 +213,9 @@ const RefundConfirmationDialog = ({
 }: RefundConfirmationDialogProps) => {
   if (!rowData) return null;
 
+  // MARK: Currency Formatter Helper
+  // Explanation: Formats monetary amounts according to currency standards using Intl.NumberFormat.
+  // Falls back to USD formatting if invalid currency code provided. Ensures consistent currency display.
   const formatCurrency = (
     amount: string,
     currency: string | null | undefined
@@ -287,7 +306,15 @@ const RefundConfirmationDialog = ({
   );
 };
 
+// MARK: PayPal Payment Page Component
+// Explanation: Main component for PayPal transaction management system.
+// Provides comprehensive PayPal payment operations including viewing transactions, processing payments/refunds,
+// bulk operations, filtering, searching, and manual payment creation. Integrates with PayPal API for payment processing.
 export default function PaypalPaymentPageComponent() {
+  // MARK: State Management - Data & Loading
+  // Explanation: Manages transaction data, pagination, filters, and loading states.
+  // data: Main API response containing rows, pagination metadata, and active filters
+  // Loading states: Track different async operations (initial load, bulk payment, bulk refund)
   const [data, setData] = useState<ApiResponse>({
     rows: [],
     pagination: {
@@ -305,6 +332,13 @@ export default function PaypalPaymentPageComponent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBulkPaymentLoading, setIsBulkPaymentLoading] = useState(false);
   const [isBulkRefundLoading, setIsBulkRefundLoading] = useState(false);
+
+  // MARK: State Management - Pagination & Filters
+  // Explanation: Controls pagination, search, and filtering functionality for transactions.
+  // currentPage: Active page number for pagination
+  // limit: Number of records per page
+  // chargeStatus: Filter by payment status (All, Charged, Pending, Failed, Refunded)
+  // searchTerm: Text search across transaction fields
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInputValue, setPageInputValue] = useState("1");
   const [showCardDetails, setShowCardDetails] = useState(false);
@@ -312,24 +346,46 @@ export default function PaypalPaymentPageComponent() {
   const [limit, setLimit] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // MARK: State Management - File Upload Selection
+  // Explanation: Manages upload file filtering with combobox for selecting specific upload batches.
+  // selectedUploadId: Filter transactions by specific upload file or "all" for all files
+  // uploadFiles: List of available upload files with metadata
   const [selectedUploadId, setSelectedUploadId] = useState<string>("all");
   const [uploadFiles, setUploadFiles] = useState<Array<{_id: string; uploadId: string; fileName: string; user?: {name: string; email: string} | null}>>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [fileComboboxOpen, setFileComboboxOpen] = useState(false);
   const [fileSearchTerm, setFileSearchTerm] = useState("");
+
+  // MARK: State Management - Dialog & Modal States
+  // Explanation: Controls visibility of various modal dialogs for viewing, editing, and processing transactions.
+  // selectedRow: Currently selected transaction row for operations
+  // Dialog states: View details, edit transaction, checkout form, refund confirmation
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // MARK: API Hooks Integration
+  // Explanation: React Query mutation hooks for PayPal payment operations.
+  // Handles bulk payments, bulk refunds, single refunds, and Excel data export functionality
   const makeBulkPayment = useMakeBulkPayment();
   const makeBulkRefund = useMakeBulkRefund();
   const processRefund = useProcessRefund();
   const exportManualExcelData = useExportManualExcelData();
   // const [isProcessing, setIsProcessing] = useState(false);
+
+  // MARK: State Management - Refund Operations
+  // Explanation: Manages refund dialog state and selected row data for refund processing.
+  // refundRowData: Transaction selected for refund operation
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [refundRowData, setRefundRowData] = useState<RowData | null>(null);
   const [isRefundLoading, setIsRefundLoading] = useState(false);
+
+  // MARK: State Management - Form Data
+  // Explanation: Stores form data for editing transactions and creating manual payments.
+  // Includes card details, billing information, reservation details, and OTA billing address
   const [formData, setFormData] = useState<FormData>({
     cardNumber: "",
     expiryDate: "",
@@ -357,6 +413,11 @@ export default function PaypalPaymentPageComponent() {
     state: "",
   });
 
+  // MARK: Fetch Transaction Data
+  // Explanation: Fetches paginated PayPal transaction data from API with filters applied.
+  // Retrieves transactions based on current page, charge status, search term, and selected upload file.
+  // Filters out partially charged records when "charged" filter is active for accurate reporting.
+  // Manual Flow: Component loads → fetchData called → API request → Data displayed in table
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -384,10 +445,15 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Refresh Data Handler
+  // Explanation: Triggers data refresh by incrementing refresh key, causing useEffect to re-run fetchData.
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
+  // MARK: Fetch Upload Files
+  // Explanation: Retrieves list of available upload files for the file filter dropdown.
+  // Supports search functionality to filter files by name. Used for filtering transactions by upload batch.
   const fetchUploadFiles = async (search?: string) => {
     try {
       setIsLoadingFiles(true);
@@ -401,7 +467,9 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
-  // Debounced search function
+  // MARK: Debounced File Search
+  // Explanation: Debounces file search input to reduce API calls. Waits 300ms after user stops typing
+  // before triggering the search API request. Improves performance and reduces server load.
   const debouncedSearchFiles = useCallback(
     useMemo(
       () => {
@@ -418,15 +486,21 @@ export default function PaypalPaymentPageComponent() {
     []
   );
 
+  // MARK: Data Fetch Effect
+  // Explanation: Automatically fetches transaction data when filters or pagination changes.
+  // Triggers on: page change, charge status filter, refresh key, limit change, search term, or upload file selection
   useEffect(() => {
     fetchData();
   }, [currentPage, chargeStatus, refreshKey, limit, searchTerm, selectedUploadId]);
 
+  // MARK: Initial Upload Files Load
+  // Explanation: Loads upload files list on component mount for the file filter dropdown
   useEffect(() => {
     fetchUploadFiles();
   }, []);
 
-  // Handle file search
+  // MARK: File Search Effect
+  // Explanation: Handles file search with debouncing. Clears search if empty, otherwise debounces the search.
   useEffect(() => {
     if (fileSearchTerm.trim() === "") {
       fetchUploadFiles();
@@ -435,12 +509,16 @@ export default function PaypalPaymentPageComponent() {
     }
   }, [fileSearchTerm, debouncedSearchFiles]);
 
-  // Sync pageInputValue with currentPage when currentPage changes from other sources
+  // MARK: Page Input Sync Effect
+  // Explanation: Keeps page input value synchronized with current page when page changes programmatically
   useEffect(() => {
     setPageInputValue(currentPage.toString());
   }, [currentPage]);
 
 
+  // MARK: Currency Formatter
+  // Explanation: Formats monetary amounts with proper currency symbols using Intl.NumberFormat.
+  // Validates currency codes and falls back to USD for invalid codes. Ensures consistent currency display.
   const formatCurrency = (
     amount: string,
     currency: string | null | undefined
@@ -467,6 +545,9 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Status Color Helper
+  // Explanation: Returns Tailwind CSS classes for badge styling based on charge status.
+  // Maps payment statuses to color schemes: yellow for ready, green for charged, red for failed, blue for partial.
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ready to charge":
@@ -482,6 +563,10 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Payment Click Handler
+  // Explanation: Prepares payment form with row data and opens PayPal checkout dialog.
+  // Extracts card details, reservation info, and billing address from selected row.
+  // Manual Flow: User clicks Pay → Form populated with row data → Checkout dialog opens → Payment processed
   const handlePaymentClick = (row: RowData) => {
     setFormData({
       cardNumber: row["Card Number"],
@@ -512,6 +597,9 @@ export default function PaypalPaymentPageComponent() {
     setShowCheckoutForm(true);
   };
 
+  // MARK: Row Selection Handler
+  // Explanation: Manages individual row selection for bulk operations using checkbox toggles.
+  // Maintains Set of selected row IDs for bulk payment/refund operations.
   const handleRowSelection = (rowId: string, checked: boolean) => {
     const newSelectedRows = new Set(selectedRows);
     if (checked) {
@@ -522,6 +610,9 @@ export default function PaypalPaymentPageComponent() {
     setSelectedRows(newSelectedRows);
   };
 
+  // MARK: Select All Handler
+  // Explanation: Toggles selection of all visible rows in current page for bulk operations.
+  // Selects all rows when checked, clears all selections when unchecked.
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       // Select all rows (both chargeable and refundable)
@@ -532,6 +623,11 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Bulk Payment Handler
+  // Explanation: Processes PayPal payments for multiple selected transactions simultaneously.
+  // Filters selected rows to include only chargeable (non-charged) transactions before processing.
+  // Shows loading toast during processing and refreshes data on completion.
+  // Manual Flow: Select rows → Click Bulk Pay → System filters chargeable rows → API processes payments → Table refreshes
   const handleBulkPayment = async () => {
     try {
       const selectedRowsArray = Array.from(selectedRows);
@@ -578,6 +674,11 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Bulk Refund Handler
+  // Explanation: Processes PayPal refunds for multiple selected transactions simultaneously.
+  // Filters selected rows to include only charged (refundable) transactions before processing.
+  // Shows loading toast with warning not to refresh during processing, updates table on completion.
+  // Manual Flow: Select charged rows → Click Bulk Refund → System filters refundable rows → API processes refunds → Table refreshes
   const handleBulkRefund = async () => {
     try {
       setIsBulkRefundLoading(true);
@@ -626,11 +727,18 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
+  // MARK: Refund Click Handler
+  // Explanation: Opens refund confirmation dialog for a single transaction.
+  // Sets the selected row data and displays confirmation dialog before processing refund.
   const handleRefundClick = (row: RowData) => {
     setRefundRowData(row);
     setShowRefundDialog(true);
   };
 
+  // MARK: Refund Confirmation Handler
+  // Explanation: Processes single PayPal refund after user confirmation.
+  // Calls API to process refund, closes dialog on success, and refreshes transaction data.
+  // Manual Flow: User clicks Refund → Confirmation dialog → User confirms → API processes refund → Dialog closes → Table refreshes
   const handleRefundConfirm = async () => {
     if (refundRowData) {
       try {
@@ -649,7 +757,11 @@ export default function PaypalPaymentPageComponent() {
     }
   };
 
-  // Check if all rows are selected
+  // MARK: Selection State Helpers
+  // Explanation: Computed values to determine button states and selection status.
+  // isAllSelected: Checks if all visible rows are selected
+  // hasSelectedRefundableRows: Checks if any selected rows can be refunded (Charged status)
+  // hasSelectedChargeableRows: Checks if any selected rows can be charged (non-Charged status)
   const isAllSelected =
     data.rows.length > 0 && selectedRows.size === data.rows.length;
 
@@ -671,9 +783,14 @@ export default function PaypalPaymentPageComponent() {
     return row && row["Charge status"] !== "Charged";
   });
 
+  // MARK: Component Render
+  // Explanation: Main render function for PayPal transaction management interface.
+  // Displays header with action buttons, filters, file selector, and transaction table with pagination.
   return (
     <div className="min-h-[80vh]">
-      {/* Header Section */}
+      {/* MARK: Header Section */}
+      {/* Explanation: Page header with title showing active filter and description.
+      Contains action buttons for creating single payments, exporting data, and bulk operations. */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
@@ -688,7 +805,8 @@ export default function PaypalPaymentPageComponent() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {/* create single payment with a modal opening clicking this button */}
+            {/* MARK: Create Single Payment Button */}
+            {/* Explanation: Opens modal for manually creating a single PayPal payment transaction */}
             <Button
               onClick={() => setShowSinglePaymentDialog(true)}
               className="bg-blue-600 hover:bg-blue-700"
@@ -696,6 +814,9 @@ export default function PaypalPaymentPageComponent() {
               Create Single Payment
               <DollarSign className="h-4 w-4 mr-2" />
             </Button>
+
+            {/* MARK: Export Single Payments Button */}
+            {/* Explanation: Exports manually created single payment transactions to Excel file */}
             <Button
               onClick={() => exportManualExcelData.mutate()}
               className="bg-green-600 hover:bg-green-700"
@@ -713,6 +834,10 @@ export default function PaypalPaymentPageComponent() {
                 </>
               )}
             </Button>
+
+            {/* MARK: Bulk Payment Button */}
+            {/* Explanation: Processes PayPal payments for all selected chargeable transactions.
+            Shows count of chargeable rows in selection. Disabled if no chargeable rows selected. */}
             <Button
               onClick={handleBulkPayment}
               className="bg-blue-600 hover:bg-blue-700"
@@ -732,6 +857,10 @@ export default function PaypalPaymentPageComponent() {
                 <Rocket className="h-4 w-4 ml-2" />
               )}
             </Button>
+
+            {/* MARK: Bulk Refund Button */}
+            {/* Explanation: Processes PayPal refunds for all selected charged transactions.
+            Shows count of refundable rows in selection. Disabled if no refundable rows selected. */}
             <Button
               onClick={handleBulkRefund}
               className="bg-red-600 hover:bg-red-700"
@@ -755,8 +884,11 @@ export default function PaypalPaymentPageComponent() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* MARK: Statistics Cards Section */}
+      {/* Explanation: Displays key metrics for current transaction view - Total Records, Unique Hotels, and Total Amount.
+      Dynamically calculates based on visible rows after filters are applied. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Total Records Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -770,6 +902,7 @@ export default function PaypalPaymentPageComponent() {
             </div>
           </div>
         </Card>
+        {/* Unique Hotels Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -783,6 +916,7 @@ export default function PaypalPaymentPageComponent() {
             </div>
           </div>
         </Card>
+        {/* Total Amount Card */}
         <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -806,10 +940,15 @@ export default function PaypalPaymentPageComponent() {
         </Card>
       </div>
 
-      {/* Filters Section */}
+      {/* MARK: Filters Section */}
+      {/* Explanation: Provides search, file filtering, and charge status filtering functionality.
+      Search: Filters transactions by guest name, hotel, or confirmation code
+      File Filter: Dropdown to filter by specific upload file with search capability
+      Status Filter: Dropdown to filter by charge status (All, Ready, Partially, Charged, Failed, Refunded) */}
       <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* search by name, hotel, or confirmation */}
+          {/* MARK: Search Input */}
+          {/* Explanation: Text search across guest name, hotel name, and confirmation code */}
           <div className="flex-1 w-full md:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -821,7 +960,9 @@ export default function PaypalPaymentPageComponent() {
               />
             </div>
           </div>
-            {/* filter by file name */}
+            {/* MARK: File Filter Combobox */}
+            {/* Explanation: Searchable dropdown to filter transactions by specific upload file.
+            Shows "All Files" or selected file name. Supports search with debouncing for performance. */}
             <div className="flex items-center gap-4 w-full md:w-auto">
             <Popover open={fileComboboxOpen} onOpenChange={setFileComboboxOpen}>
               <PopoverTrigger asChild>
@@ -906,8 +1047,12 @@ export default function PaypalPaymentPageComponent() {
               </PopoverContent>
             </Popover>
           </div>
-          {/* Filters */}
+          {/* MARK: Status and View Controls */}
+          {/* Explanation: Control buttons for filtering by charge status, toggling card visibility, and refreshing data */}
           <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* MARK: Charge Status Filter */}
+            {/* Explanation: Dropdown to filter transactions by payment status
+            Options: All, Ready to charge, Partially charged, Charged, Refunded, Failed, Declined */}
             <Select value={chargeStatus} onValueChange={setChargeStatus}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select status" />
@@ -925,6 +1070,8 @@ export default function PaypalPaymentPageComponent() {
               </SelectContent>
             </Select>
           
+            {/* MARK: Toggle Card Details Button */}
+            {/* Explanation: Shows/hides sensitive card information in the table for security purposes */}
             <Button
               variant="outline"
               onClick={() => setShowCardDetails(!showCardDetails)}
@@ -937,6 +1084,9 @@ export default function PaypalPaymentPageComponent() {
               )}
               {showCardDetails ? "Hide Cards" : "Show Cards"}
             </Button>
+
+            {/* MARK: Refresh Data Button */}
+            {/* Explanation: Manually refreshes transaction data from the API */}
             <Button
               variant="outline"
               onClick={handleRefresh}
@@ -949,7 +1099,10 @@ export default function PaypalPaymentPageComponent() {
         </div>
       </Card>
 
-      {/* Table Section */}
+      {/* MARK: Transactions Table */}
+      {/* Explanation: Main data table displaying PayPal transactions with all details.
+      Columns: Checkbox, Expedia ID, Batch, Hotel, Reservation ID, Check In/Out, Amount, File Name, Card Details, Status, Actions
+      Supports row selection for bulk operations, card detail masking, and individual transaction actions. */}
       <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm ps-4">
         <div className="overflow-x-auto">
           <Table>
@@ -975,6 +1128,8 @@ export default function PaypalPaymentPageComponent() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* MARK: Loading State */}
+              {/* Explanation: Displays skeleton placeholders while transaction data is being fetched */}
               {isLoading ? (
                 Array(5)
                   .fill(0)
@@ -990,6 +1145,8 @@ export default function PaypalPaymentPageComponent() {
                     </TableRow>
                   ))
               ) : data.rows.length === 0 ? (
+                // MARK: Empty State
+                // Explanation: Displays friendly message when no transactions match the current filters
                 <TableRow>
                   <TableCell colSpan={10} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
@@ -1000,6 +1157,9 @@ export default function PaypalPaymentPageComponent() {
                   </TableCell>
                 </TableRow>
               ) : (
+                // MARK: Transaction Data Rows
+                // Explanation: Renders each transaction row with all details and action buttons.
+                // Includes client-side filtering by guest name, hotel name, or confirmation code.
                 data.rows
                   .filter(
                     (row) =>
@@ -1015,6 +1175,7 @@ export default function PaypalPaymentPageComponent() {
                   .map((row: RowData) => {
                     return (
                       <TableRow key={row.id} className="hover:bg-gray-50/50">
+                        {/* Selection Checkbox */}
                         <TableCell>
                           <Checkbox
                             checked={selectedRows.has(row.id)}
@@ -1023,12 +1184,15 @@ export default function PaypalPaymentPageComponent() {
                             }
                           />
                         </TableCell>
+                        {/* Expedia ID */}
                         <TableCell className="font-mono">
                           {row["Expedia ID"]}
                         </TableCell>
+                        {/* Batch Number */}
                         <TableCell className="font-mono">
                           {row["Batch"]}
                         </TableCell>
+                        {/* Hotel Information */}
                         <TableCell>
                           <div className="flex items-start gap-2">
                             <Building2 className="h-4 w-4 text-gray-400 mt-1" />
@@ -1042,6 +1206,7 @@ export default function PaypalPaymentPageComponent() {
                             </div>
                           </div>
                         </TableCell>
+                        {/* Reservation ID */}
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <User2 className="h-4 w-4 text-gray-400" />
