@@ -15,17 +15,16 @@ import { useState } from "react";
 export default function TemplateDownload() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleDownloadTemplate = (templateType: "paypal" | "stripe") => {
-    // Using the same URL for both templates for now
-    // TODO: Use templateType to determine different URLs when updated
-    console.info(`Downloading ${templateType} template`);
-    const paypalTemplateUrl =
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532423405-paypal-template.xlsx";
-    const stripeTemplateUrl =
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532632398-stripe-template.xlsx";
-    window.open(
-      templateType === "paypal" ? paypalTemplateUrl : stripeTemplateUrl
-    );
+  const templateUrls: Record<"paypal" | "stripe" | "qp", string> = {
+    paypal:
+      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532423405-paypal-template.xlsx",
+    stripe:
+      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532632398-stripe-template.xlsx",
+    qp: "https://vnpstorage.s3.us-east-1.amazonaws.com/qptemplate.xlsx",
+  };
+
+  const handleDownloadTemplate = (templateType: "paypal" | "stripe" | "qp") => {
+    window.open(templateUrls[templateType]);
     setIsDialogOpen(false);
   };
 
@@ -68,6 +67,14 @@ export default function TemplateDownload() {
             >
               <Download className="h-4 w-4" />
               Stripe Template
+            </Button>
+            <Button
+              onClick={() => handleDownloadTemplate("qp")}
+              className="w-full flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-600/90 hover:text-white"
+              variant="outline"
+            >
+              <Download className="h-4 w-4" />
+              QP Template
             </Button>
           </div>
         </DialogContent>

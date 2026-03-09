@@ -100,7 +100,13 @@ interface ApiError {
 }
 
 // MARK: QP Payment Page Component
-export default function QpPaymentPageComponent() {
+interface QpPaymentPageComponentProps {
+  initialChargeFileId?: string;
+}
+
+export default function QpPaymentPageComponent({
+  initialChargeFileId,
+}: QpPaymentPageComponentProps = {}) {
   // MARK: State Management - Data & Loading
   const [data, setData] = useState<ApiResponse>({
     rows: [],
@@ -228,7 +234,14 @@ export default function QpPaymentPageComponent() {
     try {
       setIsLoadingFiles(true);
       const response = await apiClient.getQPChargeFiles({ search });
-      const filesData = response.data || [];
+      const raw = response.data || [];
+      const filesData = raw.map(
+        (f: { _id: string; charge_file_id?: string; file_name: string }) => ({
+          _id: f._id,
+          charge_file_id: f.charge_file_id ?? f._id,
+          file_name: f.file_name,
+        }),
+      );
       setChargeFiles(filesData);
     } catch (error) {
       console.error("Failed to fetch charge files:", error);
@@ -268,6 +281,15 @@ export default function QpPaymentPageComponent() {
   useEffect(() => {
     fetchChargeFiles();
   }, []);
+
+  // MARK: Apply initialChargeFileId from URL (e.g. from File History "Open in QP Payment")
+  useEffect(() => {
+    if (!initialChargeFileId || chargeFiles.length === 0) return;
+    const exists = chargeFiles.some(
+      (f) => f._id === initialChargeFileId || f.charge_file_id === initialChargeFileId,
+    );
+    if (exists) setSelectedChargeFileId(initialChargeFileId);
+  }, [initialChargeFileId, chargeFiles]);
 
   // MARK: File Search Effect
   useEffect(() => {

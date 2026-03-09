@@ -35,6 +35,7 @@ import {
   Archive,
   X,
   BadgeCheck,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
+import Link from "next/link";
 import {
   useUploadSessions,
   useRetryUpload,
@@ -76,7 +78,8 @@ interface UploadSession {
   completedAt: string | null;
   vnpWorkId: string | null;
   chargedCount: number;
-  paymentGateway: "stripe" | "paypal";
+  paymentGateway: "stripe" | "paypal" | "qp";
+  linkedQpChargeFileId?: string | null;
 }
 
 interface UploadSessionsResponse {
@@ -412,9 +415,12 @@ export default function UploadsPage() {
                       </TableCell>
 
                       {/* MARK: Payment Gateway Cell */}
-                      {/* Explanation: Shows which payment gateway (Stripe/PayPal) is used for this upload */}
-                      <TableCell className="font-medium capitalize">
-                        {session.paymentGateway}
+                      {/* Explanation: Shows which payment gateway (Stripe/PayPal/QP) is used for this upload */}
+                      <TableCell className="font-medium">
+                        {session.paymentGateway === "qp"
+                          ? "QP"
+                          : session.paymentGateway.charAt(0).toUpperCase() +
+                            session.paymentGateway.slice(1)}
                       </TableCell>
 
                       {/* MARK: Status Badge Cell */}
@@ -498,25 +504,39 @@ export default function UploadsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {/* MARK: Download Report Action */}
-                            {/* Explanation: Downloads detailed report for completed uploads.
-                            Only available for completed uploads - shows error for failed uploads.
-                            Manual Flow: Click Download Report → Browser downloads CSV/Excel with upload details */}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (session.status.toLowerCase() === "failed") {
-                                  toast.error(
-                                    "This action only works for completed uploads"
-                                  );
-                                } else {
-                                  handleDownloadReport(session.uploadId);
-                                }
-                              }}
-                              className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
-                            >
-                              <DownloadCloud className="h-4 w-4" />
-                              <span>Download Report</span>
-                            </DropdownMenuItem>
+                            {/* MARK: Open in QP Payment (QP sessions only) */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId && (
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/dashboard/qp-payment?chargeFileId=${session.linkedQpChargeFileId}`}
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  <span>Open in QP Payment</span>
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {/* MARK: Download Report Action (PayPal/Stripe only; QP uses QP Payment export) */}
+                            {session.paymentGateway !== "qp" && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (
+                                    session.status.toLowerCase() === "failed"
+                                  ) {
+                                    toast.error(
+                                      "This action only works for completed uploads"
+                                    );
+                                  } else {
+                                    handleDownloadReport(session.uploadId);
+                                  }
+                                }}
+                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                              >
+                                <DownloadCloud className="h-4 w-4" />
+                                <span>Download Report</span>
+                              </DropdownMenuItem>
+                            )}
 
                             {/* MARK: Retry Upload Action */}
                             {/* Explanation: Retries processing for failed uploads.
