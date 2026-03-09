@@ -85,6 +85,10 @@ interface ApiResponse {
     totalCount: number;
     limit: number;
   };
+  stats?: {
+    uniqueHotels: number;
+    totalAmount: number;
+  };
   filters: {
     status: string;
     search: string | null;
@@ -116,6 +120,7 @@ export default function QpPaymentPageComponent({
       totalCount: 0,
       limit: 10,
     },
+    stats: undefined,
     filters: {
       status: "All",
       search: null,
@@ -126,6 +131,7 @@ export default function QpPaymentPageComponent({
 
   // MARK: State Management - Pagination & Filters
   const [currentPage, setCurrentPage] = useState(1);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pageInputValue, setPageInputValue] = useState("1");
   const [status, setStatus] = useState("All");
   const [limit, setLimit] = useState(20);
@@ -158,7 +164,7 @@ export default function QpPaymentPageComponent({
         limit,
         page: currentPage,
         status: status === "All" ? undefined : status,
-        search: searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         chargeFileId:
           selectedChargeFileId === "all" ? undefined : selectedChargeFileId,
       });
@@ -172,6 +178,7 @@ export default function QpPaymentPageComponent({
         limit,
       };
 
+      let stats: ApiResponse["stats"] = undefined;
       if (response && typeof response === "object") {
         if (
           response.data &&
@@ -182,6 +189,9 @@ export default function QpPaymentPageComponent({
           // backend-supplied pagination
           allRows = (response.data as any).rows;
           paginationInfo = (response.data as any).pagination;
+          if ((response.data as any).stats) {
+            stats = (response.data as any).stats;
+          }
         } else if (Array.isArray(response.data)) {
           // backend returned raw array
           allRows = response.data as QPChargeInstance[];
@@ -209,6 +219,7 @@ export default function QpPaymentPageComponent({
       const responseData: ApiResponse = {
         rows: allRows,
         pagination: paginationInfo,
+        stats,
         filters: {
           status,
           search: searchTerm || null,
@@ -265,6 +276,17 @@ export default function QpPaymentPageComponent({
     [],
   );
 
+  // Debounce search term so we don't hit the API on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [status, selectedChargeFileId, debouncedSearchTerm]);
+
   // MARK: Data Fetch Effect
   useEffect(() => {
     fetchData();
@@ -273,7 +295,7 @@ export default function QpPaymentPageComponent({
     status,
     refreshKey,
     limit,
-    searchTerm,
+    debouncedSearchTerm,
     selectedChargeFileId,
   ]);
 
@@ -542,7 +564,8 @@ export default function QpPaymentPageComponent({
             <div>
               <p className="text-sm text-gray-600">Unique Hotels</p>
               <div className="text-xl font-bold text-gray-900">
-                {new Set(data.rows.map((row) => row.hotel_id)).size}
+                {data.stats?.uniqueHotels ??
+                  new Set(data.rows.map((row) => row.hotel_id)).size}
               </div>
             </div>
           </div>
@@ -557,10 +580,11 @@ export default function QpPaymentPageComponent({
               <p className="text-sm text-gray-600">Total Amount</p>
               <div className="text-xl font-bold text-gray-900">
                 {formatCurrency(
-                  data.rows.reduce(
-                    (sum, row) => sum + (row.amount_numeric || 0),
-                    0,
-                  ),
+                  data.stats?.totalAmount ??
+                    data.rows.reduce(
+                      (sum, row) => sum + (row.amount_numeric || 0),
+                      0,
+                    ),
                   "USD",
                 )}
               </div>
