@@ -1077,6 +1077,75 @@ class ApiClient {
     }
   };
 
+  // QP Charge Methods
+  getQPChargeInstances = async (params: {
+    limit: number;
+    page: number;
+    status?: string;
+    search?: string;
+    chargeFileId?: string;
+  }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/qp-charge-instances`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getQPChargeFiles = async (params?: { search?: string }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/qp-charge-files`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  processQPChargeInstance = async (instanceId: string) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/qp-charge-instances/${instanceId}/process`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  processQPBulkCharges = async (instanceIds: string[]) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/qp-charge-instances/process`,
+        { instance_ids: instanceIds }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  updateQPChargeInstance = async (
+    instanceId: string,
+    data: Record<string, unknown>
+  ) => {
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/qp-charge-instances/${instanceId}`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

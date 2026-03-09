@@ -40,6 +40,11 @@ export default function DashboardLayout({
       isVisible: true,
     },
     {
+      label: "QP Payment",
+      href: "/dashboard/qp-payment",
+      isVisible: true,
+    },
+    {
       label: "Stripe Payment",
       href: "/dashboard/stripe-payment",
       isVisible: true,
@@ -54,7 +59,7 @@ export default function DashboardLayout({
       href: "/dashboard/transactions",
       isVisible:
         process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").includes(
-          user?.email ?? ""
+          user?.email ?? "",
         ) ?? false,
     },
   ];
@@ -67,12 +72,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2">
-                  <Image
-                    src={logo}
-                    alt="VNP Logo"
-                    width={100}
-                    height={100}
-                  />
+                  <Image src={logo} alt="VNP Logo" width={100} height={100} />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
@@ -93,7 +93,7 @@ export default function DashboardLayout({
                       "relative",
                       pathname === item.href
                         ? "text-blue-600 font-semibold before:content-[''] before:absolute before:left-0 before:right-0 before:-bottom-[1.3rem] before:h-0.5 before:bg-blue-600 before:rounded-full"
-                        : "text-gray-600 hover:text-blue-600"
+                        : "text-gray-600 hover:text-blue-600",
                     )}
                   >
                     {item.label}
