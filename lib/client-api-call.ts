@@ -1123,7 +1123,7 @@ class ApiClient {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/qp-charge-instances/process`,
-        { instance_ids: instanceIds }
+        { ids: instanceIds }
       );
       return response.data;
     } catch (error) {

@@ -53,6 +53,7 @@ import {
   Check,
   ChevronsUpDown,
   Zap,
+  ArrowRight,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -72,6 +73,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import QpTransactionDetailsModal from "./qp-transaction-details-modal";
+import QpEditInstanceModal from "./qp-edit-instance-modal";
 import { QPChargeInstance, ViewDialogProps } from "./types";
 
 // MARK: TypeScript Interfaces
@@ -138,6 +140,9 @@ export default function QpPaymentPageComponent() {
   const [selectedRow, setSelectedRow] = useState<QPChargeInstance | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [processingRowId, setProcessingRowId] = useState<string | null>(null);
+  const [editRow, setEditRow] = useState<QPChargeInstance | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // MARK: Fetch Transaction Data
   const fetchData = async () => {
@@ -421,6 +426,34 @@ export default function QpPaymentPageComponent() {
     return { start, end };
   };
 
+  const isDeclinedOrError = (row: QPChargeInstance) =>
+    row.status === "DECLINED" || row.status === "ERROR";
+
+  const handleChargeAgain = async (row: QPChargeInstance) => {
+    try {
+      setProcessingRowId(row._id);
+      await apiClient.processQPBulkCharges([row._id]);
+      toast.success("Charge submitted");
+      fetchData();
+    } catch (error: unknown) {
+      const msg =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "message" in error.response.data
+          ? String((error.response.data as { message?: string }).message)
+          : "Failed to process charge";
+      toast.error(msg);
+    } finally {
+      setProcessingRowId(null);
+    }
+  };
+
   // MARK: Component Render
   return (
     <div className="min-h-[80vh]">
@@ -668,7 +701,7 @@ export default function QpPaymentPageComponent() {
                 <TableHead>Card Last 4</TableHead>
                 <TableHead>File</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-right w-px whitespace-nowrap">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -746,18 +779,52 @@ export default function QpPaymentPageComponent() {
                         {row.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="p-2 hover:bg-blue-100 w-fit"
-                        onClick={() => {
-                          setSelectedRow(row);
-                          setShowViewDialog(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 text-blue-600" />
-                      </Button>
+                    <TableCell className="text-right w-px whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 gap-1.5"
+                          onClick={() => {
+                            setSelectedRow(row);
+                            setShowViewDialog(true);
+                          }}
+                        >
+                          Details
+                          <Eye className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        {isDeclinedOrError(row) && (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-8 gap-1.5 px-3"
+                            onClick={() => handleChargeAgain(row)}
+                            disabled={
+                              processingRowId === row._id ||
+                              isBulkProcessingLoading
+                            }
+                          >
+                            {processingRowId === row._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                Charge Again
+                                <ArrowRight className="h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-700"
+                          onClick={() => {
+                            setEditRow(row);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -867,6 +934,12 @@ export default function QpPaymentPageComponent() {
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}
+      />
+      <QpEditInstanceModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        rowData={editRow}
+        onSuccess={fetchData}
       />
     </div>
   );

@@ -571,7 +571,7 @@ const StripeTransactionsTab = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="p-2 hover:bg-blue-100 w-fit flex-1"
+                                className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 gap-1.5"
                                 onClick={() => {
                                   const normalized = {
                                     ...row,
@@ -586,9 +586,8 @@ const StripeTransactionsTab = () => {
                               </Button>
                             )}
                             <Button
-                              variant={"outline"}
                               size="sm"
-                              className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white flex-1"
+                              className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-8 gap-1.5 px-3"
                               onClick={() => handleMakePayment(row)}
                             >
                               {["failed", "declined", "refunded"].includes(
@@ -596,15 +595,15 @@ const StripeTransactionsTab = () => {
                               )
                                 ? "Charge Again"
                                 : "Make Payment"}
-                              <ArrowRight className="h-4 w-4 text-white" />
+                              <ArrowRight className="h-4 w-4" />
                             </Button>
                           </>
                         ) : (
-                          <>
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="p-2 hover:bg-blue-100 flex-1"
+                              className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 gap-1.5"
                               onClick={() => {
                                 const normalized = {
                                   ...row,
@@ -620,7 +619,7 @@ const StripeTransactionsTab = () => {
                             <Button
                               variant="destructive"
                               size="sm"
-                              className="p-2 w-fit"
+                              className="bg-red-600 hover:bg-red-700 text-white border-0 h-8 gap-1.5"
                               onClick={() => {
                                 const normalized = {
                                   ...row,
@@ -634,15 +633,15 @@ const StripeTransactionsTab = () => {
                               }
                             >
                               Refund
-                              <RefreshCcw className="h-4 w-4 text-white" />
+                              <RefreshCcw className="h-4 w-4" />
                             </Button>
-                          </>
+                          </div>
                         )}
 
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="p-2 hover:bg-blue-100 w-fit"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-700"
                           onClick={() => {
                             const normalized = {
                               ...row,
@@ -652,7 +651,7 @@ const StripeTransactionsTab = () => {
                             setShowEditDialog(true);
                           }}
                         >
-                          <PencilIcon className="h-4 w-4 text-blue-600" />
+                          <PencilIcon className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

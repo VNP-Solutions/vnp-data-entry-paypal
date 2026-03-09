@@ -735,16 +735,19 @@ const StripeDisputesTab = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 gap-1.5"
                           onClick={() => {
                             setSelectedDispute(dispute);
                             setShowDetailsDialog(true);
                           }}
                         >
-                          <Eye className="h-4 w-4" />
+                          Details
+                          <Eye className="h-4 w-4 text-blue-600" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-8 gap-1.5 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-700"
                           disabled={Boolean(
                             dispute.evidence_details?.has_evidence
                           )}
@@ -753,6 +756,7 @@ const StripeDisputesTab = () => {
                             setShowEvidenceDialog(true);
                           }}
                         >
+                          Upload
                           <Upload className="h-4 w-4" />
                         </Button>
                       </div>

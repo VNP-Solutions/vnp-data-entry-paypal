@@ -1286,9 +1286,8 @@ export default function PaypalPaymentPageComponent() {
                           ) ? (
                             <>
                               <Button
-                                variant={"outline"}
                                 size="sm"
-                                className="p-2 hover:bg-blue-700 w-fit bg-blue-600 text-white hover:text-white flex-1"
+                                className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-8 gap-1.5 px-3"
                                 onClick={() => handlePaymentClick(row)}
                               >
                                 {["failed", "declined"].includes(
@@ -1296,15 +1295,15 @@ export default function PaypalPaymentPageComponent() {
                                 )
                                   ? "Charge Again"
                                   : "Make Payment"}
-                                <ArrowRight className="h-4 w-4 text-white" />
+                                <ArrowRight className="h-4 w-4" />
                               </Button>
                             </>
                           ) : (
-                            <div className="flex items-end justify-end gap-1">
+                            <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="p-2 hover:bg-blue-100 w-1/2"
+                                className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 gap-1.5"
                                 onClick={() => {
                                   setSelectedRow(row);
                                   setShowViewDialog(true);
@@ -1316,25 +1315,24 @@ export default function PaypalPaymentPageComponent() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                className="p-2 w-1/2"
+                                className="bg-red-600 hover:bg-red-700 text-white border-0 h-8 gap-1.5"
                                 onClick={() => handleRefundClick(row)}
                               >
                                 Refund
-                                <RefreshCcw className="h-4 w-4 " />
+                                <RefreshCcw className="h-4 w-4" />
                               </Button>
                             </div>
                           )}
                           <Button
                             variant="outline"
-                            size="sm"
-                            className="p-2 hover:bg-blue-100 w-fit"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-700"
                             onClick={() => {
                               setSelectedRow(row);
                               setShowEditDialog(true);
-                              // setShowViewDialog(true);
                             }}
                           >
-                            <PencilIcon className="h-4 w-4 text-blue-600" />
+                            <PencilIcon className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
