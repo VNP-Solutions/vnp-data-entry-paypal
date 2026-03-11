@@ -53,7 +53,6 @@ import {
   Check,
   ChevronsUpDown,
   Zap,
-  ArrowRight,
 } from "lucide-react";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
@@ -74,6 +73,7 @@ import {
 } from "@/components/ui/tooltip";
 import QpTransactionDetailsModal from "./qp-transaction-details-modal";
 import QpEditInstanceModal from "./qp-edit-instance-modal";
+import CreateSingleQpPaymentModal from "./create-single-qp-payment-modal";
 import { QPChargeInstance, ViewDialogProps } from "./types";
 
 // MARK: TypeScript Interfaces
@@ -155,6 +155,7 @@ export default function QpPaymentPageComponent({
   const [processingRowId, setProcessingRowId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<QPChargeInstance | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateSingleModal, setShowCreateSingleModal] = useState(false);
 
   // MARK: Fetch Transaction Data
   const fetchData = async () => {
@@ -419,13 +420,37 @@ export default function QpPaymentPageComponent({
         },
       );
 
-      await apiClient.processQPBulkCharges(finalSelectedRows);
+      const res = await apiClient.processQPBulkCharges(finalSelectedRows);
 
       toast.dismiss(loadingToastId);
       setIsBulkProcessingLoading(false);
       setSelectedRows(new Set());
       fetchData();
-      toast.success(`Successfully processed ${pendingRows.length} charges`);
+
+      const results = res?.data ?? [];
+      let successCount = 0;
+      let declinedCount = 0;
+      let errorCount = 0;
+      for (const item of results) {
+        if ("error" in item) {
+          errorCount++;
+        } else if (item.status === "SUCCESS") {
+          successCount++;
+        } else if (item.status === "DECLINED") {
+          declinedCount++;
+        } else {
+          errorCount++;
+        }
+      }
+      const parts: string[] = [];
+      if (successCount > 0) parts.push(`${successCount} success`);
+      if (declinedCount > 0) parts.push(`${declinedCount} declined`);
+      if (errorCount > 0) parts.push(`${errorCount} error`);
+      toast.success(
+        parts.length > 0
+          ? `Bulk complete: ${parts.join(", ")}`
+          : "Bulk processing finished",
+      );
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to process charges");
       setIsBulkProcessingLoading(false);
@@ -470,13 +495,38 @@ export default function QpPaymentPageComponent({
     return { start, end };
   };
 
-  const isDeclinedOrError = (row: QPChargeInstance) =>
-    row.status === "DECLINED" || row.status === "ERROR";
+  const handleExportSelected = async () => {
+    if (selectedRows.size === 0) {
+      toast.error("Select at least one row to export");
+      return;
+    }
+    try {
+      const blob = await apiClient.exportQPChargeInstances({
+        ids: Array.from(selectedRows),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qp_instances_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? "Export failed"
+          : "Export failed";
+      toast.error(msg);
+    }
+  };
 
-  const handleChargeAgain = async (row: QPChargeInstance) => {
+  // Process single instance for this row (uses existing instance data; no modal)
+  const handleMakePayment = async (row: QPChargeInstance) => {
     try {
       setProcessingRowId(row._id);
-      await apiClient.processQPBulkCharges([row._id]);
+      await apiClient.processQPChargeInstance(row._id);
       toast.success("Charge submitted");
       fetchData();
     } catch (error: unknown) {
@@ -498,6 +548,14 @@ export default function QpPaymentPageComponent({
     }
   };
 
+  const canProcessRow = (row: QPChargeInstance) =>
+    ["PENDING", "PROCESSING", "DECLINED", "SKIPPED"].includes(row.status);
+
+  const processButtonLabel = (row: QPChargeInstance) =>
+    row.status === "DECLINED" || row.status === "ERROR"
+      ? "Charge again"
+      : "Make payment";
+
   // MARK: Component Render
   return (
     <div className="min-h-[80vh]">
@@ -516,6 +574,20 @@ export default function QpPaymentPageComponent({
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateSingleModal(true)}
+            >
+              Create single payment
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportSelected}
+              disabled={selectedRows.size === 0}
+            >
+              Export selected
+              {selectedRows.size > 0 ? ` (${selectedRows.size})` : ""}
+            </Button>
             {/* MARK: Bulk Process Button */}
             <Button
               onClick={handleBulkProcess}
@@ -839,11 +911,12 @@ export default function QpPaymentPageComponent({
                           Details
                           <Eye className="h-4 w-4 text-blue-600" />
                         </Button>
-                        {isDeclinedOrError(row) && (
+                        {canProcessRow(row) && (
                           <Button
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-8 gap-1.5 px-3"
-                            onClick={() => handleChargeAgain(row)}
+                            variant="outline"
+                            className="h-8 gap-1.5 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700"
+                            onClick={() => handleMakePayment(row)}
                             disabled={
                               processingRowId === row._id ||
                               isBulkProcessingLoading
@@ -853,8 +926,8 @@ export default function QpPaymentPageComponent({
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <>
-                                Charge Again
-                                <ArrowRight className="h-4 w-4" />
+                                {processButtonLabel(row)}
+                                <CreditCard className="h-4 w-4" />
                               </>
                             )}
                           </Button>
@@ -985,6 +1058,11 @@ export default function QpPaymentPageComponent({
         open={showEditModal}
         onOpenChange={setShowEditModal}
         rowData={editRow}
+        onSuccess={fetchData}
+      />
+      <CreateSingleQpPaymentModal
+        open={showCreateSingleModal}
+        onOpenChange={setShowCreateSingleModal}
         onSuccess={fetchData}
       />
     </div>

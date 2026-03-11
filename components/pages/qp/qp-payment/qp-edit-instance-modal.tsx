@@ -12,6 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 import { QPChargeInstance } from "./types";
@@ -40,6 +47,18 @@ export default function QpEditInstanceModal({
   const [countryCode, setCountryCode] = useState("");
   const [expiryMonth, setExpiryMonth] = useState("");
   const [expiryYear, setExpiryYear] = useState("");
+  const [status, setStatus] = useState("");
+  const [statusReason, setStatusReason] = useState("");
+
+  const STATUS_OPTIONS = [
+    "PENDING",
+    "PROCESSING",
+    "SUCCESS",
+    "DECLINED",
+    "ERROR",
+    "INVALID",
+    "SKIPPED",
+  ];
 
   useEffect(() => {
     if (rowData) {
@@ -53,6 +72,8 @@ export default function QpEditInstanceModal({
       setCountryCode(rowData.billing_address?.country_code ?? "US");
       setExpiryMonth(rowData.expiry_month ? String(rowData.expiry_month) : "");
       setExpiryYear(rowData.expiry_year ? String(rowData.expiry_year) : "");
+      setStatus(rowData.status ?? "PENDING");
+      setStatusReason(rowData.status_reason ?? "");
     }
   }, [rowData]);
 
@@ -85,6 +106,8 @@ export default function QpEditInstanceModal({
         postal_code: postalCode,
         country_code: countryCode.toUpperCase() || "US",
       },
+      status: status || undefined,
+      status_reason: statusReason || undefined,
     };
 
     const month = expiryMonth ? parseInt(expiryMonth, 10) : undefined;
@@ -136,6 +159,36 @@ export default function QpEditInstanceModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={status}
+                onValueChange={(v) => setStatus(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="statusReason">Status reason</Label>
+              <Input
+                id="statusReason"
+                value={statusReason}
+                onChange={(e) => setStatusReason(e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount</Label>

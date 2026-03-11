@@ -123,6 +123,26 @@ export default function QpTransactionDetailsModal({
             </div>
           )}
 
+          {(rowData.status === "SUCCESS" || rowData.status === "DECLINED") && (
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Response from payment processor
+              </h3>
+              <p className="text-xs text-gray-600 mb-2">
+                Payload returned after charge (status: {rowData.status})
+              </p>
+              {rowData.last_response_payload != null ? (
+                <pre className="bg-gray-50 p-3 rounded-lg text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-words">
+                  {JSON.stringify(rowData.last_response_payload, null, 2)}
+                </pre>
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  No response payload recorded for this charge.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="border-t pt-4 text-xs text-gray-500 space-y-1">
             <p>Created: {new Date(rowData.createdAt).toLocaleString()}</p>
             <p>Updated: {new Date(rowData.updatedAt).toLocaleString()}</p>

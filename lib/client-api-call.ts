@@ -1119,6 +1119,40 @@ class ApiClient {
     }
   };
 
+  createAndProcessSingleQPCharge = async (data: {
+    hotel_id: string;
+    reservation_id: string;
+    amount_numeric: number;
+    currency?: string;
+    card_number: string;
+    cvv: string;
+    card_expire?: string;
+    expiry_month?: number;
+    expiry_year?: number;
+    billing_address?: {
+      address_1?: string;
+      address_2?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+      country_code?: string;
+    };
+    ota?: string;
+    vnp_work_id?: string;
+    portfolio?: string;
+    user_id?: string;
+  }) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/qp-charge-instances/create-and-process`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   processQPBulkCharges = async (instanceIds: string[]) => {
     try {
       const response = await axios.post(
@@ -1144,6 +1178,30 @@ class ApiClient {
     } catch (error) {
       throw error;
     }
+  };
+
+  exportQPChargeInstances = async (params: {
+    ids?: string[];
+    charge_file_id?: string;
+    status?: string;
+  }) => {
+    const query: Record<string, string> = {};
+    if (params.ids?.length) query.ids = params.ids.join(",");
+    if (params.charge_file_id) query.charge_file_id = params.charge_file_id;
+    if (params.status) query.status = params.status;
+    const response = await axios.get(
+      `${API_BASE_URL}/qp-charge-instances/export`,
+      { params: query, responseType: "blob" }
+    );
+    return response.data as Blob;
+  };
+
+  downloadQPChargeFileReport = async (chargeFileId: string) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/download-report`,
+      { responseType: "blob" }
+    );
+    return response.data as Blob;
   };
 
   // Add an axios interceptor to handle 401 errors (unauthorized)

@@ -59,6 +59,7 @@ import {
   useDeleteFile,
   useArchiveUnarchiveFile,
 } from "@/lib/hooks/use-api";
+import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 import TemplateDownload from "@/components/pages/uploads/template-download";
 
@@ -155,6 +156,26 @@ export default function UploadsPage() {
         "Downloading report, Make sure popup is not blocked by browser"
       );
       await downloadReportMutation.mutateAsync(uploadId);
+    } finally {
+      toast.dismiss();
+    }
+  };
+
+  const handleDownloadQPReport = async (chargeFileId: string) => {
+    try {
+      toast.loading("Downloading QP report...");
+      const blob = await apiClient.downloadQPChargeFileReport(chargeFileId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qp_report_${chargeFileId}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Report downloaded");
+    } catch (err) {
+      toast.error("Failed to download report");
     } finally {
       toast.dismiss();
     }
@@ -436,12 +457,12 @@ export default function UploadsPage() {
                       </TableCell>
 
                       {/* MARK: Charge Progress Cell */}
-                      {/* Explanation: Displays charging progress showing how many entries were successfully charged
-                      out of total processed entries. Format: "X charged out of Y entries" */}
+                      {/* Explanation: Displays charging progress: X charged out of Y entries (Y = total entries in file).
+                      For QP uses linked charge file success_count and total_rows; for PayPal/Stripe uses charged count and total rows. */}
                       <TableCell className="">
                         <span>
                           {session.chargedCount} charged out of{" "}
-                          {session.processedRows} entries
+                          {session.totalRows} entries
                         </span>
                       </TableCell>
 
@@ -517,7 +538,22 @@ export default function UploadsPage() {
                                 </Link>
                               </DropdownMenuItem>
                             )}
-                            {/* MARK: Download Report Action (PayPal/Stripe only; QP uses QP Payment export) */}
+                            {/* MARK: Download Report for QP (parent file with charge status) */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDownloadQPReport(
+                                    session.linkedQpChargeFileId!
+                                  )
+                                }
+                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                              >
+                                <DownloadCloud className="h-4 w-4" />
+                                <span>Download Report</span>
+                              </DropdownMenuItem>
+                            )}
+                            {/* MARK: Download Report Action (PayPal/Stripe only) */}
                             {session.paymentGateway !== "qp" && (
                               <DropdownMenuItem
                                 onClick={() => {

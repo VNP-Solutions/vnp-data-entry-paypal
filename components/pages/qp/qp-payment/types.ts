@@ -21,8 +21,10 @@ export interface QPChargeInstance {
   };
   card_last4: string;
   status: string;
+  status_reason?: string | null;
   expiry_month?: number;
   expiry_year?: number;
+  last_response_payload?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
