@@ -247,13 +247,16 @@ export default function UploadsPage() {
   // responseData: Parsed API response with sessions and pagination metadata
   const responseData = data?.data as UploadSessionsResponse | undefined;
   const sessions = responseData?.sessions || [];
-  const completedCount = sessions.filter(
+  const qpSessions = sessions.filter(
+    (s: UploadSession) => s.paymentGateway === "qp"
+  );
+  const completedCount = qpSessions.filter(
     (session: UploadSession) => session.status.toLowerCase() === "completed"
   ).length;
-  const processingCount = sessions.filter(
+  const processingCount = qpSessions.filter(
     (session: UploadSession) => session.status.toLowerCase() === "processing"
   ).length;
-  const failedCount = sessions.filter(
+  const failedCount = qpSessions.filter(
     (session: UploadSession) => session.status.toLowerCase() === "failed"
   ).length;
   const pagination = responseData?.pagination;
@@ -282,7 +285,7 @@ export default function UploadsPage() {
                 {isLoading ? (
                   <Skeleton className="h-6 w-16" />
                 ) : (
-                  sessions.length
+                  qpSessions.length
                 )}
               </div>
             </div>
@@ -395,7 +398,7 @@ export default function UploadsPage() {
                         ))}
                     </TableRow>
                   ))
-              ) : sessions.length === 0 ? (
+              ) : qpSessions.length === 0 ? (
                 // MARK: Empty State
                 // Explanation: Displays a friendly message when no upload sessions are found.
                 // Shows upload icon and prompts user to upload a new file.
@@ -415,7 +418,7 @@ export default function UploadsPage() {
                 // Explanation: Renders each upload session as a table row with all relevant information.
                 // Includes client-side search filtering by filename before displaying.
                 // Each row shows file details, status, progress, and action menu.
-                sessions
+                qpSessions
                   .filter((session: UploadSession) =>
                     session.fileName
                       .toLowerCase()
@@ -677,7 +680,7 @@ export default function UploadsPage() {
               {/* MARK: Pagination Summary */}
               {/* Explanation: Displays count of currently visible sessions vs total sessions */}
               <div className="text-sm text-gray-600">
-                Showing {sessions.length} of {pagination.total} sessions
+                Showing {qpSessions.length} of {pagination.total} sessions
               </div>
             </div>
             {/* MARK: Page Navigation Buttons */}

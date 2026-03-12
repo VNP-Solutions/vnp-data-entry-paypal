@@ -15,16 +15,11 @@ import { useState } from "react";
 export default function TemplateDownload() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const templateUrls: Record<"paypal" | "stripe" | "qp", string> = {
-    paypal:
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532423405-paypal-template.xlsx",
-    stripe:
-      "https://vnpstorage.s3.us-east-1.amazonaws.com/uploads/1758532632398-stripe-template.xlsx",
-    qp: "https://vnpstorage.s3.us-east-1.amazonaws.com/qptemplate.xlsx",
-  };
+  const qpTemplateUrl =
+    "https://vnpstorage.s3.us-east-1.amazonaws.com/qptemplate.xlsx";
 
-  const handleDownloadTemplate = (templateType: "paypal" | "stripe" | "qp") => {
-    window.open(templateUrls[templateType]);
+  const handleDownloadTemplate = () => {
+    window.open(qpTemplateUrl);
     setIsDialogOpen(false);
   };
 
@@ -53,23 +48,7 @@ export default function TemplateDownload() {
           </DialogHeader>
           <div className="flex flex-col gap-3 pt-4">
             <Button
-              onClick={() => handleDownloadTemplate("paypal")}
-              className="w-full flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-600/90 hover:text-white"
-              variant="outline"
-            >
-              <Download className="h-4 w-4" />
-              PayPal Template
-            </Button>
-            <Button
-              onClick={() => handleDownloadTemplate("stripe")}
-              className="w-full flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-600/90 hover:text-white"
-              variant="outline"
-            >
-              <Download className="h-4 w-4" />
-              Stripe Template
-            </Button>
-            <Button
-              onClick={() => handleDownloadTemplate("qp")}
+              onClick={handleDownloadTemplate}
               className="w-full flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-600/90 hover:text-white"
               variant="outline"
             >

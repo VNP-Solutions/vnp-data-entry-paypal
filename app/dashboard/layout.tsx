@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { UploadDialog } from "@/components/shared/upload-dialog";
+import { UploadTerminalKeysDialog } from "@/components/shared/upload-terminal-keys-dialog";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showUploadTerminalKeysDialog, setShowUploadTerminalKeysDialog] =
+    useState(false);
   const { data: profileData } = useProfile();
   const { user } = profileData?.data || { user: null };
   const pathname = usePathname();
@@ -37,7 +40,7 @@ export default function DashboardLayout({
     {
       label: "Paypal Payment",
       href: "/dashboard/paypal-payment",
-      isVisible: true,
+      isVisible: false,
     },
     {
       label: "QP Payment",
@@ -47,7 +50,7 @@ export default function DashboardLayout({
     {
       label: "Stripe Payment",
       href: "/dashboard/stripe-payment",
-      isVisible: true,
+      isVisible: false,
     },
     {
       label: "Invite",
@@ -99,13 +102,21 @@ export default function DashboardLayout({
                     {item.label}
                   </Link>
                 ))}
-              <Button
-                onClick={() => setShowUploadDialog(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Upload
-                <Upload className="h-4 w-4 ms-1" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowUploadDialog(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Upload
+                  <Upload className="h-4 w-4 ms-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowUploadTerminalKeysDialog(true)}
+                >
+                  Upload Terminal Keys
+                </Button>
+              </div>
               <div className="md:me-10">
                 <ProfileButton />
               </div>
@@ -119,6 +130,10 @@ export default function DashboardLayout({
         open={showUploadDialog}
         onOpenChange={setShowUploadDialog}
         onUploadSuccess={handleUploadSuccess}
+      />
+      <UploadTerminalKeysDialog
+        open={showUploadTerminalKeysDialog}
+        onOpenChange={setShowUploadTerminalKeysDialog}
       />
     </div>
   );
