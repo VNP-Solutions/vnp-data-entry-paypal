@@ -48,6 +48,11 @@ export default function DashboardLayout({
       isVisible: true,
     },
     {
+      label: "Terminal Keys",
+      href: "/dashboard/terminal-keys",
+      isVisible: true,
+    },
+    {
       label: "Stripe Payment",
       href: "/dashboard/stripe-payment",
       isVisible: false,

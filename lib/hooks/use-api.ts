@@ -10,6 +10,7 @@ export const queryKeys = {
   invitations: "invitations",
   profile: "profile",
   adminExcelData: "admin-excel-data",
+  terminalCredentials: "terminal-credentials",
 } as const;
 
 // Row Data Hooks
@@ -37,6 +38,23 @@ export function useUploadSessions(page: number = 1, limit: number = 20, search: 
   return useQuery({
     queryKey: [queryKeys.uploadSessions, { page, limit, search }],
     queryFn: () => apiClient.getUploadSessions(page, limit, search),
+  });
+}
+
+// Terminal Credentials Hooks
+export function useTerminalCredentials(
+  q?: string,
+  page: number = 1,
+  limit: number = 20
+) {
+  return useQuery({
+    queryKey: [queryKeys.terminalCredentials, q ?? "", page, limit],
+    queryFn: () =>
+      apiClient.getTerminalCredentials({
+        ...(q ? { q } : {}),
+        page,
+        limit,
+      }),
   });
 }
 

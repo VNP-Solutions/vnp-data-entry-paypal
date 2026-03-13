@@ -172,6 +172,29 @@ interface ApiResponse<T = unknown> {
   data: T;
 }
 
+export interface TerminalCredentialListItem {
+  _id: string;
+  hotel_id: string;
+  username: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_by?: { name?: string; email?: string };
+  updated_by?: { name?: string; email?: string };
+}
+
+export interface TerminalCredentialsPagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface TerminalCredentialsListResponse {
+  status: string;
+  data: TerminalCredentialListItem[];
+  pagination: TerminalCredentialsPagination;
+}
+
 interface ValidateInvitationData {
   email: string;
   tempPassword: string;
@@ -543,6 +566,14 @@ class ApiClient {
     }
   };
 
+  verifyPassword = async (password: string) => {
+    const response = await axios.post<ApiResponse<{ status: string }>>(
+      `${API_BASE_URL}/auth/verify-password`,
+      { password }
+    );
+    return response.data;
+  };
+
   uploadFile = async (file: File) => {
     try {
       const formData = new FormData();
@@ -581,6 +612,81 @@ class ApiClient {
     } catch (error) {
       throw error;
     }
+  };
+
+  getTerminalCredentials = async (params?: {
+    q?: string;
+    hotel_id?: string;
+    include_deleted?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const response = await axios.get<TerminalCredentialsListResponse>(
+      `${API_BASE_URL}/terminal-credentials`,
+      { params: params ?? {} }
+    );
+    return response.data;
+  };
+
+  getTerminalCredentialById = async (
+    id: string,
+    includeKey?: boolean
+  ) => {
+    const response = await axios.get<
+      ApiResponse<TerminalCredentialListItem & { terminal_key?: string }>
+    >(`${API_BASE_URL}/terminal-credentials/${id}`, {
+      params: includeKey ? { include_key: "true" } : {},
+    });
+    return response.data;
+  };
+
+  createTerminalCredential = async (body: {
+    hotel_id: string;
+    username: string;
+    terminal_key: string;
+  }) => {
+    const response = await axios.post<ApiResponse<{ id: string; hotel_id: string; username: string }>>(
+      `${API_BASE_URL}/terminal-credentials`,
+      body
+    );
+    return response.data;
+  };
+
+  updateTerminalCredential = async (
+    id: string,
+    body: { username?: string; terminal_key?: string }
+  ) => {
+    const response = await axios.patch<ApiResponse<{ message: string }>>(
+      `${API_BASE_URL}/terminal-credentials/${id}`,
+      body
+    );
+    return response.data;
+  };
+
+  deleteTerminalCredential = async (id: string) => {
+    const response = await axios.delete<ApiResponse<{ message: string }>>(
+      `${API_BASE_URL}/terminal-credentials/${id}`
+    );
+    return response.data;
+  };
+
+  exportTerminalCredentials = async (params?: {
+    mask_terminal_key?: boolean;
+    format?: "xlsx" | "csv";
+    ids?: string[];
+  }) => {
+    const query: Record<string, string> = {
+      mask_terminal_key: params?.mask_terminal_key !== false ? "true" : "false",
+      format: params?.format ?? "xlsx",
+    };
+    if (params?.ids?.length) {
+      query.ids = params.ids.join(",");
+    }
+    const response = await axios.get(
+      `${API_BASE_URL}/terminal-credentials/export`,
+      { params: query, responseType: "blob" }
+    );
+    return response.data as Blob;
   };
 
   getRowData = async (params: RowDataParams) => {
