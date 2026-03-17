@@ -33,10 +33,16 @@ export function useSingleRowData(documentId: string) {
 }
 
 // Upload Session Hooks
-export function useUploadSessions(page: number = 1, limit: number = 20, search: string = "") {
+// gateway: on main branch use "paypal,stripe" so File History shows only PayPal/Stripe; on qpvt use "qp"
+export function useUploadSessions(
+  page: number = 1,
+  limit: number = 20,
+  search: string = "",
+  gateway: string = "paypal,stripe"
+) {
   return useQuery({
-    queryKey: [queryKeys.uploadSessions, { page, limit, search }],
-    queryFn: () => apiClient.getUploadSessions(page, limit, search),
+    queryKey: [queryKeys.uploadSessions, { page, limit, search, gateway }],
+    queryFn: () => apiClient.getUploadSessions(page, limit, search, gateway),
   });
 }
 

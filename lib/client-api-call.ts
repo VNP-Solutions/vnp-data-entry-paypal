@@ -653,17 +653,22 @@ class ApiClient {
     }
   };
 
-  getUploadSessions = async (page: number = 1, limit: number = 20, search: string = "") => {
+  getUploadSessions = async (
+    page: number = 1,
+    limit: number = 20,
+    search: string = "",
+    gateway?: string
+  ) => {
     try {
+      const params: { page: number; limit: number; search: string; gateway?: string } = {
+        page,
+        limit,
+        search,
+      };
+      if (gateway) params.gateway = gateway;
       const response = await axios.get<ApiResponse<UploadSessionsResponse>>(
         `${API_BASE_URL}/upload/sessions`,
-        {
-          params: {
-            page,
-            limit,
-            search
-          },
-        }
+        { params }
       );
       return response.data;
     } catch (error) {
