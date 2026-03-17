@@ -1,4 +1,23 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+/**
+ * use-api.ts
+ * React Query hooks for dashboard: upload sessions, row data, auth, terminal credentials,
+ * invitations, admin Excel data. Used by File History, QP Payment, and other pages.
+ *
+ * BOOKMARK LIST (landmarks in this file – key hooks)
+ * ------------------------------------
+ * useUploadSessions
+ *   Fetches File History list. Fourth param gateway: "paypal,stripe" (main branch) or "qp" (qpvt) to show only that gateway; default "paypal,stripe".
+ * useRowData / useSingleRowData
+ *   PayPal/Stripe row data with filters.
+ * useLogin / useVerifyOtp / auth hooks
+ *   Auth mutations and session.
+ * useTerminalCredentials
+ *   QP terminal keys list with search/pagination.
+ * useInvitations / useAdminExcelData / etc.
+ *   Other dashboard data hooks.
+ */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminExcelDataParams, apiClient } from "../client-api-call";
 import { toast } from "sonner";
 
@@ -34,10 +53,16 @@ export function useSingleRowData(documentId: string) {
 }
 
 // Upload Session Hooks
-export function useUploadSessions(page: number = 1, limit: number = 20, search: string = "") {
+// gateway: main branch use "paypal,stripe"; qpvt use "qp" so File History shows only that gateway.
+export function useUploadSessions(
+  page: number = 1,
+  limit: number = 20,
+  search: string = "",
+  gateway: string = "paypal,stripe"
+) {
   return useQuery({
-    queryKey: [queryKeys.uploadSessions, { page, limit, search }],
-    queryFn: () => apiClient.getUploadSessions(page, limit, search),
+    queryKey: [queryKeys.uploadSessions, { page, limit, search, gateway }],
+    queryFn: () => apiClient.getUploadSessions(page, limit, search, gateway),
   });
 }
 

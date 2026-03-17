@@ -1,3 +1,22 @@
+/**
+ * client-api-call.ts
+ * Central API client for the dashboard: auth, upload sessions, PayPal/Stripe payments,
+ * QP charge files/instances, terminal credentials, invitations, admin row data.
+ *
+ * BOOKMARK LIST (landmarks in this file – key methods)
+ * ------------------------------------
+ * getUploadSessions
+ *   Fetches paginated File History (upload sessions). Optional gateway param: "paypal,stripe" (main) or "qp" (qpvt) to filter by payment gateway.
+ * Login / Register / Verify OTP / Auth helpers
+ *   Auth flow and token/cookie handling.
+ * processPayPalPayment / Stripe / QP endpoints
+ *   Payment processing and QP charge file/instance APIs.
+ * getTerminalCredentials / useTerminalCredentials
+ *   Terminal key CRUD for QP.
+ * Invitations / Admin Excel Data
+ *   Invite and row-data APIs.
+ */
+
 import axios from "axios";
 import Cookies from "js-cookie";
 
@@ -779,17 +798,22 @@ class ApiClient {
     }
   };
 
-  getUploadSessions = async (page: number = 1, limit: number = 20, search: string = "") => {
+  getUploadSessions = async (
+    page: number = 1,
+    limit: number = 20,
+    search: string = "",
+    gateway?: string
+  ) => {
     try {
+      const params: { page: number; limit: number; search: string; gateway?: string } = {
+        page,
+        limit,
+        search,
+      };
+      if (gateway) params.gateway = gateway;
       const response = await axios.get<ApiResponse<UploadSessionsResponse>>(
         `${API_BASE_URL}/upload/sessions`,
-        {
-          params: {
-            page,
-            limit,
-            search
-          },
-        }
+        { params }
       );
       return response.data;
     } catch (error) {
