@@ -341,14 +341,13 @@ export default function TerminalKeysPage() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addForm.hotel_id.trim() || !addForm.username.trim() || !addForm.terminal_key.trim()) {
-      toast.error("Please fill all required fields");
+    if (!addForm.username.trim() || !addForm.terminal_key.trim()) {
+      toast.error("Username and terminal key are required");
       return;
     }
     setAddSubmitting(true);
     try {
       await apiClient.createTerminalCredential({
-        hotel_id: addForm.hotel_id.trim(),
         username: addForm.username.trim(),
         terminal_key: addForm.terminal_key,
       });
@@ -360,7 +359,7 @@ export default function TerminalKeysPage() {
       const apiErr = err as { response?: { data?: { message?: string }; status?: number } };
       const msg = apiErr.response?.data?.message;
       if (apiErr.response?.status === 409) {
-        toast.error(msg || "Credential for this hotel ID already exists");
+        toast.error(msg || "Credential for this username already exists");
       } else {
         toast.error(msg || "Failed to add terminal key");
       }
@@ -451,7 +450,7 @@ export default function TerminalKeysPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by Hotel ID or Username..."
+                placeholder="Search by Username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -514,7 +513,6 @@ export default function TerminalKeysPage() {
                     />
                   )}
                 </TableHead>
-                <TableHead>Hotel ID</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Terminal Key</TableHead>
                 <TableHead className="text-start">Created At</TableHead>
@@ -527,7 +525,7 @@ export default function TerminalKeysPage() {
                   .fill(0)
                   .map((_, idx) => (
                     <TableRow key={idx}>
-                      {Array(6)
+                      {Array(5)
                         .fill(0)
                         .map((_, cellIdx) => (
                           <TableCell key={cellIdx}>
@@ -538,7 +536,7 @@ export default function TerminalKeysPage() {
                   ))
               ) : credentials.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center py-12">
+                  <TableCell colSpan={5} className="h-40 text-center py-12">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <Key className="h-10 w-10 mb-3 opacity-60" />
                       <p className="text-lg font-medium">No terminal keys found</p>
@@ -558,11 +556,8 @@ export default function TerminalKeysPage() {
                       <Checkbox
                         checked={selectedIds.has(cred._id)}
                         onCheckedChange={() => toggleSelectRow(cred._id)}
-                        aria-label={`Select ${cred.hotel_id}`}
+                        aria-label={`Select ${cred.username}`}
                       />
-                    </TableCell>
-                    <TableCell className="font-medium py-3">
-                      {cred.hotel_id}
                     </TableCell>
                     <TableCell className="py-3">{cred.username}</TableCell>
                     <TableCell className="font-mono text-muted-foreground py-3">
@@ -681,18 +676,6 @@ export default function TerminalKeysPage() {
           </DialogHeader>
           <form onSubmit={handleAddSubmit}>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="add-hotel_id">Hotel ID</Label>
-                <Input
-                  id="add-hotel_id"
-                  value={addForm.hotel_id}
-                  onChange={(e) =>
-                    setAddForm((p) => ({ ...p, hotel_id: e.target.value }))
-                  }
-                  placeholder="e.g. 12345"
-                  required
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="add-username">Username</Label>
                 <Input
@@ -818,12 +801,6 @@ export default function TerminalKeysPage() {
               <div className="space-y-4 py-4">
                 {viewCredentialWithKey && (
                   <div className="rounded-lg border bg-gray-50/50 p-4 space-y-2 text-sm">
-                    <p>
-                      <span className="text-muted-foreground">Hotel ID:</span>{" "}
-                      <span className="font-medium">
-                        {viewCredentialWithKey.hotel_id}
-                      </span>
-                    </p>
                     <p>
                       <span className="text-muted-foreground">Username:</span>{" "}
                       <span className="font-medium">
@@ -985,14 +962,6 @@ export default function TerminalKeysPage() {
           ) : (
             <form onSubmit={handleEditSubmit}>
               <div className="space-y-4 py-4">
-                {selectedCredential && (
-                  <p className="text-sm text-gray-600">
-                    Hotel ID:{" "}
-                    <span className="font-medium">
-                      {selectedCredential.hotel_id}
-                    </span>
-                  </p>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="edit-username">Username</Label>
                   <Input
@@ -1059,7 +1028,7 @@ export default function TerminalKeysPage() {
             <DialogDescription>
               {deleteStep === 1
                 ? "Confirm your password to delete this credential."
-                : `Are you sure you want to delete the credential for hotel ${selectedCredential?.hotel_id}? This action cannot be undone.`}
+                : `Are you sure you want to delete the credential for username ${selectedCredential?.username}? This action cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
           {deleteStep === 1 ? (

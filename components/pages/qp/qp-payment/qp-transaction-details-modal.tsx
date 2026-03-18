@@ -25,9 +25,8 @@ export default function QpTransactionDetailsModal({
   };
 
   const displayFields = [
-    { label: "Hotel ID", value: rowData.hotel_id },
     { label: "Reservation ID", value: rowData.reservation_id },
-    { label: "User ID", value: rowData.user_id },
+    { label: "QP Username", value: rowData.user_id },
     {
       label: "Amount",
       value: `${rowData.currency} ${rowData.amount_numeric?.toFixed(2)}`,

@@ -634,10 +634,10 @@ export default function QpPaymentPageComponent({
               <Building2 className="h-5 w-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Unique Hotels</p>
+              <p className="text-sm text-gray-600">Unique QP Usernames</p>
               <div className="text-xl font-bold text-gray-900">
                 {data.stats?.uniqueHotels ??
-                  new Set(data.rows.map((row) => row.hotel_id)).size}
+                  new Set(data.rows.map((row) => row.user_id).filter(Boolean)).size}
               </div>
             </div>
           </div>
@@ -673,7 +673,7 @@ export default function QpPaymentPageComponent({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by hotel ID, user, or reservation..."
+                placeholder="Search by QP username or reservation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -812,7 +812,6 @@ export default function QpPaymentPageComponent({
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Hotel ID</TableHead>
                 <TableHead>Reservation ID</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Amount</TableHead>
@@ -828,7 +827,7 @@ export default function QpPaymentPageComponent({
                   .fill(0)
                   .map((_, idx) => (
                     <TableRow key={idx}>
-                      {Array(8)
+                      {Array(7)
                         .fill(0)
                         .map((_, cellIdx) => (
                           <TableCell key={cellIdx}>
@@ -839,7 +838,7 @@ export default function QpPaymentPageComponent({
                   ))
               ) : data.rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={7} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <FileSpreadsheet className="h-8 w-8 mb-2" />
                       <p className="text-lg font-medium">No records found</p>
@@ -858,7 +857,6 @@ export default function QpPaymentPageComponent({
                         }
                       />
                     </TableCell>
-                    <TableCell className="font-mono">{row.hotel_id}</TableCell>
                     <TableCell>{row.reservation_id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

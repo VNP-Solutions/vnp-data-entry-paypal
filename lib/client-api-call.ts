@@ -193,7 +193,7 @@ interface ApiResponse<T = unknown> {
 
 export interface TerminalCredentialListItem {
   _id: string;
-  hotel_id: string;
+  hotel_id?: string | null;
   username: string;
   createdAt?: string;
   updatedAt?: string;
@@ -660,7 +660,7 @@ class ApiClient {
   };
 
   createTerminalCredential = async (body: {
-    hotel_id: string;
+    hotel_id?: string;
     username: string;
     terminal_key: string;
   }) => {

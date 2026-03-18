@@ -53,12 +53,12 @@ export function useSingleRowData(documentId: string) {
 }
 
 // Upload Session Hooks
-// gateway: main branch use "paypal,stripe"; qpvt use "qp" so File History shows only that gateway.
+// gateway: "qp" so File History shows only QP files (no PayPal/Stripe).
 export function useUploadSessions(
   page: number = 1,
   limit: number = 20,
   search: string = "",
-  gateway: string = "paypal,stripe"
+  gateway: string = "qp"
 ) {
   return useQuery({
     queryKey: [queryKeys.uploadSessions, { page, limit, search, gateway }],
