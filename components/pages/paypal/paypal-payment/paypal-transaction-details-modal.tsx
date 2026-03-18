@@ -52,6 +52,8 @@ const PaypalTransactionDetailsModal = ({
   // Explanation: Flattens the nested rowData object into a simple key-value array for easy grid rendering
   const flattenedData = flattenObject(rowData);
 
+  const lastChargeApiResponse = (rowData as Record<string, unknown>).lastChargeApiResponse;
+
   // MARK: Component Render
   // Explanation: Renders modal dialog with transaction details in a responsive 3-column grid.
   // Filters out internal system fields and formats each field appropriately based on its type.
@@ -61,6 +63,28 @@ const PaypalTransactionDetailsModal = ({
         <DialogHeader>
           <DialogTitle>Entry Details</DialogTitle>
         </DialogHeader>
+        {/* MARK: Last payment API response */}
+        <div className="space-y-2 py-2">
+          <p className="text-sm font-medium text-gray-500 uppercase">
+            Last payment API response
+          </p>
+          <div className="rounded-md bg-gray-50 dark:bg-gray-900 border p-3 max-h-64 overflow-auto">
+            {lastChargeApiResponse != null &&
+            typeof lastChargeApiResponse === "object" ? (
+              <pre className="text-xs whitespace-pre-wrap break-words">
+                {JSON.stringify(lastChargeApiResponse, null, 2)}
+              </pre>
+            ) : lastChargeApiResponse != null ? (
+              <pre className="text-xs whitespace-pre-wrap break-words">
+                {String(lastChargeApiResponse)}
+              </pre>
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                API response for this instance was not recorded.
+              </p>
+            )}
+          </div>
+        </div>
         {/* MARK: Transaction Details Grid */}
         {/* Explanation: Displays all transaction fields in 3-column grid layout.
         Filters out internal fields (id, createdAt, uploadId, rowNumber, uploadStatus) for cleaner display.
@@ -73,7 +97,9 @@ const PaypalTransactionDetailsModal = ({
                 key !== "createdAt" &&
                 key !== "uploadId" &&
                 key !== "rowNumber" &&
-                key !== "uploadStatus"
+                key !== "uploadStatus" &&
+                key !== "lastChargeApiResponse" &&
+                key !== "lastChargeApiResponseAt"
             )
             .map(({ key, value }) => (
               <div key={key} className="space-y-1">

@@ -135,9 +135,13 @@ export default function StripeTransactionDetailsModal({
       "updatedAt",
       "__v",
       "otaId",
+      "lastChargeApiResponse",
+      "lastChargeApiResponseAt",
     ];
     return !hiddenFields.includes(key);
   };
+
+  const lastChargeApiResponse = (rowData as Record<string, unknown>).lastChargeApiResponse;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,6 +149,28 @@ export default function StripeTransactionDetailsModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
+        {/* Last payment API response */}
+        <div className="space-y-2 py-2">
+          <p className="text-sm font-medium text-gray-500 uppercase">
+            Last payment API response
+          </p>
+          <div className="rounded-md bg-gray-50 dark:bg-gray-900 border p-3 max-h-64 overflow-auto">
+            {lastChargeApiResponse != null &&
+            typeof lastChargeApiResponse === "object" ? (
+              <pre className="text-xs whitespace-pre-wrap break-words">
+                {JSON.stringify(lastChargeApiResponse, null, 2)}
+              </pre>
+            ) : lastChargeApiResponse != null ? (
+              <pre className="text-xs whitespace-pre-wrap break-words">
+                {String(lastChargeApiResponse)}
+              </pre>
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                API response for this instance was not recorded.
+              </p>
+            )}
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-4 py-4">
           {Object.entries(rowData)
             .filter(([key]) => shouldDisplayField(key))

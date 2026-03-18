@@ -420,7 +420,7 @@ const StripeTransactionsTab = () => {
                 <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -555,7 +555,7 @@ const StripeTransactionsTab = () => {
                           {row["Charge status"] || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center flex items-center justify-center gap-2">
+                      <TableCell className="text-right flex items-center justify-end gap-2">
                         {[
                           "ready to charge",
                           "partially charged",
@@ -566,6 +566,22 @@ const StripeTransactionsTab = () => {
                           row["Charge status"]?.toLowerCase().trim()
                         ) ? (
                           <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-2 hover:bg-blue-100 w-fit"
+                              onClick={() => {
+                                const normalized = {
+                                  ...row,
+                                  id: (row.id || row._id) as string,
+                                };
+                                setSelectedRow(normalized);
+                                setShowViewDialog(true);
+                              }}
+                            >
+                              Details
+                              <Eye className="h-4 w-4 text-blue-600" />
+                            </Button>
                             {row["Charge status"]?.toLowerCase().trim() ===
                               "refunded" && (
                               <Button

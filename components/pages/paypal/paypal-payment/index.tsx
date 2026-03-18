@@ -1124,7 +1124,7 @@ export default function PaypalPaymentPageComponent() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Card Details</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-center">Action</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1274,7 +1274,7 @@ export default function PaypalPaymentPageComponent() {
                             {row["Charge status"]}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center flex items-center justify-center gap-2">
+                        <TableCell className="text-right flex items-center justify-end gap-2">
                           {[
                             "ready to charge",
                             "partially charged",
@@ -1285,6 +1285,18 @@ export default function PaypalPaymentPageComponent() {
                             row["Charge status"]?.toLowerCase().trim()
                           ) ? (
                             <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="p-2 hover:bg-blue-100 w-fit"
+                                onClick={() => {
+                                  setSelectedRow(row);
+                                  setShowViewDialog(true);
+                                }}
+                              >
+                                Details
+                                <Eye className="h-4 w-4 text-blue-600" />
+                              </Button>
                               <Button
                                 variant={"outline"}
                                 size="sm"
