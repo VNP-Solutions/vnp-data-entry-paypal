@@ -122,25 +122,25 @@ export default function QpTransactionDetailsModal({
             </div>
           )}
 
-          {(rowData.status === "SUCCESS" || rowData.status === "DECLINED") && (
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Response from payment processor
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Payload returned after charge (status: {rowData.status})
+          <div className="border-t pt-4">
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Response from payment processor
+            </h3>
+            <p className="text-xs text-gray-600 mb-2">
+              Whatever the outcome (success, declined, error, invalid, etc.), we
+              keep the API response when one was recorded. Charge status:{" "}
+              <span className="font-medium text-gray-800">{rowData.status}</span>
+            </p>
+            {rowData.last_response_payload != null ? (
+              <pre className="bg-gray-50 p-3 rounded-lg text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-words">
+                {JSON.stringify(rowData.last_response_payload, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                No response payload recorded yet for this charge.
               </p>
-              {rowData.last_response_payload != null ? (
-                <pre className="bg-gray-50 p-3 rounded-lg text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-words">
-                  {JSON.stringify(rowData.last_response_payload, null, 2)}
-                </pre>
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  No response payload recorded for this charge.
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="border-t pt-4 text-xs text-gray-500 space-y-1">
             <p>Created: {new Date(rowData.createdAt).toLocaleString()}</p>

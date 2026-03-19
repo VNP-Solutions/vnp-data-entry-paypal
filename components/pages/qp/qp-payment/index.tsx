@@ -1,7 +1,7 @@
 "use client";
 
 // MARK: Import Dependencies
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -111,6 +111,9 @@ interface QpPaymentPageComponentProps {
 export default function QpPaymentPageComponent({
   initialChargeFileId,
 }: QpPaymentPageComponentProps = {}) {
+  // Ignore stale fetch responses when filter changes (e.g. open from File History)
+  const fetchIdRef = useRef(0);
+
   // MARK: State Management - Data & Loading
   const [data, setData] = useState<ApiResponse>({
     rows: [],
@@ -139,8 +142,9 @@ export default function QpPaymentPageComponent({
   const [refreshKey, setRefreshKey] = useState(0);
 
   // MARK: State Management - File Upload Selection
+  // When opening from File History (chargeFileId in URL), start with that file so first fetch is filtered
   const [selectedChargeFileId, setSelectedChargeFileId] =
-    useState<string>("all");
+    useState<string>(initialChargeFileId ?? "all");
   const [chargeFiles, setChargeFiles] = useState<
     Array<{ _id: string; charge_file_id: string; file_name: string }>
   >([]);
@@ -159,6 +163,7 @@ export default function QpPaymentPageComponent({
 
   // MARK: Fetch Transaction Data
   const fetchData = async () => {
+    const thisFetchId = ++fetchIdRef.current;
     try {
       setIsLoading(true);
       const response = await apiClient.getQPChargeInstances({
@@ -169,6 +174,9 @@ export default function QpPaymentPageComponent({
         chargeFileId:
           selectedChargeFileId === "all" ? undefined : selectedChargeFileId,
       });
+
+      // Only apply this response if it's still the latest fetch (avoids race when opening with chargeFileId from URL)
+      if (thisFetchId !== fetchIdRef.current) return;
 
       // normalize various response shapes
       let allRows: QPChargeInstance[] = [];
@@ -419,11 +427,10 @@ export default function QpPaymentPageComponent({
       setIsBulkProcessingLoading(true);
 
       toast.loading(
-        `Starting bulk processing for ${pendingRows.length} records...`,
+        "Charge instances are now processing. You will get an email when they are done.",
         {
           id: loadingToastId,
           duration: Infinity,
-          description: `Please do not refresh the page`,
         },
       );
 
@@ -434,29 +441,8 @@ export default function QpPaymentPageComponent({
       setSelectedRows(new Set());
       fetchData();
 
-      const results = res?.data ?? [];
-      let successCount = 0;
-      let declinedCount = 0;
-      let errorCount = 0;
-      for (const item of results) {
-        if ("error" in item) {
-          errorCount++;
-        } else if (item.status === "SUCCESS") {
-          successCount++;
-        } else if (item.status === "DECLINED") {
-          declinedCount++;
-        } else {
-          errorCount++;
-        }
-      }
-      const parts: string[] = [];
-      if (successCount > 0) parts.push(`${successCount} success`);
-      if (declinedCount > 0) parts.push(`${declinedCount} declined`);
-      if (errorCount > 0) parts.push(`${errorCount} error`);
       toast.success(
-        parts.length > 0
-          ? `Bulk complete: ${parts.join(", ")}`
-          : "Bulk processing finished",
+        "Processing started. You'll receive an email when it's done.",
       );
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to process charges");
@@ -911,9 +897,35 @@ export default function QpPaymentPageComponent({
                       </TooltipProvider>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(row.status)}>
-                        {row.status}
-                      </Badge>
+                      {(() => {
+                        const payload = row.last_response_payload as
+                          | { processor?: { message?: string } }
+                          | null
+                          | undefined;
+                        const processorMessage = payload?.processor?.message?.trim();
+                        const badge = (
+                          <Badge className={getStatusColor(row.status)}>
+                            {row.status}
+                          </Badge>
+                        );
+                        if (processorMessage) {
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-default inline-block">
+                                    {badge}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-xs">{processorMessage}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        }
+                        return badge;
+                      })()}
                     </TableCell>
                     <TableCell className="text-right w-px whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">

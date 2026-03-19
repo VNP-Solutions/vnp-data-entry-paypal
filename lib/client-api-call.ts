@@ -1354,6 +1354,13 @@ class ApiClient {
     return response.data as Blob;
   };
 
+  startQPChargeFileProcess = async (chargeFileId: string) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/process`
+    );
+    return response.data;
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

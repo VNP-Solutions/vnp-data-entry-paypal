@@ -36,6 +36,7 @@ import {
   X,
   BadgeCheck,
   ExternalLink,
+  CreditCard,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -460,11 +461,10 @@ export default function UploadsPage() {
                       </TableCell>
 
                       {/* MARK: Charge Progress Cell */}
-                      {/* Explanation: Displays charging progress: X charged out of Y entries (Y = total entries in file).
-                      For QP uses linked charge file success_count and total_rows; for PayPal/Stripe uses charged count and total rows. */}
+                      {/* Explanation: Displays progress: X processed out of Y entries (Y = total entries in file). */}
                       <TableCell className="">
                         <span>
-                          {session.chargedCount} charged out of{" "}
+                          {session.chargedCount} processed out of{" "}
                           {session.totalRows} entries
                         </span>
                       </TableCell>
@@ -539,6 +539,40 @@ export default function UploadsPage() {
                                   <ExternalLink className="h-4 w-4" />
                                   <span>Open in QP Payment</span>
                                 </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {/* MARK: Process file (QP only) – start bulk charge for whole file */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId && (
+                              <DropdownMenuItem
+                                onClick={async () => {
+                                  try {
+                                    await apiClient.startQPChargeFileProcess(
+                                      session.linkedQpChargeFileId!
+                                    );
+                                    toast.success(
+                                      "Processing started. You'll receive an email when it's done."
+                                    );
+                                    refetch();
+                                  } catch (err: unknown) {
+                                    const ax = (err as { response?: { status: number; data?: { message?: string } } })
+                                      ?.response;
+                                    if (ax?.status === 409) {
+                                      toast.error(
+                                        "One file is already being processed. Please wait for it to finish before starting another."
+                                      );
+                                    } else {
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Failed to start processing"
+                                      );
+                                    }
+                                  }
+                                }}
+                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                              >
+                                <CreditCard className="h-4 w-4" />
+                                <span>Process file</span>
                               </DropdownMenuItem>
                             )}
                             {/* MARK: Download Report for QP (parent file with charge status) */}
