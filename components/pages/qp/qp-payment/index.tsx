@@ -190,6 +190,13 @@ export default function QpPaymentPageComponent({
           // backend-supplied pagination
           allRows = (response.data as any).rows;
           paginationInfo = (response.data as any).pagination;
+          // Derive totalPages from totalCount/limit so it's never wrong (e.g. backend bug or wrapper)
+          const totalCount = paginationInfo.totalCount ?? 0;
+          const limitVal = paginationInfo.limit ?? limit;
+          paginationInfo.totalPages = Math.max(
+            1,
+            Math.ceil(totalCount / limitVal),
+          );
           if ((response.data as any).stats) {
             stats = (response.data as any).stats;
           }
@@ -474,7 +481,20 @@ export default function QpPaymentPageComponent({
   };
 
   const handlePageInputChange = (value: string) => {
-    setPageInputValue(value);
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      setPageInputValue(trimmed);
+      return;
+    }
+    const num = parseInt(trimmed, 10);
+    const totalPages = data.pagination.totalPages;
+    if (!Number.isNaN(num)) {
+      // Clamp so number stepper and typing stay within valid range
+      const clamped = Math.max(1, Math.min(num, totalPages));
+      setPageInputValue(String(clamped));
+    } else {
+      setPageInputValue(trimmed);
+    }
   };
 
   const handlePageInputSubmit = () => {
@@ -1000,8 +1020,9 @@ export default function QpPaymentPageComponent({
               <span>Page</span>
               <Input
                 type="number"
-                min="1"
-                max={data.pagination.totalPages}
+                min={1}
+                max={Math.max(1, data.pagination.totalPages)}
+                step={1}
                 value={pageInputValue}
                 onChange={(e) => handlePageInputChange(e.target.value)}
                 onKeyDown={(e) => {
