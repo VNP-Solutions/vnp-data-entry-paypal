@@ -365,7 +365,7 @@ export default function UploadsPage() {
 
       {/* MARK: Upload Sessions Table */}
       {/* Explanation: Main data table displaying all upload sessions with their details.
-      Columns: File Name, Payment Gateway, Status, Charge Progress, Archive Status, Upload Time, Actions.
+      Columns: File Name, Payment Gateway, Upload Status, Charge Progress, Archive Status, Upload Time, Actions.
       Includes loading skeletons, empty state, and row actions dropdown menu. */}
       <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm ps-4">
         <div className="overflow-x-auto">
@@ -374,7 +374,7 @@ export default function UploadsPage() {
               <TableRow className="bg-gray-50/50">
                 <TableHead>File Name</TableHead>
                 <TableHead>Gateway</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Upload Status</TableHead>
                 <TableHead>Charge Progress</TableHead>
                 <TableHead>Archive Status</TableHead>
                 <TableHead className="text-start">Uploaded At</TableHead>

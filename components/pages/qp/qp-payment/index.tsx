@@ -176,7 +176,10 @@ export default function QpPaymentPageComponent({
       });
 
       // Only apply this response if it's still the latest fetch (avoids race when opening with chargeFileId from URL)
-      if (thisFetchId !== fetchIdRef.current) return;
+      if (thisFetchId !== fetchIdRef.current) {
+        // Do not clear loading here — a newer fetch is in flight. Clearing would flash empty state.
+        return;
+      }
 
       // normalize various response shapes
       let allRows: QPChargeInstance[] = [];
@@ -244,10 +247,14 @@ export default function QpPaymentPageComponent({
 
       setData(responseData);
     } catch (error) {
-      const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to fetch data");
+      if (thisFetchId === fetchIdRef.current) {
+        const apiError = error as ApiError;
+        toast.error(apiError.response?.data?.message || "Failed to fetch data");
+      }
     } finally {
-      setIsLoading(false);
+      if (thisFetchId === fetchIdRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
