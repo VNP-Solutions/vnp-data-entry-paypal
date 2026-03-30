@@ -84,10 +84,14 @@ interface ResetPasswordData {
   confirmPassword: string;
 }
 
+/** `data` shape depends on gateway; QP uploads may include reservation skip metadata. */
 interface UploadResponse {
   status: string;
   message: string;
-  data: Record<string, unknown>;
+  data: Record<string, unknown> & {
+    skipped_duplicate_reservation_rows?: number;
+    duplicate_reservation_ids?: string[];
+  };
 }
 
 interface RowDataParams {
