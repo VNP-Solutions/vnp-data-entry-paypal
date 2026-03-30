@@ -98,6 +98,7 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
               placeholder="John Doe"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
               disabled={isSubmitting}
             />
           </div>
