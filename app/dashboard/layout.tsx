@@ -58,8 +58,8 @@ export default function DashboardLayout({
       isVisible: false,
     },
     {
-      label: "Invite",
-      href: "/dashboard/invite",
+      label: "User Management",
+      href: "/dashboard/users",
       isVisible: true,
     },
     {

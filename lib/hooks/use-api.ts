@@ -18,7 +18,14 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AdminExcelDataParams, apiClient } from "../client-api-call";
+import {
+  AdminExcelDataParams,
+  apiClient,
+  UserParams,
+  UpdateUserStatusData,
+  DeleteUserData,
+  UpdateUserData,
+} from "../client-api-call";
 import { toast } from "sonner";
 
 // Query keys
@@ -30,6 +37,7 @@ export const queryKeys = {
   profile: "profile",
   adminExcelData: "admin-excel-data",
   terminalCredentials: "terminal-credentials",
+  users: "users",
 } as const;
 
 // Row Data Hooks
@@ -80,6 +88,67 @@ export function useTerminalCredentials(
         page,
         limit,
       }),
+  });
+}
+
+// User Management Hooks
+export function useUsers(params: UserParams) {
+  return useQuery({
+    queryKey: [queryKeys.users, params],
+    queryFn: () => apiClient.getUsers(params),
+  });
+}
+
+export function useUser(id: string) {
+  return useQuery({
+    queryKey: [queryKeys.users, id],
+    queryFn: () => apiClient.getUserById(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) =>
+      apiClient.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+    },
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserStatusData }) =>
+      apiClient.updateUserStatus(id, data),
+    onSuccess: (res: any) => {
+      if (res.status === "success") {
+        toast.success(res.message);
+        queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to update status");
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DeleteUserData }) =>
+      apiClient.deleteUser(id, data),
+    onSuccess: (res: any) => {
+      if (res.status === "success") {
+        toast.success(res.message);
+        queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to delete user");
+    },
   });
 }
 
@@ -459,7 +528,7 @@ export function useExportManualExcelData() {
       if (response.message) {
         toast.success(response.message);
       }
-      
+
       // Check if there's data to export
       if (!response.data || response.data.length === 0) {
         toast.info("No data to export");
@@ -495,7 +564,7 @@ export function useExportManualExcelData() {
           'Soft Descriptor': item['Soft Descriptor'] || '',
           'VNP Work ID': item['VNP Work ID'] || '',
           'Status': item.Status || '',
-          
+
           // PayPal Payment Fields
           'PayPal Order ID': item.paypalOrderId || '',
           'PayPal Capture ID': item.paypalCaptureId || '',
@@ -514,7 +583,7 @@ export function useExportManualExcelData() {
           'PayPal Currency': item.paypalCurrency || '',
           'PayPal Capture Status': item.paypalCaptureStatus || '',
           'PayPal Custom ID': item.paypalCustomId || '',
-          
+
           // PayPal Refund Fields
           'PayPal Refund ID': item.paypalRefundId || '',
           'PayPal Refund Status': item.paypalRefundStatus || '',
@@ -529,7 +598,7 @@ export function useExportManualExcelData() {
           'PayPal Refund Invoice ID': item.paypalRefundInvoiceId || '',
           'PayPal Refund Custom ID': item.paypalRefundCustomId || '',
           'PayPal Refund Note': item.paypalRefundNote || '',
-          
+
           // OTA/Billing Address Fields
           'OTA Name': item.otaId?.name || '',
           'OTA Display Name': item.otaId?.displayName || '',
@@ -541,7 +610,7 @@ export function useExportManualExcelData() {
           'Billing Address Line 2': item.otaId?.billingAddress?.addressLine2 || '',
           'Billing City': item.otaId?.billingAddress?.city || '',
           'Billing State': item.otaId?.billingAddress?.state || '',
-          
+
           // Other Fields
           'Archive': item.archive ? 'Yes' : 'No',
           'Created At': item.createdAt ? new Date(item.createdAt).toLocaleString() : '',

@@ -195,6 +195,27 @@ interface ApiResponse<T = unknown> {
   data: T;
 }
 
+export interface UserParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+}
+
+export interface UpdateUserStatusData {
+  isActive: boolean;
+  masterPassword?: string;
+}
+
+export interface DeleteUserData {
+  masterPassword?: string;
+}
+
+export interface UpdateUserData {
+  name?: string;
+  email?: string;
+}
+
 export interface TerminalCredentialListItem {
   _id: string;
   hotel_id?: string | null;
@@ -918,6 +939,52 @@ class ApiClient {
           },
         }
       );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // User Management
+  getUsers = async (params: UserParams = {}) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users`, { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getUserById = async (id: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  updateUser = async (id: string, data: UpdateUserData) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/users/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  updateUserStatus = async (id: string, data: UpdateUserStatusData) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/users/${id}/status`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  deleteUser = async (id: string, data: DeleteUserData) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/users/${id}`, { data });
       return response.data;
     } catch (error) {
       throw error;
