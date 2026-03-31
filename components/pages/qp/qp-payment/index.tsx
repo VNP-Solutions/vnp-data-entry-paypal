@@ -143,8 +143,9 @@ export default function QpPaymentPageComponent({
 
   // MARK: State Management - File Upload Selection
   // When opening from File History (chargeFileId in URL), start with that file so first fetch is filtered
-  const [selectedChargeFileId, setSelectedChargeFileId] =
-    useState<string>(initialChargeFileId ?? "all");
+  const [selectedChargeFileId, setSelectedChargeFileId] = useState<string>(
+    initialChargeFileId ?? "all",
+  );
   const [chargeFiles, setChargeFiles] = useState<
     Array<{ _id: string; charge_file_id: string; file_name: string }>
   >([]);
@@ -331,7 +332,9 @@ export default function QpPaymentPageComponent({
   useEffect(() => {
     if (!initialChargeFileId || chargeFiles.length === 0) return;
     const exists = chargeFiles.some(
-      (f) => f._id === initialChargeFileId || f.charge_file_id === initialChargeFileId,
+      (f) =>
+        f._id === initialChargeFileId ||
+        f.charge_file_id === initialChargeFileId,
     );
     if (exists) setSelectedChargeFileId(initialChargeFileId);
   }, [initialChargeFileId, chargeFiles]);
@@ -562,7 +565,9 @@ export default function QpPaymentPageComponent({
   };
 
   const canProcessRow = (row: QPChargeInstance) =>
-    ["PENDING", "PROCESSING", "DECLINED", "ERROR", "SKIPPED"].includes(row.status);
+    ["PENDING", "PROCESSING", "DECLINED", "ERROR", "SKIPPED"].includes(
+      row.status,
+    );
 
   const processButtonLabel = (row: QPChargeInstance) =>
     row.status === "DECLINED" || row.status === "ERROR"
@@ -650,7 +655,8 @@ export default function QpPaymentPageComponent({
               <p className="text-sm text-gray-600">Unique QP Usernames</p>
               <div className="text-xl font-bold text-gray-900">
                 {data.stats?.uniqueHotels ??
-                  new Set(data.rows.map((row) => row.user_id).filter(Boolean)).size}
+                  new Set(data.rows.map((row) => row.user_id).filter(Boolean))
+                    .size}
               </div>
             </div>
           </div>
@@ -831,7 +837,9 @@ export default function QpPaymentPageComponent({
                 <TableHead>Card Last 4</TableHead>
                 <TableHead>File</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right w-px whitespace-nowrap">Action</TableHead>
+                <TableHead className="text-right w-px whitespace-nowrap">
+                  Action
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -909,7 +917,8 @@ export default function QpPaymentPageComponent({
                           | { processor?: { message?: string } }
                           | null
                           | undefined;
-                        const processorMessage = payload?.processor?.message?.trim();
+                        const processorMessage =
+                          payload?.processor?.message?.trim();
                         const badge = (
                           <Badge className={getStatusColor(row.status)}>
                             {row.status}

@@ -564,9 +564,15 @@ export default function UploadsPage() {
                                 {hasQPStats && (
                                   <TooltipContent>
                                     <div className="text-left text-xs">
-                                      <div>approved: {session.qpSuccessCount ?? 0}</div>
-                                      <div>declined: {session.qpDeclinedCount ?? 0}</div>
-                                      <div>error: {session.qpErrorCount ?? 0}</div>
+                                      <div>
+                                        approved: {session.qpSuccessCount ?? 0}
+                                      </div>
+                                      <div>
+                                        declined: {session.qpDeclinedCount ?? 0}
+                                      </div>
+                                      <div>
+                                        error: {session.qpErrorCount ?? 0}
+                                      </div>
                                     </div>
                                   </TooltipContent>
                                 )}
