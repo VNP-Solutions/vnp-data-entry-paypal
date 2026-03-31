@@ -1460,6 +1460,26 @@ class ApiClient {
     return response.data;
   };
 
+  getQPChargeFileQueue = async () => {
+    const response = await axios.get(`${API_BASE_URL}/qp-charge-files/queue`);
+    return response.data;
+  };
+
+  updateQPChargeFileQueue = async (chargeFileId: string, action: "up" | "down" | "top" | "bottom") => {
+    const response = await axios.patch(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/queue`,
+      { action }
+    );
+    return response.data;
+  };
+
+  removeQPChargeFileFromQueue = async (chargeFileId: string) => {
+    const response = await axios.delete(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/queue`
+    );
+    return response.data;
+  };
+
   // Add an axios interceptor to handle 401 errors (unauthorized)
   setupAxiosInterceptors() {
     axios.interceptors.response.use(

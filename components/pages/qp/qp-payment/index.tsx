@@ -562,7 +562,7 @@ export default function QpPaymentPageComponent({
   };
 
   const canProcessRow = (row: QPChargeInstance) =>
-    ["PENDING", "PROCESSING", "DECLINED", "SKIPPED"].includes(row.status);
+    ["PENDING", "PROCESSING", "DECLINED", "ERROR", "SKIPPED"].includes(row.status);
 
   const processButtonLabel = (row: QPChargeInstance) =>
     row.status === "DECLINED" || row.status === "ERROR"

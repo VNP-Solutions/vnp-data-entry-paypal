@@ -51,6 +51,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import Link from "next/link";
 import {
@@ -82,6 +88,9 @@ interface UploadSession {
   chargedCount: number;
   paymentGateway: "stripe" | "paypal" | "qp";
   linkedQpChargeFileId?: string | null;
+  qpStatus?: string | null;
+  qpQueueOrder?: number | null;
+  qpQueuedAt?: string | null;
 }
 
 interface UploadSessionsResponse {
@@ -115,7 +124,7 @@ export default function UploadsPage() {
   const { data, isLoading, refetch } = useUploadSessions(
     currentPage,
     limit,
-    searchTerm
+    searchTerm,
   );
   const retryUploadMutation = useRetryUpload();
   // const discardUploadMutation = useDiscardUpload()
@@ -154,7 +163,7 @@ export default function UploadsPage() {
   const handleDownloadReport = async (uploadId: string) => {
     try {
       toast.loading(
-        "Downloading report, Make sure popup is not blocked by browser"
+        "Downloading report, Make sure popup is not blocked by browser",
       );
       await downloadReportMutation.mutateAsync(uploadId);
     } finally {
@@ -182,19 +191,50 @@ export default function UploadsPage() {
     }
   };
 
+  const handleQpQueueAction = async (
+    chargeFileId: string,
+    action: "up" | "down" | "top" | "bottom",
+  ) => {
+    try {
+      const response = await apiClient.updateQPChargeFileQueue(
+        chargeFileId,
+        action,
+      );
+      toast.success(response?.message || "Queue order updated");
+      refetch();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to update queue order",
+      );
+    }
+  };
+
+  const handleQpQueueRemove = async (chargeFileId: string) => {
+    try {
+      const response =
+        await apiClient.removeQPChargeFileFromQueue(chargeFileId);
+      toast.success(response?.message || "Removed from queue");
+      refetch();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to remove from queue",
+      );
+    }
+  };
+
   // MARK: Archive/Unarchive File Handler
   // Explanation: Toggles the archive status of an upload file.
   // Archived files are hidden from main view but can be restored later.
   // Manual Flow: User clicks Archive/Unarchive → File status updated → Success message shown
   const handleArchiveUnarchiveFile = async (
     uploadId: string,
-    archive: boolean
+    archive: boolean,
   ) => {
     try {
       toast.loading(
         archive
           ? "Unarchiving file, please wait.."
-          : "Archiving file, please wait.."
+          : "Archiving file, please wait..",
       );
       const response = await archiveUnarchiveFileMutation.mutateAsync({
         uploadId,
@@ -203,7 +243,7 @@ export default function UploadsPage() {
       toast.success(response.message);
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to archive/unarchive file"
+        error.response?.data?.message || "Failed to archive/unarchive file",
       );
     } finally {
       toast.dismiss();
@@ -216,10 +256,17 @@ export default function UploadsPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
+      case "completed_with_errors":
+      case "completed with errors":
         return "bg-green-100 text-green-800";
       case "processing":
         return "bg-yellow-100 text-yellow-800";
+      case "queued":
+        return "bg-blue-100 text-blue-800";
+      case "cancelled":
+        return "bg-gray-100 text-gray-800";
       case "failed":
+      case "error":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -232,14 +279,54 @@ export default function UploadsPage() {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
+      case "completed_with_errors":
+      case "completed with errors":
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       case "processing":
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      case "queued":
+        return <Clock className="h-4 w-4 text-blue-600" />;
+      case "cancelled":
+        return <XCircle className="h-4 w-4 text-gray-600" />;
       case "failed":
+      case "error":
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
+  };
+
+  const getEffectiveStatus = (session: UploadSession) => {
+    if (session.paymentGateway === "qp") {
+      return (session.qpStatus || session.status || "pending").toString();
+    }
+    return session.status || "pending";
+  };
+
+  const getDisplayStatusLabel = (status: string, queueOrder: number | null) => {
+    const normalized = status.toLowerCase();
+    if (normalized === "queued") {
+      return queueOrder ? `Queued (#${queueOrder})` : "Queued";
+    }
+    if (normalized === "imported" || normalized === "pending") {
+      return "Pending";
+    }
+    if (normalized === "processing") {
+      return "Processing";
+    }
+    if (
+      normalized === "completed_with_errors" ||
+      normalized === "completed with errors"
+    ) {
+      return "Completed";
+    }
+    if (normalized === "cancelled") {
+      return "Cancelled";
+    }
+    if (normalized === "failed" || normalized === "error") {
+      return "Failed";
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   };
 
   // MARK: Data Processing & Statistics
@@ -249,16 +336,20 @@ export default function UploadsPage() {
   const responseData = data?.data as UploadSessionsResponse | undefined;
   const sessions = responseData?.sessions || [];
   const qpSessions = sessions.filter(
-    (s: UploadSession) => s.paymentGateway === "qp"
+    (s: UploadSession) => s.paymentGateway === "qp",
   );
   const completedCount = qpSessions.filter(
-    (session: UploadSession) => session.status.toLowerCase() === "completed"
+    (session: UploadSession) =>
+      getEffectiveStatus(session).toLowerCase() === "completed",
   ).length;
   const processingCount = qpSessions.filter(
-    (session: UploadSession) => session.status.toLowerCase() === "processing"
+    (session: UploadSession) =>
+      getEffectiveStatus(session).toLowerCase() === "processing",
   ).length;
-  const failedCount = qpSessions.filter(
-    (session: UploadSession) => session.status.toLowerCase() === "failed"
+  const failedCount = qpSessions.filter((session: UploadSession) =>
+    ["failed", "error", "cancelled"].includes(
+      getEffectiveStatus(session).toLowerCase(),
+    ),
   ).length;
   const pagination = responseData?.pagination;
 
@@ -270,7 +361,7 @@ export default function UploadsPage() {
       {/* MARK: Template Download Section */}
       {/* Explanation: Component allowing users to download CSV template for bulk uploads */}
       <TemplateDownload />
-      
+
       {/* MARK: Statistics Cards Section */}
       {/* Explanation: Displays overview metrics for uploads - Total Files, Completed, Processing, and Failed counts.
       Each card shows an icon, label, and dynamic count with skeleton loading state. */}
@@ -374,7 +465,7 @@ export default function UploadsPage() {
               <TableRow className="bg-gray-50/50">
                 <TableHead>File Name</TableHead>
                 <TableHead>Gateway</TableHead>
-                <TableHead>Upload Status</TableHead>
+                <TableHead>Processing Status</TableHead>
                 <TableHead>Charge Progress</TableHead>
                 <TableHead>Archive Status</TableHead>
                 <TableHead className="text-start">Uploaded At</TableHead>
@@ -423,7 +514,7 @@ export default function UploadsPage() {
                   .filter((session: UploadSession) =>
                     session.fileName
                       .toLowerCase()
-                      .includes(searchTerm.toLowerCase())
+                      .includes(searchTerm.toLowerCase()),
                   )
                   .map((session: UploadSession) => (
                     <TableRow
@@ -450,14 +541,39 @@ export default function UploadsPage() {
 
                       {/* MARK: Status Badge Cell */}
                       {/* Explanation: Visual status indicator with color-coded badge and icon.
-                      Shows current processing state: Completed, Processing, or Failed */}
+                      Shows current processing state: Completed, Processing, Queued, etc. */}
                       <TableCell>
-                        <Badge className={getStatusColor(session.status)}>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(session.status)}
-                            <span>{session.status}</span>
-                          </div>
-                        </Badge>
+                        {(() => {
+                          const status = getEffectiveStatus(session);
+                          const label = getDisplayStatusLabel(
+                            status,
+                            session.qpQueueOrder || null,
+                          );
+                          const hasQPStats = session.paymentGateway === "qp";
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge className={getStatusColor(status)}>
+                                    <div className="flex items-center gap-2">
+                                      {getStatusIcon(status)}
+                                      <span>{label}</span>
+                                    </div>
+                                  </Badge>
+                                </TooltipTrigger>
+                                {hasQPStats && (
+                                  <TooltipContent>
+                                    <div className="text-left text-xs">
+                                      <div>approved: {session.qpSuccessCount ?? 0}</div>
+                                      <div>declined: {session.qpDeclinedCount ?? 0}</div>
+                                      <div>error: {session.qpErrorCount ?? 0}</div>
+                                    </div>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                       </TableCell>
 
                       {/* MARK: Charge Progress Cell */}
@@ -475,7 +591,7 @@ export default function UploadsPage() {
                       <TableCell className="text-start">
                         <Badge
                           className={getStatusColor(
-                            session.archive ? "archived" : "unarchived"
+                            session.archive ? "archived" : "unarchived",
                           )}
                         >
                           <div className="flex items-center gap-2">
@@ -531,65 +647,131 @@ export default function UploadsPage() {
                             {/* MARK: Open in QP Payment (QP sessions only) */}
                             {session.paymentGateway === "qp" &&
                               session.linkedQpChargeFileId && (
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/qp-payment?chargeFileId=${session.linkedQpChargeFileId}`}
-                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                  <span>Open in QP Payment</span>
-                                </Link>
-                              </DropdownMenuItem>
-                            )}
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/qp-payment?chargeFileId=${session.linkedQpChargeFileId}`}
+                                    className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                    <span>Open in QP Payment</span>
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
                             {/* MARK: Process file (QP only) – start bulk charge for whole file */}
                             {session.paymentGateway === "qp" &&
                               session.linkedQpChargeFileId && (
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  try {
-                                    await apiClient.startQPChargeFileProcess(
-                                      session.linkedQpChargeFileId!
-                                    );
-                                    toast.success(
-                                      "Processing started. You'll receive an email when it's done."
-                                    );
-                                    refetch();
-                                  } catch (err: unknown) {
-                                    const ax = (err as { response?: { status: number; data?: { message?: string } } })
-                                      ?.response;
-                                    if (ax?.status === 409) {
-                                      toast.error(
-                                        "One file is already being processed. Please wait for it to finish before starting another."
-                                      );
-                                    } else {
-                                      toast.error(
-                                        ax?.data?.message ||
-                                          "Failed to start processing"
-                                      );
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      const response =
+                                        await apiClient.startQPChargeFileProcess(
+                                          session.linkedQpChargeFileId!,
+                                        );
+                                      const processState =
+                                        response?.data?.status;
+                                      if (processState === "PROCESSING") {
+                                        toast.success(
+                                          "Processing started. You'll receive an email when it's done.",
+                                        );
+                                      } else if (processState === "QUEUED") {
+                                        const position =
+                                          response?.data?.position;
+                                        toast.success(
+                                          `File queued in position ${position || "unknown"}.`,
+                                        );
+                                      } else {
+                                        toast.success(
+                                          response?.message ||
+                                            "Process request accepted.",
+                                        );
+                                      }
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            status: number;
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      if (ax?.status === 409) {
+                                        toast.warning(
+                                          "Current file is already processing or queued. It will run automatically when ready.",
+                                        );
+                                        refetch();
+                                      } else {
+                                        toast.error(
+                                          ax?.data?.message ||
+                                            "Failed to start processing",
+                                        );
+                                      }
                                     }
-                                  }
-                                }}
-                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
-                              >
-                                <CreditCard className="h-4 w-4" />
-                                <span>Process file</span>
-                              </DropdownMenuItem>
-                            )}
+                                  }}
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                  <span>Process file</span>
+                                </DropdownMenuItem>
+                              )}
                             {/* MARK: Download Report for QP (parent file with charge status) */}
                             {session.paymentGateway === "qp" &&
                               session.linkedQpChargeFileId && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleDownloadQPReport(
-                                    session.linkedQpChargeFileId!
-                                  )
-                                }
-                                className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
-                              >
-                                <DownloadCloud className="h-4 w-4" />
-                                <span>Download Report</span>
-                              </DropdownMenuItem>
-                            )}
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDownloadQPReport(
+                                      session.linkedQpChargeFileId!,
+                                    )
+                                  }
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <DownloadCloud className="h-4 w-4" />
+                                  <span>Download Report</span>
+                                </DropdownMenuItem>
+                              )}
+
+                            {/* MARK: Queue Management Actions (QP only) */}
+                            {session.paymentGateway === "qp" &&
+                              session.qpStatus?.toLowerCase() === "queued" &&
+                              session.linkedQpChargeFileId && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleQpQueueAction(
+                                        session.linkedQpChargeFileId!,
+                                        "up",
+                                      )
+                                    }
+                                    className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    <span>Move up</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleQpQueueAction(
+                                        session.linkedQpChargeFileId!,
+                                        "down",
+                                      )
+                                    }
+                                    className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                  >
+                                    <ChevronRight className="h-4 w-4" />
+                                    <span>Move down</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleQpQueueRemove(
+                                        session.linkedQpChargeFileId!,
+                                      )
+                                    }
+                                    className="flex items-center gap-2 text-red-600 cursor-pointer p-2 hover:bg-blue-100"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span>Cancel queue</span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             {/* MARK: Download Report Action (PayPal/Stripe only) */}
                             {session.paymentGateway !== "qp" && (
                               <DropdownMenuItem
@@ -598,7 +780,7 @@ export default function UploadsPage() {
                                     session.status.toLowerCase() === "failed"
                                   ) {
                                     toast.error(
-                                      "This action only works for completed uploads"
+                                      "This action only works for completed uploads",
                                     );
                                   } else {
                                     handleDownloadReport(session.uploadId);
@@ -621,7 +803,7 @@ export default function UploadsPage() {
                                   handleRetryUpload(session.uploadId);
                                 } else {
                                   toast.error(
-                                    "This action only works for failed uploads"
+                                    "This action only works for failed uploads",
                                   );
                                 }
                               }}
@@ -639,7 +821,7 @@ export default function UploadsPage() {
                               onClick={() => {
                                 handleArchiveUnarchiveFile(
                                   session.uploadId,
-                                  session.archive
+                                  session.archive,
                                 );
                               }}
                               className="flex items-center gap-2 hover:text-white text-gray-600 cursor-pointer p-2 hover:bg-black"
