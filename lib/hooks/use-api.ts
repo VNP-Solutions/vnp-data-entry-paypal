@@ -25,6 +25,7 @@ import {
   UpdateUserStatusData,
   DeleteUserData,
   UpdateUserData,
+  PaymentAttemptParams,
 } from "../client-api-call";
 import { toast } from "sonner";
 
@@ -38,6 +39,7 @@ export const queryKeys = {
   adminExcelData: "admin-excel-data",
   terminalCredentials: "terminal-credentials",
   users: "users",
+  paymentAttempts: "payment-attempts",
 } as const;
 
 // Row Data Hooks
@@ -707,5 +709,21 @@ export function useExportManualExcelData() {
         error.response?.data?.message || "Failed to export data"
       );
     },
+  });
+}
+
+// Payment Attempts Hooks
+export function usePaymentAttempts(params: PaymentAttemptParams) {
+  return useQuery({
+    queryKey: [queryKeys.paymentAttempts, params],
+    queryFn: () => apiClient.getPaymentAttempts(params),
+  });
+}
+
+export function usePaymentAttempt(id: string) {
+  return useQuery({
+    queryKey: [queryKeys.paymentAttempts, id],
+    queryFn: () => apiClient.getPaymentAttemptById(id),
+    enabled: !!id,
   });
 }

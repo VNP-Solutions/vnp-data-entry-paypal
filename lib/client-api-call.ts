@@ -216,6 +216,15 @@ export interface UpdateUserData {
   email?: string;
 }
 
+export interface PaymentAttemptParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  result?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
 export interface TerminalCredentialListItem {
   _id: string;
   hotel_id?: string | null;
@@ -985,6 +994,25 @@ class ApiClient {
   deleteUser = async (id: string, data: DeleteUserData) => {
     try {
       const response = await axios.delete(`${API_BASE_URL}/users/${id}`, { data });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // QP Payment Attempts
+  getPaymentAttempts = async (params: PaymentAttemptParams = {}) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/qp-payment-attempts`, { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  getPaymentAttemptById = async (id: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/qp-payment-attempts/${id}`);
       return response.data;
     } catch (error) {
       throw error;

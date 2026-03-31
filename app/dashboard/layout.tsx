@@ -53,6 +53,11 @@ export default function DashboardLayout({
       isVisible: true,
     },
     {
+      label: "Payments",
+      href: "/dashboard/payments",
+      isVisible: true,
+    },
+    {
       label: "Stripe Payment",
       href: "/dashboard/stripe-payment",
       isVisible: false,
