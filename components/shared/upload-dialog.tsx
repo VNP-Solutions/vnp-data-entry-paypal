@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { apiClient } from "@/lib/client-api-call"
+import { useState, useRef } from "react";
+import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/client-api-call";
 
 interface ApiError {
   response?: {
@@ -21,32 +27,46 @@ interface UploadDialogProps {
   onUploadSuccess?: () => void;
 }
 
-export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDialogProps) {
+export function UploadDialog({
+  open,
+  onOpenChange,
+  onUploadSuccess,
+}: UploadDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-        toast.error('Please select an Excel file (.xlsx)');
-        return;
-      }
-      setSelectedFile(file);
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(
+      (file) =>
+        file.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+
+    if (validFiles.length !== files.length) {
+      toast.error("Only Excel files (.xlsx) are allowed");
+      return;
     }
+
+    setSelectedFiles(validFiles);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-        toast.error('Please select an Excel file (.xlsx)');
-        return;
-      }
-      setSelectedFile(file);
+    const files = Array.from(e.dataTransfer.files || []);
+    const validFiles = files.filter(
+      (file) =>
+        file.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+
+    if (validFiles.length !== files.length) {
+      toast.error("Only Excel files (.xlsx) are allowed");
+      return;
     }
+
+    setSelectedFiles(validFiles);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -54,33 +74,43 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file first');
+    if (selectedFiles.length === 0) {
+      toast.error("Please select at least one file");
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await apiClient.uploadFile(selectedFile);
-      if (response.status === 'success') {
-        toast.success(response.message || 'File uploaded successfully');
-        setSelectedFile(null);
-        onOpenChange(false); // Close dialog after successful upload
-        onUploadSuccess?.(); // Trigger refetch of uploads data
+      // Upload files sequentially
+      for (const file of selectedFiles) {
+        const response = await apiClient.uploadFile(file);
+        if (response.status !== "success") {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
       }
+
+      toast.success(`Successfully uploaded ${selectedFiles.length} file(s)`);
+      setSelectedFiles([]);
+      onOpenChange(false); // Close dialog after successful upload
+      onUploadSuccess?.(); // Trigger refetch of uploads data
     } catch (error) {
       const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || 'Failed to upload file');
+      toast.error(apiError.response?.data?.message || "Failed to upload files");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const clearFile = () => {
-    setSelectedFile(null);
+  const clearFiles = () => {
+    setSelectedFiles([]);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
+  };
+
+  const removeFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
   };
 
   return (
@@ -94,7 +124,9 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
         </DialogHeader>
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center ${
-            selectedFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'
+            selectedFiles.length > 0
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 hover:border-blue-500"
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -105,37 +137,54 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
             onChange={handleFileSelect}
             accept=".xlsx"
             className="hidden"
+            multiple
           />
 
-          {selectedFile ? (
+          {selectedFiles.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2 text-blue-600">
-                <FileSpreadsheet className="h-8 w-8" />
-                <span className="font-medium">{selectedFile.name}</span>
-                <button
-                  onClick={clearFile}
-                  className="p-1 hover:bg-blue-100 rounded-full"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              <div className="space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-center gap-2 text-blue-600 bg-blue-50 p-2 rounded"
+                  >
+                    <FileSpreadsheet className="h-6 w-6" />
+                    <span className="font-medium text-sm">{file.name}</span>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="p-1 hover:bg-blue-100 rounded-full"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <Button
-                onClick={handleUpload}
-                disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isLoading ? (
-                <>
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                   Uploading...
-                 </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload File
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={handleUpload}
+                  disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading {selectedFiles.length} file(s)...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload {selectedFiles.length} File(s)
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={clearFiles}
+                  disabled={isLoading}
+                >
+                  Clear All
+                </Button>
+              </div>
             </div>
           ) : (
             <button
@@ -146,9 +195,13 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
                 <Upload className="h-12 w-12 text-gray-400" />
               </div>
               <div className="text-gray-600">
-                <span className="text-blue-600 font-medium">Click to upload</span> or drag and
-                drop
-                <div className="text-sm">Excel files only (.xlsx)</div>
+                <span className="text-blue-600 font-medium">
+                  Click to upload
+                </span>{" "}
+                or drag and drop
+                <div className="text-sm">
+                  Excel files only (.xlsx) - Multiple files allowed
+                </div>
               </div>
             </button>
           )}
@@ -156,4 +209,4 @@ export function UploadDialog({ open, onOpenChange, onUploadSuccess }: UploadDial
       </DialogContent>
     </Dialog>
   );
-} 
+}

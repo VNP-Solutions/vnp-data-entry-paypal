@@ -91,6 +91,10 @@ interface UploadSession {
   qpStatus?: string | null;
   qpQueueOrder?: number | null;
   qpQueuedAt?: string | null;
+  qpSuccessCount?: number;
+  qpDeclinedCount?: number;
+  qpErrorCount?: number;
+  qpPendingCount?: number;
 }
 
 interface UploadSessionsResponse {
