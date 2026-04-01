@@ -550,34 +550,84 @@ export default function UploadsPage() {
                             session.qpQueueOrder || null,
                           );
                           const hasQPStats = session.paymentGateway === "qp";
+
+                          const totalRows = session.totalRows || 1;
+                          const successCount = session.qpSuccessCount ?? 0;
+                          const declinedCount = session.qpDeclinedCount ?? 0;
+                          const errorCount = session.qpErrorCount ?? 0;
+                          const pendingCount =
+                            session.qpPendingCount ??
+                            Math.max(
+                              0,
+                              totalRows -
+                                (successCount + declinedCount + errorCount),
+                            );
+
+                          const successPct = Math.min(
+                            100,
+                            Math.max(0, (successCount / totalRows) * 100),
+                          );
+                          const declinedPct = Math.min(
+                            100,
+                            Math.max(0, (declinedCount / totalRows) * 100),
+                          );
+                          const errorPct = Math.min(
+                            100,
+                            Math.max(0, (errorCount / totalRows) * 100),
+                          );
+                          const pendingPct = Math.max(
+                            0,
+                            100 - (successPct + declinedPct + errorPct),
+                          );
+
                           return (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className={getStatusColor(status)}>
-                                    <div className="flex items-center gap-2">
-                                      {getStatusIcon(status)}
-                                      <span>{label}</span>
-                                    </div>
-                                  </Badge>
-                                </TooltipTrigger>
-                                {hasQPStats && (
-                                  <TooltipContent>
-                                    <div className="text-left text-xs">
-                                      <div>
-                                        approved: {session.qpSuccessCount ?? 0}
+                            <>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge className={getStatusColor(status)}>
+                                      <div className="flex items-center gap-2">
+                                        {getStatusIcon(status)}
+                                        <span>{label}</span>
                                       </div>
-                                      <div>
-                                        declined: {session.qpDeclinedCount ?? 0}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  {hasQPStats && (
+                                    <TooltipContent>
+                                      <div className="text-left text-xs">
+                                        <div>approved: {successCount}</div>
+                                        <div>declined: {declinedCount}</div>
+                                        <div>error: {errorCount}</div>
+                                        <div>pending: {pendingCount}</div>
                                       </div>
-                                      <div>
-                                        error: {session.qpErrorCount ?? 0}
-                                      </div>
-                                    </div>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              {hasQPStats && (
+                                <div className="mt-1 h-2 w-full overflow-hidden rounded bg-slate-100">
+                                  <div className="flex h-full">
+                                    <div
+                                      className="bg-blue-500"
+                                      style={{ width: `${successPct}%` }}
+                                    />
+                                    <div
+                                      className="bg-yellow-400"
+                                      style={{ width: `${declinedPct}%` }}
+                                    />
+                                    <div
+                                      className="bg-red-500"
+                                      style={{ width: `${errorPct}%` }}
+                                    />
+                                    <div
+                                      className="bg-slate-400"
+                                      style={{ width: `${pendingPct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           );
                         })()}
                       </TableCell>
