@@ -49,6 +49,7 @@ import {
   EyeOff,
   ChevronLeft,
   ChevronRight,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ import { queryKeys, useTerminalCredentials } from "@/lib/hooks/use-api";
 import { apiClient } from "@/lib/client-api-call";
 import type { TerminalCredentialListItem } from "@/lib/client-api-call";
 import { toast } from "sonner";
+import { UploadTerminalKeysDialog } from "@/components/shared/upload-terminal-keys-dialog";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -88,6 +90,8 @@ export default function TerminalKeysPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUploadTerminalKeysDialog, setShowUploadTerminalKeysDialog] =
+    useState(false);
   const [selectedCredential, setSelectedCredential] =
     useState<TerminalCredentialListItem | null>(null);
 
@@ -415,13 +419,24 @@ export default function TerminalKeysPage() {
 
   return (
     <div className="min-h-[80vh]">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Terminal Keys
-        </h1>
-        <p className="text-gray-600">
-          Manage terminal credentials for QP charging (encrypted at rest).
-        </p>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Terminal Keys
+          </h1>
+          <p className="text-gray-600">
+            Manage terminal credentials for QP charging (encrypted at rest).
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="text-blue-600 hover:bg-blue-600/10 shrink-0 gap-2"
+          onClick={() => setShowUploadTerminalKeysDialog(true)}
+        >
+          <Upload className="h-4 w-4" />
+          Upload Terminal Keys
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -1194,6 +1209,12 @@ export default function TerminalKeysPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <UploadTerminalKeysDialog
+        open={showUploadTerminalKeysDialog}
+        onOpenChange={setShowUploadTerminalKeysDialog}
+        onSuccess={() => invalidateList()}
+      />
     </div>
   );
 }

@@ -639,6 +639,8 @@ class ApiClient {
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          // Backend returns 202 Accepted for async / QP import; ensure we never treat it as an error.
+          validateStatus: (status) => status >= 200 && status < 300,
         }
       );
       return response.data;
@@ -853,6 +855,37 @@ class ApiClient {
     } catch (error) {
       throw error;
     }
+  };
+
+  getTrashedUploadSessions = async (
+    page: number = 1,
+    limit: number = 20,
+    search: string = "",
+    gateway?: string
+  ) => {
+    const params: {
+      page: number;
+      limit: number;
+      search: string;
+      gateway?: string;
+    } = {
+      page,
+      limit,
+      search,
+    };
+    if (gateway) params.gateway = gateway;
+    const response = await axios.get(
+      `${API_BASE_URL}/upload/sessions/trash`,
+      { params }
+    );
+    return response.data;
+  };
+
+  restoreUploadSession = async (uploadId: string) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/upload/restore/${uploadId}`
+    );
+    return response.data;
   };
 
   processPayPalPayment = async (data: {
@@ -1429,6 +1462,23 @@ class ApiClient {
     }
   };
 
+  /** When includeSensitive is true, response includes decrypted `card_number` and `cvv` (call after verifyPassword). */
+  getQPChargeInstanceById = async (
+    instanceId: string,
+    includeSensitive?: boolean
+  ) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/qp-charge-instances/${instanceId}`,
+      {
+        params:
+          includeSensitive === true
+            ? { include_sensitive: "true" }
+            : undefined,
+      }
+    );
+    return response.data;
+  };
+
   exportQPChargeInstances = async (params: {
     ids?: string[];
     charge_file_id?: string;
@@ -1461,7 +1511,61 @@ class ApiClient {
   };
 
   getQPChargeFileQueue = async () => {
-    const response = await axios.get(`${API_BASE_URL}/qp-charge-files/queue`);
+    const response = await axios.get<{
+      status: string;
+      data: unknown[];
+      globally_paused?: boolean;
+    }>(`${API_BASE_URL}/qp-charge-files/queue`);
+    return response.data;
+  };
+
+  pauseQPChargeFile = async (chargeFileId: string) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/pause`
+    );
+    return response.data;
+  };
+
+  resumeQPChargeFile = async (chargeFileId: string) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/resume`
+    );
+    return response.data;
+  };
+
+  pauseQPGlobalQueue = async () => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/queue/pause-global`
+    );
+    return response.data;
+  };
+
+  resumeQPGlobalQueue = async () => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/queue/resume-global`
+    );
+    return response.data;
+  };
+
+  recoverQPChargeFileStalled = async (
+    chargeFileId: string,
+    options?: { force?: boolean; reset_processing_instances?: boolean }
+  ) => {
+    const q = options?.force === true ? "?force=true" : "";
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/recover-stalled${q}`,
+      {
+        reset_processing_instances:
+          options?.reset_processing_instances === true,
+      }
+    );
+    return response.data;
+  };
+
+  reconcileQPChargeFileCounts = async (chargeFileId: string) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/qp-charge-files/${chargeFileId}/reconcile-counts`
+    );
     return response.data;
   };
 

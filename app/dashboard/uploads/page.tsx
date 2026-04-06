@@ -4,6 +4,7 @@
 // Explanation: Imports all required UI components, icons, hooks, and utilities for the uploads management page.
 // This includes table components, form elements, icons from lucide-react, API hooks, and date formatting utilities.
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -33,10 +34,13 @@ import {
   Trash2,
   DownloadCloud,
   Archive,
-  X,
   BadgeCheck,
   ExternalLink,
   CreditCard,
+  Pause,
+  PlayCircle,
+  LifeBuoy,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -65,10 +69,13 @@ import {
   useDownloadReport,
   useDeleteFile,
   useArchiveUnarchiveFile,
+  useQPChargeQueue,
+  queryKeys,
 } from "@/lib/hooks/use-api";
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 import TemplateDownload from "@/components/pages/uploads/template-download";
+import { UploadDialog } from "@/components/shared/upload-dialog";
 
 // MARK: TypeScript Interfaces
 // Explanation: Defines the data structure for upload sessions and API responses.
@@ -95,6 +102,20 @@ interface UploadSession {
   qpDeclinedCount?: number;
   qpErrorCount?: number;
   qpPendingCount?: number;
+  qpSkippedCount?: number;
+  qpInvalidCount?: number;
+  /** Last bulk-run heartbeat; used to detect stalled PROCESSING after a crash */
+  qpBulkLastActivityAt?: string | null;
+}
+
+const QP_BULK_STALL_MS = 15 * 60 * 1000;
+
+function isLikelyStalledQpProcessing(session: UploadSession): boolean {
+  if (session.paymentGateway !== "qp") return false;
+  if (session.qpStatus?.toLowerCase() !== "processing") return false;
+  const t = session.qpBulkLastActivityAt;
+  if (!t) return true;
+  return Date.now() - new Date(t).getTime() > QP_BULK_STALL_MS;
 }
 
 interface UploadSessionsResponse {
@@ -120,16 +141,20 @@ export default function UploadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   // MARK: API Hooks Integration
   // Explanation: React Query hooks for data fetching and mutations.
   // useUploadSessions: Fetches paginated upload sessions with search filtering
   // Mutation hooks: Handle upload retry, report download, file deletion, and archive operations
+  const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useUploadSessions(
     currentPage,
     limit,
     searchTerm,
   );
+  const { data: qpQueueResponse } = useQPChargeQueue();
+  const globallyPaused = qpQueueResponse?.globally_paused === true;
   const retryUploadMutation = useRetryUpload();
   // const discardUploadMutation = useDiscardUpload()
   const downloadReportMutation = useDownloadReport();
@@ -148,15 +173,12 @@ export default function UploadsPage() {
   // }
 
   // MARK: Delete File Handler
-  // Explanation: Permanently deletes an upload file along with all its associated entries from the database.
-  // Shows loading toast during deletion and dismisses on completion or error.
-  // Manual Flow: User clicks Delete File → Confirmation → File and all entries removed from database
+  // Explanation: Soft-deletes the upload (90-day trash). Success/error toasts come from useDeleteFile.
   const handleDeleteFile = async (uploadId: string) => {
     try {
-      toast.loading("Deleting file with all entries, please wait..");
       await deleteFileMutation.mutateAsync(uploadId);
     } catch {
-      toast.dismiss();
+      /* toast from mutation onError if added; backend errors surface via mutation */
     }
   };
 
@@ -189,6 +211,7 @@ export default function UploadsPage() {
       URL.revokeObjectURL(url);
       toast.success("Report downloaded");
     } catch (err) {
+      console.error("Failed to download report:", err);
       toast.error("Failed to download report");
     } finally {
       toast.dismiss();
@@ -223,6 +246,38 @@ export default function UploadsPage() {
       toast.error(
         error.response?.data?.message || "Failed to remove from queue",
       );
+    }
+  };
+
+  const invalidateQpQueue = () => {
+    queryClient.invalidateQueries({ queryKey: [queryKeys.qpChargeQueue] });
+  };
+
+  const handleGlobalQueuePause = async () => {
+    try {
+      await apiClient.pauseQPGlobalQueue();
+      toast.success(
+        "Queue paused globally. The active file will stop after the current row finishes.",
+      );
+      invalidateQpQueue();
+      refetch();
+    } catch (error: unknown) {
+      const ax = (error as { response?: { data?: { message?: string } } })
+        ?.response;
+      toast.error(ax?.data?.message || "Failed to pause queue");
+    }
+  };
+
+  const handleGlobalQueueResume = async () => {
+    try {
+      await apiClient.resumeQPGlobalQueue();
+      toast.success("Global queue pause is off. Queued files can run again.");
+      invalidateQpQueue();
+      refetch();
+    } catch (error: unknown) {
+      const ax = (error as { response?: { data?: { message?: string } } })
+        ?.response;
+      toast.error(ax?.data?.message || "Failed to resume queue");
     }
   };
 
@@ -267,6 +322,8 @@ export default function UploadsPage() {
         return "bg-yellow-100 text-yellow-800";
       case "queued":
         return "bg-blue-100 text-blue-800";
+      case "paused":
+        return "bg-amber-100 text-amber-900";
       case "cancelled":
         return "bg-gray-100 text-gray-800";
       case "failed":
@@ -290,6 +347,8 @@ export default function UploadsPage() {
         return <Clock className="h-4 w-4 text-yellow-600" />;
       case "queued":
         return <Clock className="h-4 w-4 text-blue-600" />;
+      case "paused":
+        return <Pause className="h-4 w-4 text-amber-700" />;
       case "cancelled":
         return <XCircle className="h-4 w-4 text-gray-600" />;
       case "failed":
@@ -317,6 +376,9 @@ export default function UploadsPage() {
     }
     if (normalized === "processing") {
       return "Processing";
+    }
+    if (normalized === "paused") {
+      return "Paused";
     }
     if (
       normalized === "completed_with_errors" ||
@@ -350,6 +412,10 @@ export default function UploadsPage() {
     (session: UploadSession) =>
       getEffectiveStatus(session).toLowerCase() === "processing",
   ).length;
+  const pausedCount = qpSessions.filter(
+    (session: UploadSession) =>
+      getEffectiveStatus(session).toLowerCase() === "paused",
+  ).length;
   const failedCount = qpSessions.filter((session: UploadSession) =>
     ["failed", "error", "cancelled"].includes(
       getEffectiveStatus(session).toLowerCase(),
@@ -364,7 +430,7 @@ export default function UploadsPage() {
     <div className="min-h-[80vh]">
       {/* MARK: Template Download Section */}
       {/* Explanation: Component allowing users to download CSV template for bulk uploads */}
-      <TemplateDownload />
+      <TemplateDownload onUploadClick={() => setShowUploadDialog(true)} />
 
       {/* MARK: Statistics Cards Section */}
       {/* Explanation: Displays overview metrics for uploads - Total Files, Completed, Processing, and Failed counts.
@@ -414,6 +480,11 @@ export default function UploadsPage() {
                   processingCount
                 )}
               </div>
+              {!isLoading && pausedCount > 0 ? (
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Paused: {pausedCount}
+                </p>
+              ) : null}
             </div>
           </div>
         </Card>
@@ -436,25 +507,70 @@ export default function UploadsPage() {
       {/* Explanation: Provides search and refresh functionality for the uploads table.
       Users can search by filename and manually refresh data using the refresh button. */}
       <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex-1 w-full md:w-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search by filename..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <SlidersHorizontal className="h-4 w-4 text-gray-500 shrink-0" />
+              <span>
+                QP queue:{" "}
+                <span
+                  className={
+                    globallyPaused ? "text-amber-800 font-medium" : "font-medium"
+                  }
+                >
+                  {globallyPaused ? "paused globally" : "running"}
+                </span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {globallyPaused ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  onClick={handleGlobalQueueResume}
+                  className="gap-1.5"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  Resume global queue
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGlobalQueuePause}
+                  className="gap-1.5"
+                >
+                  <Pause className="h-4 w-4" />
+                  Pause global queue
+                </Button>
+              )}
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            className="w-10 h-10 p-0"
-          >
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 w-full md:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by filename..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                refetch();
+                invalidateQpQueue();
+              }}
+              className="w-10 h-10 p-0"
+            >
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -559,13 +675,9 @@ export default function UploadsPage() {
                           const successCount = session.qpSuccessCount ?? 0;
                           const declinedCount = session.qpDeclinedCount ?? 0;
                           const errorCount = session.qpErrorCount ?? 0;
-                          const pendingCount =
-                            session.qpPendingCount ??
-                            Math.max(
-                              0,
-                              totalRows -
-                                (successCount + declinedCount + errorCount),
-                            );
+                          const skippedCount = session.qpSkippedCount ?? 0;
+                          const invalidCount = session.qpInvalidCount ?? 0;
+                          const pendingCount = session.qpPendingCount ?? 0;
 
                           const successPct = Math.min(
                             100,
@@ -579,9 +691,17 @@ export default function UploadsPage() {
                             100,
                             Math.max(0, (errorCount / totalRows) * 100),
                           );
-                          const pendingPct = Math.max(
-                            0,
-                            100 - (successPct + declinedPct + errorPct),
+                          const skippedPct = Math.min(
+                            100,
+                            Math.max(0, (skippedCount / totalRows) * 100),
+                          );
+                          const pendingPct = Math.min(
+                            100,
+                            Math.max(0, (pendingCount / totalRows) * 100),
+                          );
+                          const invalidPct = Math.min(
+                            100,
+                            Math.max(0, (invalidCount / totalRows) * 100),
                           );
 
                           return (
@@ -598,11 +718,17 @@ export default function UploadsPage() {
                                   </TooltipTrigger>
                                   {hasQPStats && (
                                     <TooltipContent>
-                                      <div className="text-left text-xs">
+                                      <div className="text-left text-xs space-y-0.5">
                                         <div>approved: {successCount}</div>
                                         <div>declined: {declinedCount}</div>
                                         <div>error: {errorCount}</div>
-                                        <div>pending: {pendingCount}</div>
+                                        <div>skipped: {skippedCount}</div>
+                                        {pendingCount > 0 ? (
+                                          <div>pending: {pendingCount}</div>
+                                        ) : null}
+                                        {invalidCount > 0 ? (
+                                          <div>invalid: {invalidCount}</div>
+                                        ) : null}
                                       </div>
                                     </TooltipContent>
                                   )}
@@ -625,8 +751,16 @@ export default function UploadsPage() {
                                       style={{ width: `${errorPct}%` }}
                                     />
                                     <div
+                                      className="bg-amber-600"
+                                      style={{ width: `${skippedPct}%` }}
+                                    />
+                                    <div
                                       className="bg-slate-400"
                                       style={{ width: `${pendingPct}%` }}
+                                    />
+                                    <div
+                                      className="bg-violet-500"
+                                      style={{ width: `${invalidPct}%` }}
                                     />
                                   </div>
                                 </div>
@@ -717,9 +851,99 @@ export default function UploadsPage() {
                                   </Link>
                                 </DropdownMenuItem>
                               )}
-                            {/* MARK: Process file (QP only) – start bulk charge for whole file */}
+                            {/* MARK: Pause bulk run (QP, while PROCESSING) */}
                             {session.paymentGateway === "qp" &&
-                              session.linkedQpChargeFileId && (
+                              session.linkedQpChargeFileId &&
+                              getEffectiveStatus(session).toLowerCase() ===
+                                "processing" && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      await apiClient.pauseQPChargeFile(
+                                        session.linkedQpChargeFileId!,
+                                      );
+                                      toast.success(
+                                        "Pause requested — the run will stop after the current row.",
+                                      );
+                                      invalidateQpQueue();
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Failed to request pause",
+                                      );
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <Pause className="h-4 w-4" />
+                                  <span>Pause after current row</span>
+                                </DropdownMenuItem>
+                              )}
+                            {/* MARK: Resume paused bulk run */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId &&
+                              getEffectiveStatus(session).toLowerCase() ===
+                                "paused" && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      const response =
+                                        await apiClient.resumeQPChargeFile(
+                                          session.linkedQpChargeFileId!,
+                                        );
+                                      const processState =
+                                        response?.data?.status;
+                                      if (processState === "PROCESSING") {
+                                        toast.success(
+                                          "Processing resumed. You'll receive an email when this file finishes.",
+                                        );
+                                      } else if (processState === "QUEUED") {
+                                        toast.success(
+                                          `File queued in position ${response?.data?.position ?? "unknown"}.`,
+                                        );
+                                      } else {
+                                        toast.success(
+                                          response?.message ||
+                                            "Resume request accepted.",
+                                        );
+                                      }
+                                      invalidateQpQueue();
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            status: number;
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Failed to resume processing",
+                                      );
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <PlayCircle className="h-4 w-4" />
+                                  <span>Resume processing</span>
+                                </DropdownMenuItem>
+                              )}
+                            {/* MARK: Process file (QP) — not while processing, queued, or paused */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId &&
+                              !["processing", "queued", "paused"].includes(
+                                getEffectiveStatus(session).toLowerCase(),
+                              ) && (
                                 <DropdownMenuItem
                                   onClick={async () => {
                                     try {
@@ -745,6 +969,7 @@ export default function UploadsPage() {
                                             "Process request accepted.",
                                         );
                                       }
+                                      invalidateQpQueue();
                                       refetch();
                                     } catch (err: unknown) {
                                       const ax = (
@@ -772,6 +997,121 @@ export default function UploadsPage() {
                                 >
                                   <CreditCard className="h-4 w-4" />
                                   <span>Process file</span>
+                                </DropdownMenuItem>
+                              )}
+                            {/* MARK: Recover stalled PROCESSING (crash) — optional reset rows (duplicate-charge risk) */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId &&
+                              isLikelyStalledQpProcessing(session) && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      const ok = window.confirm(
+                                        "Move this file from PROCESSING to PAUSED so you can resume? Use this if the server crashed mid-run. If the run is still active, prefer Pause instead.",
+                                      );
+                                      if (!ok) return;
+                                      try {
+                                        await apiClient.recoverQPChargeFileStalled(
+                                          session.linkedQpChargeFileId!,
+                                          { force: true },
+                                        );
+                                        toast.success(
+                                          "File set to PAUSED. Use Resume or reconcile counts if needed.",
+                                        );
+                                        invalidateQpQueue();
+                                        refetch();
+                                      } catch (err: unknown) {
+                                        const ax = (
+                                          err as {
+                                            response?: {
+                                              data?: { message?: string };
+                                            };
+                                          }
+                                        )?.response;
+                                        toast.error(
+                                          ax?.data?.message ||
+                                            "Recovery failed",
+                                        );
+                                      }
+                                    }}
+                                    className="flex items-center gap-2 text-amber-900 cursor-pointer p-2 hover:bg-amber-50"
+                                  >
+                                    <LifeBuoy className="h-4 w-4" />
+                                    <span>Recover stalled run</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      const ok = window.confirm(
+                                        "Reset rows stuck in PROCESSING back to PENDING? Only if you are sure the gateway did not capture payment — otherwise you risk duplicate charges.",
+                                      );
+                                      if (!ok) return;
+                                      try {
+                                        await apiClient.recoverQPChargeFileStalled(
+                                          session.linkedQpChargeFileId!,
+                                          {
+                                            force: true,
+                                            reset_processing_instances: true,
+                                          },
+                                        );
+                                        toast.success(
+                                          "Recovery complete — verify row statuses before resuming.",
+                                        );
+                                        invalidateQpQueue();
+                                        refetch();
+                                      } catch (err: unknown) {
+                                        const ax = (
+                                          err as {
+                                            response?: {
+                                              data?: { message?: string };
+                                            };
+                                          }
+                                        )?.response;
+                                        toast.error(
+                                          ax?.data?.message ||
+                                            "Recovery failed",
+                                        );
+                                      }
+                                    }}
+                                    className="flex items-center gap-2 text-red-700 cursor-pointer p-2 hover:bg-red-50"
+                                  >
+                                    <LifeBuoy className="h-4 w-4" />
+                                    <span>Recover + reset PROCESSING rows</span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            {/* MARK: Reconcile file counters from instance rows */}
+                            {session.paymentGateway === "qp" &&
+                              session.linkedQpChargeFileId &&
+                              getEffectiveStatus(session).toLowerCase() !==
+                                "processing" && (
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      await apiClient.reconcileQPChargeFileCounts(
+                                        session.linkedQpChargeFileId!,
+                                      );
+                                      toast.success(
+                                        "Counts reconciled from charge rows.",
+                                      );
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Reconcile failed",
+                                      );
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 text-gray-600 cursor-pointer p-2 hover:bg-blue-100"
+                                >
+                                  <SlidersHorizontal className="h-4 w-4" />
+                                  <span>Re-Run Stalled</span>
                                 </DropdownMenuItem>
                               )}
                             {/* MARK: Download Report for QP (parent file with charge status) */}
@@ -988,6 +1328,15 @@ export default function UploadsPage() {
           </div>
         )}
       </Card>
+
+      <UploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+        onUploadSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
+          refetch();
+        }}
+      />
     </div>
   );
 }

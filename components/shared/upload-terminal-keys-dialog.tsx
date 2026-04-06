@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +35,10 @@ export function UploadTerminalKeysDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) setIsLoading(false);
+  }, [open]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,16 +82,26 @@ export function UploadTerminalKeysDialog({
     setIsLoading(true);
     try {
       const response = await apiClient.importTerminalCredentials(selectedFile);
-      if (response.status === "success") {
-        toast.success(response.message || "Terminal keys imported successfully");
-        setSelectedFile(null);
-        onOpenChange(false);
+      if (response.status !== "success") {
+        throw new Error(
+          (response as { message?: string }).message ||
+            "Import did not complete successfully"
+        );
+      }
+      toast.success(response.message || "Terminal keys imported successfully");
+      setSelectedFile(null);
+      onOpenChange(false);
+      try {
         onSuccess?.();
+      } catch (e) {
+        console.error("onSuccess callback failed:", e);
       }
     } catch (error) {
       const apiError = error as ApiError;
       toast.error(
-        apiError.response?.data?.message || "Failed to import terminal keys"
+        apiError.response?.data?.message ||
+          (error instanceof Error ? error.message : null) ||
+          "Failed to import terminal keys"
       );
     } finally {
       setIsLoading(false);

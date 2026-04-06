@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,15 @@ interface UploadDialogProps {
   onUploadSuccess?: () => void;
 }
 
+function isUploadSuccessBody(body: unknown): boolean {
+  if (body == null || typeof body !== "object") return false;
+  const b = body as Record<string, unknown>;
+  if (b.status === "success") return true;
+  if (b.success === true) return true;
+  if (String(b.status ?? "").toLowerCase() === "success") return true;
+  return false;
+}
+
 export function UploadDialog({
   open,
   onOpenChange,
@@ -35,6 +44,10 @@ export function UploadDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) setIsLoading(false);
+  }, [open]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -84,7 +97,7 @@ export function UploadDialog({
       // Upload files sequentially
       for (const file of selectedFiles) {
         const response = await apiClient.uploadFile(file);
-        if (response.status !== "success") {
+        if (!isUploadSuccessBody(response)) {
           throw new Error(`Failed to upload ${file.name}`);
         }
       }
@@ -92,7 +105,11 @@ export function UploadDialog({
       toast.success(`Successfully uploaded ${selectedFiles.length} file(s)`);
       setSelectedFiles([]);
       onOpenChange(false); // Close dialog after successful upload
-      onUploadSuccess?.(); // Trigger refetch of uploads data
+      try {
+        onUploadSuccess?.();
+      } catch (e) {
+        console.error("onUploadSuccess callback failed:", e);
+      }
     } catch (error) {
       const apiError = error as ApiError;
       toast.error(apiError.response?.data?.message || "Failed to upload files");

@@ -33,6 +33,8 @@ import { toast } from "sonner";
 export const queryKeys = {
   rowData: "row-data",
   uploadSessions: "upload-sessions",
+  uploadTrashSessions: "upload-trash-sessions",
+  qpChargeQueue: "qp-charge-queue",
   singleRowData: (id: string) => ["single-row-data", id],
   invitations: "invitations",
   profile: "profile",
@@ -73,6 +75,47 @@ export function useUploadSessions(
   return useQuery({
     queryKey: [queryKeys.uploadSessions, { page, limit, search, gateway }],
     queryFn: () => apiClient.getUploadSessions(page, limit, search, gateway),
+  });
+}
+
+export function useQPChargeQueue() {
+  return useQuery({
+    queryKey: [queryKeys.qpChargeQueue],
+    queryFn: () => apiClient.getQPChargeFileQueue(),
+  });
+}
+
+export function useTrashedUploadSessions(
+  page: number = 1,
+  limit: number = 20,
+  search: string = "",
+  gateway: string = "qp"
+) {
+  return useQuery({
+    queryKey: [queryKeys.uploadTrashSessions, { page, limit, search, gateway }],
+    queryFn: () =>
+      apiClient.getTrashedUploadSessions(page, limit, search, gateway),
+  });
+}
+
+export function useRestoreUploadSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (uploadId: string) => apiClient.restoreUploadSession(uploadId),
+    onSuccess: (data) => {
+      toast.success(
+        (data as { message?: string })?.message || "File restored successfully"
+      );
+      queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.uploadTrashSessions],
+      });
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        error.response?.data?.message || "Failed to restore file"
+      );
+    },
   });
 }
 
@@ -403,13 +446,22 @@ export function useProcessRefund() {
 }
 
 export function useDeleteFile() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: apiClient.deleteFile,
     onSuccess: () => {
-      toast.success("File deleted successfully!");
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      toast.success(
+        "File moved to trash. Restore within 90 days from Deleted files."
+      );
+      queryClient.invalidateQueries({ queryKey: [queryKeys.uploadSessions] });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.uploadTrashSessions],
+      });
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        error.response?.data?.message || "Could not move file to trash"
+      );
     },
   });
 }

@@ -72,6 +72,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import QpTransactionDetailsModal from "./qp-transaction-details-modal";
+import QpRevealCardModal from "./qp-reveal-card-modal";
 import QpEditInstanceModal from "./qp-edit-instance-modal";
 import CreateSingleQpPaymentModal from "./create-single-qp-payment-modal";
 import { QPChargeInstance, ViewDialogProps } from "./types";
@@ -161,6 +162,10 @@ export default function QpPaymentPageComponent({
   const [editRow, setEditRow] = useState<QPChargeInstance | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateSingleModal, setShowCreateSingleModal] = useState(false);
+  const [revealCardRow, setRevealCardRow] = useState<QPChargeInstance | null>(
+    null,
+  );
+  const [showRevealCardModal, setShowRevealCardModal] = useState(false);
 
   // MARK: Fetch Transaction Data
   const fetchData = async () => {
@@ -894,10 +899,20 @@ export default function QpPaymentPageComponent({
                       </div>
                     </TableCell>
                     <TableCell className="font-mono">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-gray-400" />
-                        <p className="text-sm">****{row.card_last4}</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRevealCardRow(row);
+                          setShowRevealCardModal(true);
+                        }}
+                        className="flex items-center gap-2 text-left rounded-md px-2 py-1 -mx-2 -my-1 w-full min-w-0 transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        title="View full card number and CVV (password required)"
+                      >
+                        <CreditCard className="h-4 w-4 shrink-0 text-blue-600" />
+                        <span className="text-sm text-gray-900">
+                          ****{row.card_last4}
+                        </span>
+                      </button>
                     </TableCell>
                     <TableCell>
                       <TooltipProvider>
@@ -1100,6 +1115,14 @@ export default function QpPaymentPageComponent({
         open={showViewDialog}
         onOpenChange={setShowViewDialog}
         rowData={selectedRow}
+      />
+      <QpRevealCardModal
+        open={showRevealCardModal}
+        onOpenChange={(open) => {
+          setShowRevealCardModal(open);
+          if (!open) setRevealCardRow(null);
+        }}
+        row={revealCardRow}
       />
       <QpEditInstanceModal
         open={showEditModal}
