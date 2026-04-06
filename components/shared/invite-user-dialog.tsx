@@ -5,7 +5,13 @@ import { Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/client-api-call";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,7 +31,11 @@ interface ApiError {
   };
 }
 
-export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDialogProps) {
+export function InviteUserDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: InviteUserDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,30 +46,34 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       const params: any = {
         email: formData.email,
         isInvite: true,
       };
-      
+
       if (formData.name.trim()) {
         params.name = formData.name.trim();
       }
 
       await apiClient.register(params);
-      toast.success("Invitation sent! User will receive instructions via email.");
+      toast.success(
+        "Invitation sent! User will receive instructions via email.",
+      );
       setFormData({ name: "", email: "" });
-      
+
       // Request refetch
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.invitations] });
-      
+
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.message || "Failed to send invitation");
+      toast.error(
+        apiError.response?.data?.message || "Failed to send invitation",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -71,7 +85,8 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
         <DialogHeader>
           <DialogTitle>Invite User</DialogTitle>
           <DialogDescription>
-            Enter the email address of the person you'd like to invite to the VCC Charge System.
+            Enter the email address of the person you would like to invite to
+            the VCC Charge System.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
@@ -84,7 +99,9 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
               type="email"
               placeholder="name@example.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
               disabled={isSubmitting}
             />
@@ -97,7 +114,9 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
               type="text"
               placeholder="John Doe"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
               disabled={isSubmitting}
             />
