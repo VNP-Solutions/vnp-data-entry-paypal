@@ -60,7 +60,7 @@ export default function DeletedFilesPage() {
   const pagination = payload?.data?.pagination;
 
   return (
-    <div className="min-h-[80vh] max-w-6xl mx-auto">
+    <div className="min-h-[80vh] w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Trash2 className="h-7 w-7 text-amber-700" />
@@ -72,7 +72,7 @@ export default function DeletedFilesPage() {
         </p>
       </div>
 
-      <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
+      <Card className="w-full border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -92,8 +92,8 @@ export default function DeletedFilesPage() {
         </div>
       </Card>
 
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm overflow-hidden">
-        <Table>
+      <Card className="w-full border-0 shadow-lg bg-white/80 backdrop-blur-sm overflow-hidden">
+        <Table className="w-full">
           <TableHeader>
             <TableRow className="bg-gray-50/50">
               <TableHead>File</TableHead>
