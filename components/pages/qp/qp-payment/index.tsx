@@ -579,6 +579,24 @@ export default function QpPaymentPageComponent({
       ? "Charge again"
       : "Make payment";
 
+  const selectedChargeFileName = useMemo(() => {
+    if (selectedChargeFileId === "all") return null;
+    return chargeFiles.find((f) => f.charge_file_id === selectedChargeFileId)
+      ?.file_name;
+  }, [selectedChargeFileId, chargeFiles]);
+
+  const headerFileScopeShort =
+    selectedChargeFileId === "all"
+      ? "All files"
+      : selectedChargeFileName
+        ? formatLongString(selectedChargeFileName, 48)
+        : "Selected file";
+
+  const headerStatusLabel =
+    status === "All"
+      ? "All statuses"
+      : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+
   // MARK: Component Render
   return (
     <div className="min-h-[80vh]">
@@ -586,12 +604,25 @@ export default function QpPaymentPageComponent({
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">
+            <h1 className="text-xl font-bold text-gray-900 mb-1">
               QP Charge Records for{" "}
-              <span className="text-blue-600">
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </span>{" "}
+              <span
+                className="text-blue-600"
+                title={
+                  selectedChargeFileId !== "all" && selectedChargeFileName
+                    ? selectedChargeFileName
+                    : undefined
+                }
+              >
+                {headerFileScopeShort}
+              </span>
             </h1>
+            <p className="text-sm text-gray-500 mb-2">
+              Status:{" "}
+              <span className="font-medium text-gray-700">
+                {headerStatusLabel}
+              </span>
+            </p>
             <p className="text-gray-600">
               Manage and process QuantumPay charge transactions
             </p>
