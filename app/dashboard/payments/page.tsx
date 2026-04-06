@@ -1,10 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Loader2, Search, MoreHorizontal, RotateCcw, Filter, 
-  CheckCircle2, ShieldAlert, Clock, AlertCircle, Eye,
-  Calendar, CreditCard, Building2, Receipt, Hash, CircleDot
+import {
+  Loader2,
+  Search,
+  MoreHorizontal,
+  RotateCcw,
+  Filter,
+  CheckCircle2,
+  ShieldAlert,
+  Clock,
+  AlertCircle,
+  Eye,
+  Calendar,
+  CreditCard,
+  Building2,
+  Receipt,
+  Hash,
+  CircleDot,
+  Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,6 +62,16 @@ export default function PaymentsPage() {
   const viewDetails = (attempt: any) => {
     setSelectedAttempt(attempt);
     setShowDetailsModal(true);
+  };
+
+  const copyJsonToClipboard = async (data: unknown, successMessage: string) => {
+    try {
+      const text = JSON.stringify(data ?? null, null, 2);
+      await navigator.clipboard.writeText(text);
+      toast.success(successMessage);
+    } catch {
+      toast.error("Could not copy to clipboard");
+    }
   };
 
   const attempts = data?.data?.attempts || [];
@@ -209,13 +233,19 @@ export default function PaymentsPage() {
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() => viewDetails(attempt)}
+                                onSelect={() => {
+                                  window.setTimeout(() => viewDetails(attempt), 0);
+                                }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => navigator.clipboard.writeText(attempt.request_id)}
+                                onSelect={() => {
+                                  void navigator.clipboard.writeText(
+                                    attempt.request_id,
+                                  );
+                                }}
                               >
                                 Copy Request ID
                               </DropdownMenuItem>
@@ -262,7 +292,10 @@ export default function PaymentsPage() {
 
       {/* Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-4xl max-h-[80vh] overflow-y-auto"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 border-b pb-4">
               <Receipt className="h-5 w-5 text-blue-600" />
@@ -316,20 +349,58 @@ export default function PaymentsPage() {
               {/* Payload Tabs/JSON */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    <div className="p-1 bg-blue-100 rounded text-blue-600"><AlertCircle className="h-3 w-3" /></div>
-                    Request Payload (Redacted)
-                  </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                      <div className="p-1 bg-blue-100 rounded text-blue-600">
+                        <AlertCircle className="h-3 w-3" />
+                      </div>
+                      Request Payload (Redacted)
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1.5 h-8"
+                      onClick={() =>
+                        copyJsonToClipboard(
+                          selectedAttempt.request_payload_redacted,
+                          "Request payload copied",
+                        )
+                      }
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy
+                    </Button>
+                  </div>
                   <pre className="bg-slate-900 text-slate-300 p-4 rounded-lg text-xs overflow-x-auto border border-slate-800 shadow-inner">
                     {JSON.stringify(selectedAttempt.request_payload_redacted, null, 2)}
                   </pre>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    <div className="p-1 bg-green-100 rounded text-green-600"><CheckCircle2 className="h-3 w-3" /></div>
-                    Response Body
-                  </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                      <div className="p-1 bg-green-100 rounded text-green-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                      </div>
+                      Response Body
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1.5 h-8"
+                      onClick={() =>
+                        copyJsonToClipboard(
+                          selectedAttempt.response_body,
+                          "Response body copied",
+                        )
+                      }
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy
+                    </Button>
+                  </div>
                   <pre className="bg-slate-900 text-slate-300 p-4 rounded-lg text-xs overflow-x-auto border border-slate-800 shadow-inner">
                     {JSON.stringify(selectedAttempt.response_body, null, 2)}
                   </pre>
