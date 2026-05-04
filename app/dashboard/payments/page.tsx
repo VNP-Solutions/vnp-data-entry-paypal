@@ -19,6 +19,7 @@ import {
   Hash,
   CircleDot,
   Copy,
+  Download,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePaymentAttempts } from "@/lib/hooks/use-api";
+import { apiClient } from "@/lib/client-api-call";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -39,6 +41,7 @@ export default function PaymentsPage() {
   
   const [selectedAttempt, setSelectedAttempt] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = usePaymentAttempts({
     page,
@@ -71,6 +74,30 @@ export default function PaymentsPage() {
       toast.success(successMessage);
     } catch {
       toast.error("Could not copy to clipboard");
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const { blob, filename } = await apiClient.exportPaymentAttemptsExcel({
+        search: searchTerm || undefined,
+        result: resultFilter === "all" ? undefined : resultFilter,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Payment attempts exported");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Export failed";
+      toast.error(msg);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -127,16 +154,30 @@ export default function PaymentsPage() {
               </Select>
             </div>
 
-            <div className="md:col-span-5 flex items-center justify-end gap-2 h-10">
+            <div className="md:col-span-5 flex flex-wrap items-center justify-end gap-2 min-h-10">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleExportExcel()}
+                disabled={isExporting}
+                className="h-10 border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 md:mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 md:mr-2" />
+                )}
+                <span className="hidden sm:inline">Export Excel</span>
+              </Button>
               <Button
                 variant="outline"
                 onClick={handleReset}
-                className="h-full border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900"
+                className="h-10 border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900"
               >
                 <RotateCcw className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Reset</span>
               </Button>
-              <Button onClick={handleSearch} className="h-full bg-slate-800 hover:bg-slate-900">
+              <Button onClick={handleSearch} className="h-10 bg-slate-800 hover:bg-slate-900">
                 <Search className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Search</span>
               </Button>

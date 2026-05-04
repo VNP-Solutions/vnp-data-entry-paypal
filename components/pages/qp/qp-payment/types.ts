@@ -11,6 +11,7 @@ export interface QPChargeInstance {
   amount_numeric: number;
   currency: string;
   user_id: string;
+  ota_billing_name?: string;
   billing_address: {
     address_1: string;
     address_2: string;

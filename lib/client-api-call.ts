@@ -225,6 +225,12 @@ export interface PaymentAttemptParams {
   date_to?: string;
 }
 
+/** Same filters as the payments list; used for Excel export (no pagination). */
+export type PaymentAttemptExportParams = Omit<
+  PaymentAttemptParams,
+  "page" | "limit"
+>;
+
 export interface TerminalCredentialListItem {
   _id: string;
   hotel_id?: string | null;
@@ -1052,6 +1058,45 @@ class ApiClient {
     }
   };
 
+  /** Excel export; throws Error with server message on 4xx (e.g. row limit exceeded). */
+  exportPaymentAttemptsExcel = async (
+    params: PaymentAttemptExportParams = {}
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query: Record<string, string> = {};
+    if (params.search) query.search = params.search;
+    if (params.result) query.result = params.result;
+    if (params.date_from) query.date_from = params.date_from;
+    if (params.date_to) query.date_to = params.date_to;
+
+    try {
+      const response = await axios.get<Blob>(
+        `${API_BASE_URL}/qp-payment-attempts/export`,
+        { params: query, responseType: "blob" }
+      );
+      let filename = "qp_payment_attempts.xlsx";
+      const cd = response.headers["content-disposition"];
+      if (cd) {
+        const m = /filename="([^"]+)"/.exec(cd);
+        if (m) filename = m[1];
+      }
+      return { blob: response.data, filename };
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const j = JSON.parse(text) as { message?: string };
+          throw new Error(j.message || "Export failed");
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            throw new Error("Export failed");
+          }
+          throw e;
+        }
+      }
+      throw err;
+    }
+  };
+
   getProfile = async () => {
     try {
       const response = await axios.get<ApiResponse<{ user: User }>>(
@@ -1423,6 +1468,7 @@ class ApiClient {
     vnp_work_id?: string;
     portfolio?: string;
     user_id?: string;
+    ota_billing_name?: string;
   }) => {
     try {
       const response = await axios.post(

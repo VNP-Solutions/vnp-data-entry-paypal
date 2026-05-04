@@ -40,7 +40,8 @@ const formSchema = z.object({
   ota: z.string().optional(),
   vnp_work_id: z.string().optional(),
   portfolio: z.string().optional(),
-  user_id: z.string().optional(),
+  user_id: z.string().min(1, "QP Username is required"),
+  ota_billing_name: z.string().min(1, "OTA Billing Name is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -76,6 +77,7 @@ export default function CreateSingleQpPaymentModal({
       vnp_work_id: "",
       portfolio: "",
       user_id: "",
+      ota_billing_name: "",
     },
   });
 
@@ -100,7 +102,8 @@ export default function CreateSingleQpPaymentModal({
         ota: values.ota || undefined,
         vnp_work_id: values.vnp_work_id || undefined,
         portfolio: values.portfolio || undefined,
-        user_id: values.user_id || undefined,
+        user_id: values.user_id.trim(),
+        ota_billing_name: values.ota_billing_name.trim(),
       });
       toast.success("Charge created and processed");
       form.reset();
@@ -344,15 +347,29 @@ export default function CreateSingleQpPaymentModal({
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="portfolio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Portfolio</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Portfolio" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="portfolio"
+                name="user_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Portfolio</FormLabel>
+                    <FormLabel>QP Username *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Portfolio" {...field} />
+                      <Input placeholder="QP Username (terminal lookup)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -360,12 +377,12 @@ export default function CreateSingleQpPaymentModal({
               />
               <FormField
                 control={form.control}
-                name="user_id"
+                name="ota_billing_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>User ID</FormLabel>
+                    <FormLabel>OTA Billing Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="User ID" {...field} />
+                      <Input placeholder="OTA Billing Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

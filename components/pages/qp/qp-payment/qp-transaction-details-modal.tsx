@@ -27,6 +27,7 @@ export default function QpTransactionDetailsModal({
   const displayFields = [
     { label: "Reservation ID", value: rowData.reservation_id },
     { label: "QP Username", value: rowData.user_id },
+    { label: "OTA Billing Name", value: rowData.ota_billing_name },
     {
       label: "Amount",
       value: `${rowData.currency} ${rowData.amount_numeric?.toFixed(2)}`,

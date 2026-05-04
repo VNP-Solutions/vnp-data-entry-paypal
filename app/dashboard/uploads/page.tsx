@@ -41,6 +41,7 @@ import {
   PlayCircle,
   LifeBuoy,
   SlidersHorizontal,
+  ListOrdered,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -73,9 +74,11 @@ import {
   queryKeys,
 } from "@/lib/hooks/use-api";
 import { apiClient } from "@/lib/client-api-call";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import TemplateDownload from "@/components/pages/uploads/template-download";
 import { UploadDialog } from "@/components/shared/upload-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // MARK: TypeScript Interfaces
 // Explanation: Defines the data structure for upload sessions and API responses.
@@ -128,6 +131,16 @@ interface UploadSessionsResponse {
   };
 }
 
+/** Row shape from GET /qp-charge-files/queue (lean QPChargeFile) */
+interface QpQueueFileRow {
+  _id: string;
+  file_name: string;
+  status: string;
+  queue_order?: number | null;
+  total_rows?: number;
+  processed_rows?: number;
+}
+
 // MARK: Uploads Page Component
 // Explanation: Main component for managing file uploads and viewing upload sessions.
 // Displays a paginated table of upload sessions with filtering, search, and action capabilities.
@@ -153,7 +166,8 @@ export default function UploadsPage() {
     limit,
     searchTerm,
   );
-  const { data: qpQueueResponse } = useQPChargeQueue();
+  const { data: qpQueueResponse, isLoading: isQueueLoading } =
+    useQPChargeQueue();
   const globallyPaused = qpQueueResponse?.globally_paused === true;
   const retryUploadMutation = useRetryUpload();
   // const discardUploadMutation = useDiscardUpload()
@@ -218,6 +232,10 @@ export default function UploadsPage() {
     }
   };
 
+  const invalidateQpQueue = () => {
+    queryClient.invalidateQueries({ queryKey: [queryKeys.qpChargeQueue] });
+  };
+
   const handleQpQueueAction = async (
     chargeFileId: string,
     action: "up" | "down" | "top" | "bottom",
@@ -228,6 +246,7 @@ export default function UploadsPage() {
         action,
       );
       toast.success(response?.message || "Queue order updated");
+      invalidateQpQueue();
       refetch();
     } catch (error: any) {
       toast.error(
@@ -241,16 +260,13 @@ export default function UploadsPage() {
       const response =
         await apiClient.removeQPChargeFileFromQueue(chargeFileId);
       toast.success(response?.message || "Removed from queue");
+      invalidateQpQueue();
       refetch();
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to remove from queue",
       );
     }
-  };
-
-  const invalidateQpQueue = () => {
-    queryClient.invalidateQueries({ queryKey: [queryKeys.qpChargeQueue] });
   };
 
   const handleGlobalQueuePause = async () => {
@@ -426,91 +442,115 @@ export default function UploadsPage() {
   // MARK: Component Render
   // Explanation: Main render function for the uploads page layout.
   // Displays template download section, statistics cards, filters, and upload sessions table with pagination.
+  const queueRows = (qpQueueResponse?.data as QpQueueFileRow[]) ?? [];
+  const reorderableRows = queueRows.filter((r) =>
+    ["QUEUED", "PAUSED"].includes(r.status),
+  );
+
   return (
     <div className="min-h-[80vh]">
       {/* MARK: Template Download Section */}
       {/* Explanation: Component allowing users to download CSV template for bulk uploads */}
       <TemplateDownload onUploadClick={() => setShowUploadDialog(true)} />
 
-      {/* MARK: Statistics Cards Section */}
-      {/* Explanation: Displays overview metrics for uploads - Total Files, Completed, Processing, and Failed counts.
-      Each card shows an icon, label, and dynamic count with skeleton loading state. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileSpreadsheet className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Files</p>
-              <div className="text-xl font-bold text-gray-900">
-                {isLoading ? (
-                  <Skeleton className="h-6 w-16" />
-                ) : (
-                  qpSessions.length
-                )}
-              </div>
+      <Tabs defaultValue="files" className="w-full gap-2">
+        <TabsList className="mb-1">
+          <TabsTrigger value="files" className="gap-2">
+            <FileSpreadsheet className="h-4 w-4 shrink-0" />
+            Files
+          </TabsTrigger>
+          <TabsTrigger value="queue" className="gap-2">
+            <ListOrdered className="h-4 w-4 shrink-0" />
+            Files in queue
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="files" className="mt-0">
+      {/* MARK: Files tab — stats + filters + table in one card (compact stats above table) */}
+      <Card className="gap-0 py-0 border-0 shadow-lg bg-white/80 backdrop-blur-sm overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 border-b border-gray-100 bg-slate-50/50">
+        <div className="flex items-center gap-1.5 min-w-0 rounded-md bg-white/80 px-1.5 py-1 border border-gray-100/80">
+          <div className="shrink-0 rounded-md bg-blue-100 p-0.5">
+            <FileSpreadsheet className="h-3.5 w-3.5 text-blue-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-gray-500 leading-none truncate">
+              Total files
+            </p>
+            <div className="text-base font-semibold tabular-nums text-gray-900 leading-tight mt-0.5">
+              {isLoading ? (
+                <Skeleton className="h-5 w-8 mt-0.5" />
+              ) : (
+                qpSessions.length
+              )}
             </div>
           </div>
-        </Card>
-        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Completed</p>
-              <div className="text-xl font-bold text-gray-900">
-                {isLoading ? <Skeleton className="h-6 w-16" /> : completedCount}
-              </div>
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0 rounded-md bg-white/80 px-1.5 py-1 border border-gray-100/80">
+          <div className="shrink-0 rounded-md bg-green-100 p-0.5">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-gray-500 leading-none truncate">
+              Completed
+            </p>
+            <div className="text-base font-semibold tabular-nums text-gray-900 leading-tight mt-0.5">
+              {isLoading ? (
+                <Skeleton className="h-5 w-8 mt-0.5" />
+              ) : (
+                completedCount
+              )}
             </div>
           </div>
-        </Card>
-        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-5 w-5 text-yellow-600" />
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0 rounded-md bg-white/80 px-1.5 py-1 border border-gray-100/80">
+          <div className="shrink-0 rounded-md bg-amber-100 p-0.5">
+            <Clock className="h-3.5 w-3.5 text-amber-700" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-gray-500 leading-none truncate">
+              Processing
+            </p>
+            <div className="text-base font-semibold tabular-nums text-gray-900 leading-tight mt-0.5">
+              {isLoading ? (
+                <Skeleton className="h-5 w-8 mt-0.5" />
+              ) : (
+                processingCount
+              )}
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Processing</p>
-              <div className="text-xl font-bold text-gray-900">
-                {isLoading ? (
-                  <Skeleton className="h-6 w-16" />
-                ) : (
-                  processingCount
-                )}
-              </div>
-              {!isLoading && pausedCount > 0 ? (
-                <p className="text-xs text-amber-800 mt-0.5">
-                  Paused: {pausedCount}
-                </p>
-              ) : null}
+            {!isLoading && pausedCount > 0 ? (
+              <p className="text-[10px] text-amber-800 leading-tight mt-0.5">
+                Paused {pausedCount}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0 rounded-md bg-white/80 px-1.5 py-1 border border-gray-100/80">
+          <div className="shrink-0 rounded-md bg-red-100 p-0.5">
+            <XCircle className="h-3.5 w-3.5 text-red-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-gray-500 leading-none truncate">
+              Failed
+            </p>
+            <div className="text-base font-semibold tabular-nums text-gray-900 leading-tight mt-0.5">
+              {isLoading ? (
+                <Skeleton className="h-5 w-8 mt-0.5" />
+              ) : (
+                failedCount
+              )}
             </div>
           </div>
-        </Card>
-        <Card className="p-4 border-0 shadow-md bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <XCircle className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Failed</p>
-              <div className="text-xl font-bold text-gray-900">
-                {isLoading ? <Skeleton className="h-6 w-16" /> : failedCount}
-              </div>
-            </div>
-          </div>
-        </Card>
+        </div>
       </div>
 
       {/* MARK: Filters Section */}
       {/* Explanation: Provides search and refresh functionality for the uploads table.
       Users can search by filename and manually refresh data using the refresh button. */}
-      <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm p-4 mb-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <SlidersHorizontal className="h-4 w-4 text-gray-500 shrink-0" />
+        <div className="flex flex-col gap-2 px-2.5 py-2 sm:px-3 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pb-1.5 border-b border-gray-100/80">
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-700">
+              <SlidersHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 shrink-0" />
               <span>
                 QP queue:{" "}
                 <span
@@ -529,9 +569,9 @@ export default function UploadsPage() {
                   size="sm"
                   variant="default"
                   onClick={handleGlobalQueueResume}
-                  className="gap-1.5"
+                  className="gap-1 h-8 text-xs"
                 >
-                  <PlayCircle className="h-4 w-4" />
+                  <PlayCircle className="h-3.5 w-3.5" />
                   Resume global queue
                 </Button>
               ) : (
@@ -540,23 +580,23 @@ export default function UploadsPage() {
                   size="sm"
                   variant="outline"
                   onClick={handleGlobalQueuePause}
-                  className="gap-1.5"
+                  className="gap-1 h-8 text-xs"
                 >
-                  <Pause className="h-4 w-4" />
+                  <Pause className="h-3.5 w-3.5" />
                   Pause global queue
                 </Button>
               )}
             </div>
           </div>
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex-1 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 items-stretch sm:items-center justify-between">
+            <div className="flex-1 w-full min-w-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
                 <Input
                   placeholder="Search by filename..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 h-8 text-sm"
                 />
               </div>
             </div>
@@ -566,23 +606,21 @@ export default function UploadsPage() {
                 refetch();
                 invalidateQpQueue();
               }}
-              className="w-10 h-10 p-0"
+              className="w-8 h-8 p-0 shrink-0"
             >
-              <RefreshCcw className="h-4 w-4" />
+              <RefreshCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
-      </Card>
 
       {/* MARK: Upload Sessions Table */}
       {/* Explanation: Main data table displaying all upload sessions with their details.
       Columns: File Name, Payment Gateway, Upload Status, Charge Progress, Archive Status, Upload Time, Actions.
       Includes loading skeletons, empty state, and row actions dropdown menu. */}
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm ps-4">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto ps-3 pe-2 sm:ps-3 sm:pe-3">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50/50">
+              <TableRow className="bg-gray-50/50 [&_th]:h-9 [&_th]:py-2 [&_th]:text-xs">
                 <TableHead>File Name</TableHead>
                 <TableHead>Gateway</TableHead>
                 <TableHead>Processing Status</TableHead>
@@ -1268,7 +1306,7 @@ export default function UploadsPage() {
         Right side: Previous/Next page buttons with current page indicator
         Pagination resets to page 1 when changing items per page limit */}
         {data && pagination && (
-          <div className="flex items-center justify-between p-4 border-t">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-2.5 py-2 sm:px-3 border-t border-gray-100 bg-slate-50/30">
             <div className="flex items-center gap-4">
               {/* MARK: Items Per Page Selector */}
               {/* Explanation: Dropdown to change number of items displayed per page.
@@ -1328,6 +1366,277 @@ export default function UploadsPage() {
           </div>
         )}
       </Card>
+        </TabsContent>
+
+        <TabsContent value="queue" className="mt-0">
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm p-4 sm:p-6">
+            <p className="text-sm text-gray-600 mb-4">
+              <strong>Processing</strong> runs first and cannot be moved.{" "}
+              <strong>Queued</strong> and <strong>Paused</strong> files can be
+              reordered (move up/down) or removed from the queue. Pause the
+              active file first if you need the queue to stand still.
+            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 mb-4 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <SlidersHorizontal className="h-4 w-4 text-gray-500 shrink-0" />
+                <span>
+                  QP queue:{" "}
+                  <span
+                    className={
+                      globallyPaused
+                        ? "text-amber-800 font-medium"
+                        : "font-medium"
+                    }
+                  >
+                    {globallyPaused ? "paused globally" : "running"}
+                  </span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {globallyPaused ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="default"
+                    onClick={handleGlobalQueueResume}
+                    className="gap-1.5"
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                    Resume global queue
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleGlobalQueuePause}
+                    className="gap-1.5"
+                  >
+                    <Pause className="h-4 w-4" />
+                    Pause global queue
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Refresh queue"
+                  onClick={() => {
+                    invalidateQpQueue();
+                    refetch();
+                  }}
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-md border border-gray-100">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="w-14">#</TableHead>
+                    <TableHead>File</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead className="text-end">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isQueueLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={5}>
+                          <Skeleton className="h-10 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : queueRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="h-32 text-center text-gray-500"
+                      >
+                        No files in the QP queue right now.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    queueRows.map((row, displayIndex) => {
+                      const reorderIdx = reorderableRows.findIndex(
+                        (r) => r._id === row._id,
+                      );
+                      const canReorder = reorderIdx >= 0;
+                      const chargeId = String(row._id);
+                      return (
+                        <TableRow key={chargeId}>
+                          <TableCell className="font-mono text-sm text-gray-600">
+                            {row.queue_order != null
+                              ? row.queue_order
+                              : displayIndex + 1}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900 max-w-[240px] truncate">
+                            {row.file_name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                row.status === "PROCESSING" &&
+                                  "border-amber-200 bg-amber-50 text-amber-900",
+                                row.status === "QUEUED" &&
+                                  "border-blue-200 bg-blue-50 text-blue-800",
+                                row.status === "PAUSED" &&
+                                  "border-violet-200 bg-violet-50 text-violet-900",
+                              )}
+                            >
+                              {row.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-600 tabular-nums">
+                            {row.processed_rows ?? 0} /{" "}
+                            {row.total_rows != null ? row.total_rows : "—"}
+                          </TableCell>
+                          <TableCell className="text-end">
+                            <div className="flex flex-wrap justify-end gap-1.5">
+                              {row.status === "PROCESSING" ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={async () => {
+                                    try {
+                                      await apiClient.pauseQPChargeFile(
+                                        chargeId,
+                                      );
+                                      toast.success(
+                                        "Pause requested — stops after the current row.",
+                                      );
+                                      invalidateQpQueue();
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Failed to request pause",
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <Pause className="h-3.5 w-3.5 mr-1" />
+                                  Pause
+                                </Button>
+                              ) : null}
+                              {row.status === "PAUSED" ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={async () => {
+                                    try {
+                                      const response =
+                                        await apiClient.resumeQPChargeFile(
+                                          chargeId,
+                                        );
+                                      const st = response?.data?.status;
+                                      if (st === "PROCESSING") {
+                                        toast.success(
+                                          "Processing resumed for this file.",
+                                        );
+                                      } else if (st === "QUEUED") {
+                                        toast.success(
+                                          `Queued in position ${response?.data?.position ?? "?"}.`,
+                                        );
+                                      } else {
+                                        toast.success(
+                                          response?.message ||
+                                            "Resume accepted.",
+                                        );
+                                      }
+                                      invalidateQpQueue();
+                                      refetch();
+                                    } catch (err: unknown) {
+                                      const ax = (
+                                        err as {
+                                          response?: {
+                                            data?: { message?: string };
+                                          };
+                                        }
+                                      )?.response;
+                                      toast.error(
+                                        ax?.data?.message ||
+                                          "Failed to resume",
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                                  Resume
+                                </Button>
+                              ) : null}
+                              {canReorder ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 px-2"
+                                    disabled={reorderIdx <= 0}
+                                    aria-label="Move up in queue"
+                                    onClick={() =>
+                                      handleQpQueueAction(chargeId, "up")
+                                    }
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 px-2"
+                                    disabled={
+                                      reorderIdx >= reorderableRows.length - 1
+                                    }
+                                    aria-label="Move down in queue"
+                                    onClick={() =>
+                                      handleQpQueueAction(chargeId, "down")
+                                    }
+                                  >
+                                    <ChevronRight className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-red-600 hover:text-red-700"
+                                    onClick={() =>
+                                      handleQpQueueRemove(chargeId)
+                                    }
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                    Remove
+                                  </Button>
+                                </>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <UploadDialog
         open={showUploadDialog}
