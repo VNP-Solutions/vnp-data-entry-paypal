@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,14 +30,64 @@ import {
 import { apiClient } from "@/lib/client-api-call";
 import { toast } from "sonner";
 
+const OTA_PRESET_KEYS = ["expedia", "agoda"] as const;
+type OtaPresetKey = (typeof OTA_PRESET_KEYS)[number];
+
+const OTA_PRESETS: Record<
+  OtaPresetKey,
+  { label: string; billingName: string; ota: string }
+> = {
+  expedia: { label: "Expedia", billingName: "Expedia Group", ota: "Expedia" },
+  agoda: {
+    label: "Agoda",
+    billingName: "Agoda Company Pte Ltd.",
+    ota: "Agoda",
+  },
+};
+
+const defaultFormValues = {
+  ota_provider: "expedia" as OtaPresetKey,
+  hotel_id: "",
+  reservation_id: "",
+  amount_numeric: "",
+  currency: "USD",
+  card_number: "",
+  card_expire: "",
+  cvv: "",
+  address_1: "",
+  address_2: "",
+  city: "",
+  state: "",
+  postal_code: "",
+  country_code: "US",
+  ota: OTA_PRESETS.expedia.ota,
+  vnp_work_id: "",
+  portfolio: "",
+  user_id: "",
+  ota_billing_name: OTA_PRESETS.expedia.billingName,
+};
+
 const formSchema = z.object({
+  ota_provider: z.enum(OTA_PRESET_KEYS),
   hotel_id: z.string().min(1, "Expedia ID / Hotel ID is required"),
   reservation_id: z.string().min(1, "Reservation ID is required"),
-  amount_numeric: z.string().min(1, "Amount is required").refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0, "Amount must be a positive number"),
-  currency: z.string().min(1, "Currency is required").length(3, "Use 3-letter code (e.g. USD)"),
+  amount_numeric: z
+    .string()
+    .min(1, "Amount is required")
+    .refine(
+      (v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0,
+      "Amount must be a positive number",
+    ),
+  currency: z
+    .string()
+    .min(1, "Currency is required")
+    .length(3, "Use 3-letter code (e.g. USD)"),
   card_number: z.string().min(13, "Card number is required"),
   card_expire: z.string().min(1, "Card expire (MM/YY) is required"),
-  cvv: z.string().min(3, "CVV is required").regex(/^\d{3,4}$/, "CVV must be 3 or 4 digits"),
+  cvv: z
+    .string()
+    .min(3, "CVV is required")
+    .regex(/^\d{3,4}$/, "CVV must be 3 or 4 digits"),
   address_1: z.string().optional(),
   address_2: z.string().optional(),
   city: z.string().optional(),
@@ -59,26 +116,7 @@ export default function CreateSingleQpPaymentModal({
 }: CreateSingleQpPaymentModalProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      hotel_id: "",
-      reservation_id: "",
-      amount_numeric: "",
-      currency: "USD",
-      card_number: "",
-      card_expire: "",
-      cvv: "",
-      address_1: "",
-      address_2: "",
-      city: "",
-      state: "",
-      postal_code: "",
-      country_code: "US",
-      ota: "",
-      vnp_work_id: "",
-      portfolio: "",
-      user_id: "",
-      ota_billing_name: "",
-    },
+    defaultValues: defaultFormValues,
   });
 
   async function onSubmit(values: FormValues) {
@@ -106,13 +144,14 @@ export default function CreateSingleQpPaymentModal({
         ota_billing_name: values.ota_billing_name.trim(),
       });
       toast.success("Charge created and processed");
-      form.reset();
+      form.reset(defaultFormValues);
       onOpenChange(false);
       onSuccess?.();
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "response" in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : "Failed to create and process charge";
       toast.error(String(msg));
     }
@@ -129,7 +168,44 @@ export default function CreateSingleQpPaymentModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-2"
+          >
+            <FormField
+              control={form.control}
+              name="ota_provider"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>OTA *</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      const key = value as OtaPresetKey;
+                      field.onChange(key);
+                      const preset = OTA_PRESETS[key];
+                      form.setValue("ota_billing_name", preset.billingName);
+                      form.setValue("ota", preset.ota);
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select OTA" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {OTA_PRESET_KEYS.map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {OTA_PRESETS[key].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -167,7 +243,13 @@ export default function CreateSingleQpPaymentModal({
                   <FormItem>
                     <FormLabel>Amount *</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -180,7 +262,12 @@ export default function CreateSingleQpPaymentModal({
                   <FormItem>
                     <FormLabel>Currency *</FormLabel>
                     <FormControl>
-                      <Input placeholder="USD" maxLength={3} className="uppercase" {...field} />
+                      <Input
+                        placeholder="USD"
+                        maxLength={3}
+                        className="uppercase"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -223,7 +310,12 @@ export default function CreateSingleQpPaymentModal({
                   <FormItem>
                     <FormLabel>CVV *</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="123" maxLength={4} {...field} />
+                      <Input
+                        type="password"
+                        placeholder="123"
+                        maxLength={4}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -310,7 +402,12 @@ export default function CreateSingleQpPaymentModal({
                   <FormItem>
                     <FormLabel>Country (2-letter)</FormLabel>
                     <FormControl>
-                      <Input placeholder="US" maxLength={2} className="uppercase" {...field} />
+                      <Input
+                        placeholder="US"
+                        maxLength={2}
+                        className="uppercase"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -369,7 +466,10 @@ export default function CreateSingleQpPaymentModal({
                   <FormItem>
                     <FormLabel>QP Username *</FormLabel>
                     <FormControl>
-                      <Input placeholder="QP Username (terminal lookup)" {...field} />
+                      <Input
+                        placeholder="QP Username (terminal lookup)"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -391,7 +491,11 @@ export default function CreateSingleQpPaymentModal({
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Create and charge</Button>
